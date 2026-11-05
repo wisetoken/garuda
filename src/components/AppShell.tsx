@@ -1,5 +1,6 @@
-import { Sun, Moon, Wallet } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+import { WalletButton } from '../lib/wallet';
 import { Link } from 'react-router-dom';
 import { navigation, screenHref, type Screen } from '../navigation';
 
@@ -31,7 +32,7 @@ export function AppShell({ activeScreen, children }: { activeScreen: Screen; chi
           <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
             {theme === 'dark' ? <Sun size={20} aria-hidden="true" /> : <Moon size={20} aria-hidden="true" />}
           </button>
-          <button className="wallet-button" type="button" disabled><Wallet size={16} aria-hidden="true" />Connect wallet</button>
+          <WalletButton />
           </div>
         </div>
       </header>

@@ -2,41 +2,20 @@
 
 A WiseOne NFT stake marketplace with planned stake-backed lending.
 
-The repository currently contains a static concept page and a minimal React, TypeScript, and Vite app shell. Market, My stakes, and Lend are placeholder screens with working navigation. There are no wallet connections, live positions, transactions, APIs, or smart-contract integrations yet.
-
 ## Development
 
-Use Node.js 22.12 or newer and npm.
+Use Node.js 22.12 or newer and npm. Run `npm ci`, copy `.env.example` to `.env.local`, and set a public Thirdweb client ID for your app origin. `npm run dev` serves the app at http://127.0.0.1:3211/garuda/.
 
-```sh
-npm ci
-npm run dev
-```
+My stakes reads the connected wallet's Signature and Advanced NFTs from Ethereum. The cards and table show principal, maturity, available interest, historical annualized yield, and indexed creation transactions. Wallet connection supports external wallets; switching accounts refreshes the portfolio.
 
-Open <http://127.0.0.1:3211/> for the concept page or <http://127.0.0.1:3211/garuda/> for the app. The separate port keeps the existing development app available.
+The local development and preview servers forward `/api` to `GARUDA_API_ORIGIN` (default http://127.0.0.1:3202). The service supplies WISE pricing and the stake indexer. Ethereum reads use public RPC endpoints, or `VITE_MAINNET_RPC_URL` if configured. Browser configuration is public: never use private keys or private API credentials in `VITE_` variables.
 
-## Checks and production preview
+## Checks and preview
 
-```sh
-npm run typecheck
-npm run build
-npm run preview
-```
+Run `npm run typecheck` or `npm run build`. `npm run preview -- --port 3212` serves the production build locally. A production host must route `/api` to a Garuda API; Vite's development proxy is not included in the static build.
 
-Stop the development server before starting the production preview; both use port 3211. The build writes both HTML entry points and app assets to `dist/`.
+## App structure
 
-## Structure
+`src/components` contains the shared shell and stake cards. `src/pages` contains the feature screens. `src/lib` contains wallet integration and Ethereum readers. The app uses `/garuda/?screen=trade` for Market and `/garuda/?screen=stakes` for My stakes. The standalone concept at `/` is separate from the app.
 
-- `index.html`: the standalone project concept, also readable directly in a browser.
-- `garuda/index.html`: the React app entry point.
-- `src/main.tsx`: React and router setup.
-- `src/App.tsx`: selects a screen from the URL.
-- `src/components/`: the shared app shell and placeholder layout.
-- `src/pages/`: separate Market, My stakes, and Lend screens.
-- `src/styles.css`: the app's base styling.
-
-The app defaults to Market. Direct links use `/garuda/?screen=trade`, `/garuda/?screen=stakes`, and `/garuda/?screen=lend`. Browser back and forward navigation are supported.
-
-The shared app shell follows the existing WiseOne Garuda app: teal owl branding, seven navigation destinations, dark/light appearance, and an Ethereum footer. Feature pages remain placeholders until their integrations are migrated. The homepage is deferred.
-
-My stakes includes card and table views, an introductory info tooltip, and creation transaction links. The positions are fixed design fixtures from `src/data/stake-preview.ts`, not connected wallet balances. Wallet connection and transaction buttons are disabled. Creation transaction hashes were resolved from the original app’s indexed stake records.
+Market, lending, funding, and informational screens are being developed independently. No transactions are initiated just by connecting a wallet or viewing stakes.

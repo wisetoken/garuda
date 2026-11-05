@@ -1,13 +1,19 @@
 import { useState } from 'react';
-import { ArrowDownUp, LayoutGrid, List } from 'lucide-react';
+import { ArrowDownUp, LayoutGrid, List, Wallet } from 'lucide-react';
+import { useActiveAccount } from 'thirdweb/react';
 import { GarudaPageKicker } from '../components/GarudaPageKicker';
 import { StakeCard } from '../components/StakeCard';
-import { previewStakes, stakeDate } from '../data/stake-preview';
+import { usePortfolio, useWiseUsd, wiseAmount, usdAmount } from '../lib/portfolio';
+import { stakeDate, stakeTimeline, stakeYield } from '../lib/blend/stake-art';
+import { stakeCollection, STAKE_COLLECTIONS } from '../lib/blend/stake-collections';
+import { useWalletAccess } from '../lib/wallet';
 import './my-stakes.css';
 
-const newestFirst = [...previewStakes].sort((a, b) => b.started.localeCompare(a.started));
 export function MyStakesPage() {
   const [view, setView] = useState<'cards' | 'table'>('cards');
+  const account=useActiveAccount(),{connect,connecting}=useWalletAccess();
+  const portfolio=usePortfolio(),{data:price}=useWiseUsd();
+  const positions=[...(portfolio.data?.positions??[])].sort((a,b)=>b.startAt-a.startAt);
   return <>
     <title>My stakes | WiseOne | Garuda Extension</title>
     <div className="stakes-page-heading">
@@ -19,12 +25,18 @@ export function MyStakesPage() {
         </div>
       </div>
     </div>
-    {view === 'cards' ? <div className="stakes-grid">{newestFirst.map(stake => <StakeCard key={`${stake.collection}:${stake.id}`} stake={stake} />)}</div> :
-      <div className="stakes-table-wrap"><table className="stakes-table"><caption className="sr-only">Sample NFT stakes, newest first</caption><thead><tr><th>Type</th><th>Stake created ↓</th><th>Maturity progress</th><th>Status</th><th>Amount staked</th><th>Annualized yield*</th><th>Unclaimed interest</th></tr></thead><tbody>{newestFirst.map(stake => <tr key={`${stake.collection}:${stake.id}`}>
-        <td><span className="stake-type" tabIndex={0} aria-label={`${stake.collection} #${stake.id}`}><ArrowDownUp size={18} aria-hidden="true" /><span role="tooltip">{stake.collection} #{stake.id}</span></span></td>
-        <td><time dateTime={stake.started}>{stakeDate(stake.started)}</time></td>
-        <td><div className="table-progress" role="progressbar" aria-label={`${stake.collection} #${stake.id} term elapsed`} aria-valuenow={stake.progress} aria-valuemin={0} aria-valuemax={100}><span style={{width:`${stake.progress}%`}} /></div><small>{stake.progress}% elapsed</small></td>
-        <td>{stake.status}<small>{stakeDate(stake.maturity)}</small></td><td>{stake.principal} WISE<small>≈ ${stake.principalUsd}</small></td><td>{stake.annualYield}%<small>Simple, historical</small></td><td>{stake.interest} WISE<small>≈ {stake.interestUsd}</small></td>
-      </tr>)}</tbody></table></div>}
+    {!account ? <div className="state-panel"><Wallet size={28}/><h2>Your stakes, in one place.</h2><p>Connect your wallet to see your Signature and Advanced stakes.</p><button className="stake-primary" onClick={()=>void connect()} disabled={connecting}>Connect wallet</button></div> : <>
+      {portfolio.isError && <div className="state-message" role="alert">Could not refresh your stakes. <button onClick={()=>void portfolio.refetch()}>Try again</button></div>}
+      {portfolio.isPending ? <div className="state-panel" role="status">Reading your stakes from Ethereum…</div> : !portfolio.isError&&!positions.length ? <div className="state-panel"><h2>No NFT stakes in this wallet.</h2><p>Your Signature and Advanced positions will appear here.</p></div> :
+      view === 'cards' ? <div className="stakes-grid">{positions.map(position => <StakeCard key={`${position.collection}:${position.tokenId}`} position={position} />)}</div> :
+      <div className="stakes-table-wrap"><table className="stakes-table"><caption className="sr-only">Your NFT stakes, newest first</caption><thead><tr><th>Type</th><th>Stake created ↓</th><th>Maturity progress</th><th>Status</th><th>Amount staked</th><th>Annualized yield*</th><th>Unclaimed interest</th></tr></thead><tbody>{positions.map(position => {
+        const name=`${stakeCollection(position.collection??STAKE_COLLECTIONS.signature.address).name} #${position.tokenId}`, timeline=stakeTimeline(position), yieldValue=stakeYield(position);
+        return <tr key={`${position.collection}:${position.tokenId}`}>
+        <td><span className="stake-type" tabIndex={0} aria-label={name}><ArrowDownUp size={18} aria-hidden="true" /><span role="tooltip">{name}</span></span></td>
+        <td>{stakeDate(position.startAt)}</td>
+        <td><div className="table-progress" role="progressbar" aria-label={`${name} term elapsed`} aria-valuenow={Math.round(timeline.progress*100)} aria-valuemin={0} aria-valuemax={100}><span style={{width:`${timeline.progress*100}%`}} /></div><small>{Math.round(timeline.progress*100)}% elapsed</small></td>
+        <td>{timeline.status}<small>{stakeDate(position.maturesAt)}</small></td><td>{wiseAmount(position.principal)} WISE<small>{usdAmount(position.principal,price)}</small></td><td>{yieldValue?.toFixed(2)??'—'}%<small>Simple, historical</small></td><td>{wiseAmount(position.unclaimedInterest)} WISE<small>{usdAmount(position.unclaimedInterest,price)}</small></td>
+      </tr>;})}</tbody></table></div>}
+    </>}
   </>;
 }
