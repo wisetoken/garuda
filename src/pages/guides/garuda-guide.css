@@ -1,0 +1,43 @@
+.garuda-guide .ba-guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.garuda-guide .ba-guide-grid article { background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 30px; }
+.garuda-guide h2 { font-size: 28px; letter-spacing: -.6px; margin: 14px 0; }
+.garuda-guide h3 { font-size: 21px; margin: 12px 0; }
+.garuda-guide p { color: var(--text-secondary); line-height: 1.75; }
+.garuda-guide .ba-guide-heading { margin: 44px 0 22px; }
+.garuda-guide .ba-guide-status { color: var(--accent); font-size: 11px; letter-spacing: 1.4px; }
+.garuda-guide .ba-guide-pending { color: var(--text-secondary); }
+.garuda-guide .ba-explain-timeline { padding: 32px; margin: 26px 0 40px; border: 1px solid var(--border); border-radius: 20px; background: var(--panel); }
+.garuda-guide .ba-timeline-track { margin: 52px 8px 28px; display: flex; justify-content: space-between; position: relative; border-top: 2px solid var(--accent); }
+.garuda-guide .ba-timeline-track > span { position: relative; padding-top: 19px; font-size: 13px; color: var(--text-secondary); }
+.garuda-guide .ba-timeline-track > span::before { content: ''; position: absolute; top: -7px; left: 0; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+.garuda-guide .ba-timeline-track > span:last-child::before { left: auto; right: 0; }
+.garuda-guide .ba-timeline-track .ba-timeline-sale { position: absolute; left: 42%; transform: translateX(-50%); top: -45px; color: var(--accent); padding-top: 0; text-align: center; }
+.garuda-guide .ba-timeline-track .ba-timeline-sale::before { left: 50%; top: 38px; box-shadow: 0 0 0 7px var(--accent-soft); }
+.garuda-guide .ba-owner-bands { display: grid; grid-template-columns: 42fr 58fr; gap: 4px; }
+.garuda-guide .ba-owner-bands > span { display: flex; gap: 10px; align-items: center; justify-content: center; padding: 20px 10px; background: var(--panel-soft); border-radius: 8px 0 0 8px; color: var(--text-primary); }
+.garuda-guide .ba-owner-bands > span:last-child { background: var(--accent); color: white; border-radius: 0 8px 8px 0; }
+.garuda-guide .ba-explain-timeline > p { font-size: 13px; margin-top: 18px; }
+.garuda-guide .ba-path-number { color: var(--ba-muted); letter-spacing: 1.5px; font-size: 10px; }
+.garuda-timeline-section { display: grid; grid-template-columns: minmax(0,.8fr) minmax(0,1.2fr); gap: 44px; align-items: center; margin: 64px 0; }
+.garuda-guide .garuda-section-intro h2 { margin: 18px 0; font-size: 34px; line-height: 1.15; letter-spacing: -1px; font-weight: 450; }
+.garuda-section-intro > p { margin: 0; max-width: 430px; font-size: 15px; }
+.garuda-guide .ba-explain-timeline { margin: 0; padding: 28px; border-radius: 18px; }
+.garuda-guide .ba-owner-bands > span { padding: 16px 10px; font-size: 13px; }
+.garuda-guide .ba-owner-bands > span:last-child { background: var(--accent-soft); color: var(--ba-mint); }
+.garuda-features-section { border-top: 1px solid var(--ba-line); padding-top: 42px; }
+.garuda-features-section .ba-guide-grid { margin-top: 28px; gap: 0 44px; }
+.garuda-features-section .ba-guide-grid article { border: 0; border-top: 1px solid var(--ba-line); border-radius: 0; background: none; padding: 28px 0; }
+.garuda-features-section h3 { font-size: 22px; font-weight: 450; line-height: 1.3; letter-spacing: -.4px; }
+.garuda-features-section p { margin: 14px 0 0; font-size: 14px; }
+.garuda-guide .ba-guide-actions { display: flex; align-items: center; gap: 24px; padding: 28px; margin-top: 32px; background: var(--ba-panel); border: 1px solid var(--ba-line); border-radius: 18px; }
+.garuda-guide .ba-guide-actions > p { margin: 0 auto 0 0; font-size: 22px; color: var(--text-primary); letter-spacing: -.5px; }
+.garuda-guide .ba-guide-actions .ba-text-button { margin: 0; }
+@media (max-width:760px) {
+.garuda-guide .ba-guide-grid { grid-template-columns: 1fr; }
+  .garuda-timeline-section { grid-template-columns: 1fr; gap: 24px; margin: 40px 0; }
+  .garuda-guide .garuda-section-intro h2 { font-size: 28px; }
+  .garuda-guide .ba-explain-timeline { padding: 22px; }
+  .garuda-guide .ba-guide-actions { flex-wrap: wrap; padding: 24px; gap: 18px; }
+  .garuda-guide .ba-guide-actions > p { flex-basis: 100%; }
+}
+@media (max-width:540px) { .garuda-guide .ba-timeline-track .ba-timeline-sale { font-size: 11px; white-space: nowrap; } }

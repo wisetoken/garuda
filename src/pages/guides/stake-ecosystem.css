@@ -1,0 +1,83 @@
+/* Shared cards and dialogs; the host provides the light or dark palette. */
+.stake-ecosystem {
+  --stake-surface: var(--tile);
+  --stake-background: var(--canvas);
+  --stake-text: var(--ink);
+  --stake-muted: var(--grey-text);
+  --stake-accent: var(--orange-ink);
+  --stake-border: var(--rule);
+  --stake-highlight: #dceee9;
+  --stake-highlight-border: #bedbd3;
+  color: var(--stake-text);
+}
+.app-shell .stake-ecosystem {
+  --stake-surface: var(--panel);
+  --stake-background: var(--background);
+  --stake-text: var(--text-primary);
+  --stake-muted: var(--text-secondary);
+  --stake-accent: var(--accent);
+  --stake-border: var(--border);
+  --stake-highlight: linear-gradient(145deg, var(--accent-soft), var(--panel));
+  --stake-highlight-border: var(--border-strong);
+}
+.stake-ecosystem .stake-flow { display:grid; grid-template-columns:minmax(0,1fr) 40px minmax(0,1fr) 40px minmax(0,1fr); align-items:stretch; gap:8px; }
+.stake-ecosystem .stake-node { position:relative; padding:32px 32px 82px; display:flex; flex-direction:column; align-items:flex-start; gap:22px; min-width:0; border-radius:10px; background:var(--stake-surface); translate:0 0; transition:translate .4s ease-in-out,box-shadow .4s ease-in-out; }
+.stake-ecosystem .stake-node img { object-fit:contain; }
+.stake-ecosystem .wiseone-mark { filter:hue-rotate(-45deg) saturate(1.4); }
+.stake-ecosystem .wise-token-mark { width:64px; height:64px; display:grid; place-items:center; background:#101c24; border-radius:16px; }
+.stake-ecosystem .wise-token-mark img { width:52px; height:52px; }
+.stake-ecosystem .stake-node h3 { font-size:clamp(28px,2.8vw,40px); font-weight:400; line-height:1.15; margin:0; letter-spacing:normal; }
+.stake-ecosystem .stake-node p { margin:0; }
+.stake-ecosystem .stake-node .label { color:var(--stake-muted); font-size:13px; line-height:1.4; }
+.stake-ecosystem .stake-node>p:not(.label) { font-size:18px; line-height:1.55; color:var(--stake-muted); }
+.stake-ecosystem .stake-node--garuda { background:var(--stake-highlight); border:1px solid var(--stake-highlight-border); }
+.stake-ecosystem .flow-arrow { align-self:center; justify-self:center; color:var(--stake-accent); font-size:32px; }
+.js .stake-ecosystem .stake-node[data-rise] { transition:opacity var(--t-reveal) var(--ease) var(--d,0ms),transform var(--t-reveal) var(--ease) var(--d,0ms),translate .4s ease-in-out 0ms,box-shadow .4s ease-in-out 0ms; }
+.stake-ecosystem .stake-node:has(.stake-open:focus-visible) { translate:0 -6px; box-shadow:0 16px 36px #007c7826,0 0 0 1px #007c7840; }
+@media(hover:hover) { .stake-ecosystem .stake-node:has(.stake-open:hover) { translate:0 -6px; box-shadow:0 16px 36px #007c7826,0 0 0 1px #007c7840; } }
+.stake-ecosystem .stake-open { position:absolute; inset:0; width:100%; height:100%; border:0; padding:0; border-radius:inherit; cursor:pointer; background:transparent; color:var(--stake-accent); font:inherit; text-align:left; }
+.stake-ecosystem .stake-open span { position:absolute; left:32px; bottom:28px; font-size:16px; }
+.stake-ecosystem :is(.stake-open,.stake-close,.stake-detail-link,.stake-modal-nav button):focus-visible { outline:2px solid var(--stake-accent); outline-offset:4px; }
+.stake-ecosystem .stake-dialog { position:fixed; inset:0; margin:auto; padding:44px; border:1px solid var(--stake-border); border-radius:20px; background:var(--stake-background); color:var(--stake-text); width:min(800px,calc(100vw - 32px)); max-height:90dvh; overflow:auto; overscroll-behavior:contain; }
+.stake-ecosystem .stake-dialog::backdrop { background:#08112288; backdrop-filter:blur(3px); }
+.stake-ecosystem .stake-modal-nav { position:absolute; top:16px; right:64px; display:flex; align-items:center; gap:12px; margin:0; color:var(--stake-accent); font-size:14px; }
+.stake-ecosystem .stake-modal-nav button { display:grid; place-items:center; width:36px; height:36px; border:1px solid var(--stake-border); border-radius:50%; background:#007c780b; color:inherit; padding:0; line-height:1; cursor:pointer; transition:background .2s ease; }
+.stake-ecosystem .stake-modal-nav button svg { display:block; width:22px; height:22px; }
+.stake-ecosystem .stake-close { position:absolute; right:16px; top:16px; width:36px; height:36px; border-radius:50%; border:1px solid var(--stake-border); background:#007c780b; color:var(--stake-text); font-size:26px; cursor:pointer; display:grid; place-items:center; padding:0; line-height:1; transition:background .2s ease; }
+.stake-ecosystem .stake-modal-nav button:hover,.stake-ecosystem .stake-close:hover { background:var(--stake-surface); }
+.stake-ecosystem .stake-dialog h2 { font-size:34px; font-weight:400; line-height:1.15; padding-right:20px; margin:0; letter-spacing:normal; }
+.stake-ecosystem .stake-dialog-intro { margin:16px 0 26px; color:var(--stake-muted); font-size:17px; line-height:1.5; }
+.stake-ecosystem .stake-explanations { background:var(--stake-surface); border-radius:14px; padding:4px 24px; }
+.stake-ecosystem .stake-explanations>div { padding:20px 0; }
+.stake-ecosystem .stake-explanations>div+div { border-top:1px solid var(--stake-border); }
+.stake-ecosystem .stake-explanations h3 { font-size:18px; font-weight:500; margin:0 0 8px; line-height:1.3; }
+.stake-ecosystem .stake-explanations p { font-size:16px; line-height:1.6; color:var(--stake-muted); margin:0; }
+.stake-ecosystem .stake-detail-link { display:inline-block; margin-top:24px; color:var(--stake-accent); }
+.stake-ecosystem .stake-dialog-header { display:grid; grid-template-columns:96px minmax(0,1fr); gap:24px; align-items:start; margin-bottom:28px; }
+.stake-ecosystem .stake-dialog-icon { width:96px; height:96px; display:grid; place-items:center; background:#101c24; border-radius:22px; }
+.stake-ecosystem .stake-dialog-icon img { width:76px; height:76px; object-fit:contain; }
+.stake-ecosystem .stake-dialog-header .stake-dialog-intro { margin:8px 0 0; }
+.app-shell .stake-ecosystem .stake-node { padding:28px 28px 78px; gap:22px; border:1px solid var(--stake-border); border-radius:20px; }
+.app-shell .stake-ecosystem .stake-node--garuda { border-color:var(--stake-highlight-border); }
+.app-shell[data-theme="dark"] .stake-ecosystem .stake-node--garuda .wise-token-mark { background:#203039; box-shadow:inset 0 0 0 1px #ffffff24; }
+.app-shell .stake-ecosystem .stake-node h3 { font-size:28px; }
+.app-shell .stake-ecosystem .stake-node>p:not(.label) { font-size:16px; }
+.app-shell .stake-ecosystem .stake-open span { left:28px; }
+@media(max-width:1000px) { .app-shell .stake-ecosystem .stake-flow { grid-template-columns:1fr; gap:12px; } .app-shell .stake-ecosystem .flow-arrow { transform:rotate(90deg); line-height:1; } }
+@media(max-width:767px) {
+  .stake-ecosystem .stake-flow { grid-template-columns:1fr; gap:12px; }
+  .stake-ecosystem .stake-node { padding:26px 26px 74px; gap:18px; }
+  .stake-ecosystem .flow-arrow { transform:rotate(90deg); line-height:1; }
+  .stake-ecosystem .stake-node h3 { font-size:32px; }
+  .stake-ecosystem .stake-open span { left:26px; bottom:24px; }
+  .stake-ecosystem .stake-dialog { padding:44px 20px 24px; }
+  .stake-ecosystem .stake-explanations { padding:0 18px; }
+}
+@media(max-width:600px) {
+  .stake-ecosystem .stake-dialog-header { grid-template-columns:64px minmax(0,1fr); gap:16px; }
+  .stake-ecosystem .stake-dialog-icon { width:64px; height:64px; border-radius:16px; }
+  .stake-ecosystem .stake-dialog-icon img { width:50px; height:50px; }
+  .stake-ecosystem .stake-dialog-header h2 { font-size:26px; padding-right:0; }
+  .stake-ecosystem .stake-dialog-header .stake-dialog-intro { font-size:15px; }
+}
+@media(prefers-reduced-motion:reduce) { .stake-ecosystem .stake-node { transition:none; } .stake-ecosystem .stake-node:has(.stake-open:hover),.stake-ecosystem .stake-node:has(.stake-open:focus-visible) { translate:none; } }

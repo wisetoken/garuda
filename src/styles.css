@@ -55,9 +55,9 @@ h1 { max-width: 900px; margin: 0; font-size: clamp(36px, 5vw, 60px); font-weight
 .brand img { width: 44px; height: 44px; object-fit: contain; filter: hue-rotate(-45deg) saturate(1.4); }
 .brand strong { font-family: "Inter Tight", "Geist", system-ui, sans-serif; font-weight: 700; font-size: 33px; line-height: 1; letter-spacing: -.025em; }
 .brand span { display: flex; align-items: center; gap: 6px; margin: 0; padding-left: 12px; border-left: 1px solid var(--border); font-size: 12px; }
-.brand i, .network i { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; }
+.network i { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; }
 .header-content nav { margin-left: auto; gap: 16px; }
-.header-content nav a { border-bottom: 1px solid transparent; border-radius: 0; padding: 10px 0; font-size: 13px; }
+.header-content nav a { border-bottom: 1px solid transparent; border-radius: 0; padding: 10px 0; font-size: 15px; }
 .header-content nav a[aria-current="page"] { color: var(--accent); background: none; border-color: var(--accent); }
 .theme-toggle { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border: 1px solid var(--border); border-radius: 12px; color: var(--accent); background: transparent; cursor: pointer; font-size: 26px; }
 .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
@@ -91,7 +91,6 @@ h1 { max-width: 900px; margin: 0; font-size: clamp(36px, 5vw, 60px); font-weight
 @media (max-width:1320px) { .header-content { padding-inline: 32px; } }
 @media (max-width:600px) { .header-content { padding: 16px 20px 8px; } }
 
-.brand > i { align-self: flex-start; margin-top: 10px; margin-left: -8px; flex-shrink: 0; }
 .header-content { display: grid; grid-template-columns: auto 1fr auto; gap: 28px; }
 .header-content nav { justify-content: flex-end; flex-wrap: nowrap; }
 .header-controls { display: flex; align-items: center; gap: 12px; }
@@ -110,12 +109,11 @@ h1 { max-width: 900px; margin: 0; font-size: clamp(36px, 5vw, 60px); font-weight
   .brand { gap: 7px; }
   .brand strong { font-size: 25px; }
   .brand img { width: 28px; height: 28px; }
-  .brand > i { display: none; }
   .header-controls { gap: 8px; }
   .theme-toggle { width: 34px; height: 34px; }
   .wallet-button { font-size: 11px; padding: 9px 12px; gap: 7px; }
   .header-content nav { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 2px 8px; width: 100%; }
-  .header-content nav a { text-align: center; font-size: 12px; }
+  .header-content nav a { text-align: center; font-size: 14px; }
   .footer-content { padding-inline: 20px; }
 }
 @media (max-width:380px) { .brand strong { font-size: 21px; } .brand img { width: 24px; height: 24px; } .header-content { column-gap: 8px; } .wallet-button { padding-inline: 8px; } }

@@ -21,7 +21,7 @@ export function AppShell({ activeScreen, children }: { activeScreen: Screen; chi
         <div className="container header-content">
           <Link className="brand" to={screenHref('trade')} aria-label="WiseOne Garuda market">
             <img src="/wiseone-logo.png" alt="" width="44" height="44" />
-            <strong>WiseOne</strong><span>Garuda extension</span><i aria-hidden="true" />
+            <strong>WiseOne</strong><span>Garuda extension</span>
           </Link>
           <nav aria-label="Garuda navigation">
             {navigation.map(({ screen, label }) => (
