@@ -72,7 +72,7 @@ export function OrderCard({ row }: { row: SaleRow }) {
     return (
       <article className="state-panel">
         <h2>
-          {stakeCollection(row.order.collection).name} #{row.order.tokenId}
+          {stakeCollection(row.order.collection).name} Stake #{row.order.tokenId}
         </h2>
         <p>
           {position.isError

@@ -219,7 +219,7 @@ export function SaleForm({
             <div>
               <span>WISE / Ethereum</span>
               <h3>
-                {meta.name} #{tokenId}
+                {meta.name} Stake #{tokenId}
               </h3>
             </div>
           </div>

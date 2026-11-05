@@ -45,7 +45,7 @@ export function SavedOrders({
             orders.map((row) => (
               <div className="recovery-row" key={row.order.nonce}>
                 <span>
-                  {stakeCollection(row.order.collection).name} #
+                  {stakeCollection(row.order.collection).name} Stake #
                   {row.order.tokenId} ·{" "}
                   {row.order.kind === 0 ? "Listing" : "Bid"} ·{" "}
                   {formatAmount(BigInt(row.order.amount), 6)} WISE

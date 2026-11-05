@@ -132,7 +132,7 @@ export function MyStakesPage({ embedded = false }: { embedded?: boolean }) {
                 </thead>
                 <tbody>
                   {positions.map((position) => {
-                    const name = `${stakeCollection(position.collection ?? STAKE_COLLECTIONS.signature.address).name} #${position.tokenId}`,
+                    const name = `${stakeCollection(position.collection ?? STAKE_COLLECTIONS.signature.address).name} Stake #${position.tokenId}`,
                       timeline = stakeTimeline(position),
                       yieldValue = stakeYield(position);
                     return (

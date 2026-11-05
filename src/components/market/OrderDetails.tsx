@@ -19,7 +19,7 @@ export function OrderDetails({ row }: { row: SaleRow }) {
     >
       <div>
         <h2>
-          {stakeCollection(row.order.collection).name} #{row.order.tokenId}
+          {stakeCollection(row.order.collection).name} Stake #{row.order.tokenId}
         </h2>
         <p>
           {row.order.kind === 0 ? "Sale listing" : "Purchase bid"} ·{" "}

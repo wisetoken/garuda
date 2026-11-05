@@ -49,7 +49,7 @@ export function filterEntries(entries: MarketEntry[], filters: MarketFilters) {
           filters.statuses.some(
             (status) => status === stakeTimeline(position).status,
           ))) &&
-      `${collection.name} #${row.order.tokenId} ${row.order.owner} ${row.order.maker}`
+      `${collection.name} Stake #${row.order.tokenId} ${row.order.owner} ${row.order.maker}`
         .toLowerCase()
         .includes(search)
     );

@@ -45,7 +45,7 @@ function OrderRow({
     position = useOrderPosition(row);
   const timeline = p ? stakeTimeline(p) : undefined,
     yieldValue = p ? stakeYield(p) : null;
-  const label = `${stakeCollection(row.order.collection).name} #${row.order.tokenId}`;
+  const label = `${stakeCollection(row.order.collection).name} Stake #${row.order.tokenId}`;
   const cells: Record<MarketColumn, ReactNode> = {
     type: (
       <button
