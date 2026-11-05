@@ -1,4 +1,4 @@
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Wallet } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { navigation, screenHref, type Screen } from '../navigation';
@@ -20,16 +20,19 @@ export function AppShell({ activeScreen, children }: { activeScreen: Screen; chi
         <div className="container header-content">
           <Link className="brand" to={screenHref('trade')} aria-label="WiseOne Garuda market">
             <img src="/wiseone-logo.png" alt="" width="44" height="44" />
-            <strong>WiseOne</strong><span>Garuda extension<i aria-hidden="true" /></span>
+            <strong>WiseOne</strong><span>Garuda extension</span><i aria-hidden="true" />
           </Link>
           <nav aria-label="Garuda navigation">
             {navigation.map(({ screen, label }) => (
               <Link key={screen} to={screenHref(screen)} aria-current={screen === activeScreen ? 'page' : undefined}>{label}</Link>
             ))}
           </nav>
+          <div className="header-controls">
           <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
             {theme === 'dark' ? <Sun size={20} aria-hidden="true" /> : <Moon size={20} aria-hidden="true" />}
           </button>
+          <button className="wallet-button" type="button" disabled><Wallet size={16} aria-hidden="true" />Connect wallet</button>
+          </div>
         </div>
       </header>
       <main className="container app-content" id="main" tabIndex={-1}>{children}</main>

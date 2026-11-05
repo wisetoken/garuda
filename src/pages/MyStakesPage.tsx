@@ -19,7 +19,6 @@ export function MyStakesPage() {
         </div>
       </div>
     </div>
-    <p className="preview-notice" id="preview-notice">Layout preview · Sample stakes, not connected wallet data. Listing and borrowing are not enabled yet.</p>
     {view === 'cards' ? <div className="stakes-grid">{newestFirst.map(stake => <StakeCard key={`${stake.collection}:${stake.id}`} stake={stake} />)}</div> :
       <div className="stakes-table-wrap"><table className="stakes-table"><caption className="sr-only">Sample NFT stakes, newest first</caption><thead><tr><th>Type</th><th>Stake created ↓</th><th>Maturity progress</th><th>Status</th><th>Amount staked</th><th>Annualized yield*</th><th>Unclaimed interest</th></tr></thead><tbody>{newestFirst.map(stake => <tr key={`${stake.collection}:${stake.id}`}>
         <td><span className="stake-type" tabIndex={0} aria-label={`${stake.collection} #${stake.id}`}><ArrowDownUp size={18} aria-hidden="true" /><span role="tooltip">{stake.collection} #{stake.id}</span></span></td>

@@ -11,7 +11,6 @@
 .stake-view-switch { display: flex; gap: 4px; padding: 4px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; }
 .stake-view-switch button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; border: 0; border-radius: 8px; font-size: 12px; background: transparent; color: var(--muted); cursor: pointer; }
 .stake-view-switch button[aria-pressed=true] { background: var(--accent-soft); color: var(--accent); }
-.preview-notice { margin: -18px 0 20px; font-size: 12px; color: var(--muted); }
 .stakes-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 22px; }
 .stake-primary { background: #00aaa7; color: white; border: 1px solid #20bcb6; }
 .garuda-stake-actions button { display: flex; align-items: center; gap: 12px; cursor: not-allowed; }
@@ -33,3 +32,6 @@ button:focus-visible,.stake-type:focus-visible { outline: 2px solid var(--accent
 @media (max-width:1100px) { .stakes-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width:700px) { .stakes-grid { grid-template-columns: 1fr; } .stakes-title-row h1 { font-size: 36px; } }
 @media (prefers-reduced-motion:reduce) { .progress-fill-sweep-ltr::after { animation: none; } }
+
+.garuda-stake-actions .stake-primary { font-family: inherit; font-size: 14px; font-weight: 600; min-height: 44px; }
+.garuda-stake-actions .ba-text-button { font-family: inherit; font-size: 14px; min-height: 44px; }

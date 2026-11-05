@@ -39,4 +39,4 @@ The app defaults to Market. Direct links use `/garuda/?screen=trade`, `/garuda/?
 
 The shared app shell follows the existing WiseOne Garuda app: teal owl branding, seven navigation destinations, dark/light appearance, and an Ethereum footer. Feature pages remain placeholders until their integrations are migrated. The homepage is deferred.
 
-My stakes now includes the migrated card presentation, a table view, and the introductory info tooltip. It currently uses explicitly labeled sample positions for design review; these are not connected wallet balances, and transaction buttons are disabled.
+My stakes includes card and table views, an introductory info tooltip, and creation transaction links. The positions are fixed design fixtures from `src/data/stake-preview.ts`, not connected wallet balances. Wallet connection and transaction buttons are disabled. Creation transaction hashes were resolved from the original app’s indexed stake records.
