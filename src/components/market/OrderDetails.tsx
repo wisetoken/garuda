@@ -1,3 +1,4 @@
+import { ArkivPublication } from "./ArkivSource";
 import { useOrderPosition } from "../../lib/market/queries";
 import type { SaleRow } from "../../lib/blend/sales";
 import { saleAmounts } from "../../lib/blend/seaport";
@@ -49,6 +50,7 @@ export function OrderDetails({ row }: { row: SaleRow }) {
       <div className="market-detail-actions">
         <RowActions row={row} position={position} />
       </div>
+      <ArkivPublication row={row} />
       <p className="market-detail-note">
         Complete NFT ownership transfers on purchase. Ownership and stake state
         are checked again before settlement.

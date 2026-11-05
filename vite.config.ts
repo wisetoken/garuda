@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const proxy = { '/api': { target: env.GARUDA_API_ORIGIN || 'http://127.0.0.1:3202', changeOrigin: true } };
+  const proxy = { '/api/garuda': { target: env.GARUDA_MARKET_API_ORIGIN || 'http://127.0.0.1:3213', changeOrigin: true }, '/api': { target: env.GARUDA_API_ORIGIN || 'http://127.0.0.1:3202', changeOrigin: true } };
   return {
     plugins: [react()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },

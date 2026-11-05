@@ -14,13 +14,19 @@ import {
 } from "../blend/stake-snapshot";
 import { ethereumClient } from "../portfolio";
 
-export function useBook(id: StakeCollectionId, deployment?: SalesDeployment) {
+export function useBook(id: StakeCollectionId, deployment?: SalesDeployment, source: "arkiv" | "catalog" = "catalog", kind?: "listing" | "bid") {
   return useInfiniteQuery({
-    queryKey: ["market-book", id, deployment?.adapter],
+    queryKey: ["market-book", id, deployment?.adapter, source, kind],
     enabled: !!deployment,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const path = pageParam ? `?before=${encodeURIComponent(pageParam)}` : "";
+      if (source === "arkiv") {
+        const query = new URLSearchParams({source:"arkiv"});
+        if (pageParam) query.set("before",pageParam);
+        if (kind) query.set("kind",kind);
+        return {...parseBook(await marketApi<MarketBook>(id, `sales?${query}`), deployment!),verified:true};
+      }
       try {
         return {
           ...parseBook(

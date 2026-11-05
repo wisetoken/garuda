@@ -64,6 +64,8 @@ export type OrderStatus =
   | "reorged"
   | "signature-invalid";
 export type SaleRow = SignedSale & {
+  arkivEntity?: string;
+  arkiv?: {state: "queued" | "publishing" | "published" | "retrying" | "unavailable"; entityKey?: string; txHash?: string};
   stakeSnapshot?: import('./stake-snapshot').StakeSnapshot;
   hash: Hex;
   status: OrderStatus;

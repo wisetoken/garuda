@@ -1,3 +1,4 @@
+import { ArkivSource } from "../components/market/ArkivSource";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useActiveAccount } from "thirdweb/react";
@@ -32,14 +33,18 @@ export function MarketPage() {
   const deployments = markets.map((query) =>
     query.data?.enabled ? query.data.deployment : undefined,
   );
-  const signature = useBook("signature", deployments[0]),
-    advanced = useBook("advanced", deployments[1]);
   const [params, setParams] = useSearchParams();
   const section = ["positions", "activity"].includes(params.get("view") ?? "")
     ? params.get("view")!
     : "market";
   const [view, setView] = useState<"table" | "cards">("table");
   const book = params.get("book") === "bids" ? "bids" : "listings";
+  const source = params.get("source") === "catalog" || section !== "market" ? "catalog" : "arkiv";
+  const signature = useBook("signature", deployments[0], source, source === "arkiv" ? (book === "bids" ? "bid" : "listing") : undefined),
+    advanced = useBook("advanced", deployments[1], source, source === "arkiv" ? (book === "bids" ? "bid" : "listing") : undefined);
+  function setSource(value: "arkiv" | "catalog") {
+    setParams(current=> {const next=new URLSearchParams(current); next.set("source",value);return next;});
+  }
   function setBook(value: "listings" | "bids") {
     setParams((current) => {
       const next = new URLSearchParams(current);
@@ -208,6 +213,7 @@ export function MarketPage() {
             )}
           </div>
         )}
+        {section === "market" && <ArkivSource source={source} onChange={setSource} failed={signature.isError || advanced.isError} onRetry={refresh} />}
         {showOrders && (
           <MarketToolbar
             count={filtered.length}

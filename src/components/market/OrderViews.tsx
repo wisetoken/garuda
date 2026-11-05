@@ -1,3 +1,4 @@
+import { ArkivPublication } from "./ArkivSource";
 import { useActiveAccount } from "thirdweb/react";
 import { AddressIdentity } from "../AddressIdentity";
 import { StakeCard } from "../StakeCard";
@@ -110,6 +111,7 @@ export function OrderCard({ row }: { row: SaleRow }) {
             </div>
           )}
           <RowActions row={row} position={position.data} />
+          <ArkivPublication row={row} />
         </>
       }
     />

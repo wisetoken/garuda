@@ -18,7 +18,7 @@ export async function marketApi<T>(
   body?: unknown,
 ): Promise<T> {
   const response = await fetch(
-    `/api/blend/${id === "advanced" ? "advanced/" : ""}${path}`,
+    `/api/garuda/${id === "advanced" ? "advanced/" : ""}${path}`,
     {
       method: body === undefined ? "GET" : "POST",
       headers:
