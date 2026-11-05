@@ -124,7 +124,7 @@ export function SaleForm({
     amount =
       "row" in intent ? BigInt(intent.row.order.amount) : parseAmount(price);
   } catch {
-    amountError = "Enter a positive WISE amount, with up to 18 decimal places.";
+    amount = undefined;
   }
   if (amount !== undefined && amount >= (1n << 128n)) {
     amount = undefined;
@@ -300,7 +300,7 @@ export function SaleForm({
                   disabled={busy}
                   onBlur={() => setTouched(true)}
                   onChange={(e) => setPrice(e.target.value)}
-                  aria-invalid={touched && !!amountError}
+                  aria-invalid={touched && amount === undefined}
                   aria-describedby={
                     touched && amountError ? "sale-price-error" : undefined
                   }
