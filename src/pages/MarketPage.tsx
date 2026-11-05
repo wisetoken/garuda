@@ -34,12 +34,20 @@ export function MarketPage() {
   );
   const signature = useBook("signature", deployments[0]),
     advanced = useBook("advanced", deployments[1]);
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const section = ["positions", "activity"].includes(params.get("view") ?? "")
     ? params.get("view")!
     : "market";
   const [view, setView] = useState<"table" | "cards">("table");
-  const [book, setBook] = useState<"listings" | "bids">("listings");
+  const book = params.get("book") === "bids" ? "bids" : "listings";
+  function setBook(value: "listings" | "bids") {
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      if (value === "bids") next.set("book", "bids");
+      else next.delete("book");
+      return next;
+    });
+  }
   const [ownedView, setOwnedView] = useState<"stakes" | "orders">("stakes");
   const [filters, setFilters] = useState<MarketFilters>(emptyFilters);
   const [columns, setColumns] = useState<MarketColumn[]>(defaultColumns);

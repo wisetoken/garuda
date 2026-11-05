@@ -36,6 +36,7 @@ import {
   forgetCancelledOrder,
 } from "./recovery";
 import type { MarketIntent, PendingTx } from "./types";
+import { refreshTradeData, tradeDestination } from "./workflow";
 
 export function useMarketController() {
   const account = useActiveAccount(),
@@ -54,6 +55,7 @@ export function useMarketController() {
   const [unsaved, setUnsaved] = useState<SignedSale | null>(null);
   const dialog = useRef<HTMLDialogElement>(null),
     lock = useRef(false),
+    connecting = useRef(false),
     context = useRef({ account, wallet }),
     phase = useRef<SalesStep>("checking");
   context.current = { account, wallet };
@@ -66,7 +68,7 @@ export function useMarketController() {
   }, []);
   const previousAccount = useRef(account?.address);
   useEffect(() => {
-    if (previousAccount.current !== account?.address && !lock.current) {
+    if (previousAccount.current && previousAccount.current !== account?.address && !lock.current) {
       setIntent(null);
       setError("");
     }
@@ -110,10 +112,22 @@ export function useMarketController() {
     setNotice("");
     setIntent(next);
   }
+  async function connectForTrade() {
+    if (lock.current || connecting.current) return;
+    connecting.current = true;
+    // Keep the form mounted so its price and duration survive the wallet picker.
+    // Native dialogs sit above portals, so lower this dialog while connecting.
+    dialog.current?.close();
+    try {
+      await connect();
+    } finally {
+      connecting.current = false;
+      if (mounted.current && dialog.current?.isConnected && !dialog.current.open)
+        dialog.current.showModal();
+    }
+  }
   function refresh() {
-    void cache.invalidateQueries({ queryKey: ["market-book"] });
-    void cache.invalidateQueries({ queryKey: ["portfolio"] });
-    void cache.invalidateQueries({ queryKey: ["market-review"] });
+    void refreshTradeData(cache);
     setRevision((v) => v + 1);
   }
   async function execute(price: string, days: number) {
@@ -268,7 +282,7 @@ export function useMarketController() {
         setUnsaved(null);
       setIntent(null);
       refresh();
-      navigate("/garuda/?screen=trade&collection=" + id + "&view=market");
+      navigate(tradeDestination(activeIntent, id));
     } catch (e) {
       setError(salesFailure(e, phase.current));
       refresh();
@@ -326,7 +340,7 @@ export function useMarketController() {
     open,
     execute,
     checkPending,
-    connect,
+    connect: connectForTrade,
     wallet,
     chain,
   };

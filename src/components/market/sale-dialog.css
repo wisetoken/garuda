@@ -353,3 +353,19 @@
 .sale-footer .stake-primary:disabled {
   cursor: not-allowed;
 }
+
+.sale-counterparty {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.sale-counterparty > div {
+  display: grid;
+  gap: 8px;
+}
+.sale-counterparty > div > span {
+  color: var(--muted);
+}

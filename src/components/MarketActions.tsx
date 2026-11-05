@@ -26,7 +26,7 @@ const labels: Record<SalesStep, string> = {
   publishing: "Publishing your signed order…",
   confirming:
     "Waiting for Ethereum confirmations. This can take several minutes.",
-  settling: "Confirm the purchase in your wallet…",
+  settling: "Confirm the stake transfer in your wallet…",
   cancelling: "Confirm cancellation in your wallet…",
 };
 export function MarketActionsProvider({ children }: { children: ReactNode }) {
@@ -119,10 +119,7 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
               (!!unsaved && intent.kind !== "cancel")
             }
             execute={execute}
-            connect={async () => {
-              setIntent(null);
-              await connect();
-            }}
+            connect={connect}
             switchChain={async () => {
               try {
                 await wallet?.switchChain(ethereum);

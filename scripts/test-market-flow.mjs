@@ -383,3 +383,48 @@ test("oversized amounts are rejected before any approval or signature", async ()
     assert.deepEqual(f.state.events, []);
   }
 });
+
+
+test("accepting a bid approves the owner's NFT, not the owner's WISE", async () => {
+  const bidder = fixture(buyer);
+  const signed = await publishSale(bidder.session, { ...input, kind: 1 }, async () => {});
+  const owner = fixture(seller);
+  owner.state.order = signed;
+  owner.state.allowance = input.amount; // The bidder's WISE allowance.
+  const { order, hash } = parseSignedSale(signed, d);
+  owner.state.logs = [
+    eventLog(zoneAbi, "SaleValidated", d.adapter, {
+      orderHash: hash, tokenId: 40n, seller: seller.address, buyer: buyer.address,
+      amount: input.amount, fee: saleAmounts(order).fee, kind: 1,
+    }),
+    eventLog(seaportAbi, "OrderFulfilled", d.market, {
+      orderHash: hash, offerer: buyer.address, zone: d.adapter,
+      recipient: seller.address, offer: [], consideration: [],
+    }),
+  ];
+  await fillSale(owner.session, signed);
+  assert.deepEqual(owner.state.writes.map(({ address, functionName }) => ({ address, functionName })), [
+    { address: d.collection, functionName: "approve" },
+    { address: d.market, functionName: "matchAdvancedOrders" },
+  ]);
+  assert.deepEqual(owner.state.writes[0].args, [d.market, 40n]);
+  const wrongOwner = fixture(buyer);
+  wrongOwner.state.order = signed;
+  wrongOwner.state.allowance = input.amount;
+  await assert.rejects(fillSale(wrongOwner.session, signed), /Only the stake owner/);
+  assert.equal(wrongOwner.state.writes.length, 0);
+});
+
+test("an order becoming unavailable during approval prevents settlement", async () => {
+  const listing = fixture(), signed = await publish(listing), f = fixture(buyer);
+  f.state.order = signed;
+  f.state.approved = true;
+  let validations = 0;
+  f.session.validateSale = async () => {
+    if (++validations > 1) throw new Error("Order no longer available");
+  };
+  await assert.rejects(fillSale(f.session, signed), /Order no longer available/);
+  assert.equal(f.state.writes.length, 1);
+  assert.equal(f.state.writes[0].functionName, "approve");
+  assert.equal(f.state.writes[0].address, d.currency);
+});

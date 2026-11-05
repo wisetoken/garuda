@@ -31,6 +31,8 @@ import {
 } from "../../lib/blend/sales";
 import { marketApi, useMarkets, orderAvailable } from "../../lib/market/api";
 import type { MarketIntent } from "../../lib/market/types";
+import { tradeInstructions } from "../../lib/market/workflow";
+import { TradeCounterparty } from "./TradeCounterparty";
 
 export function SaleForm({
   intent,
@@ -115,7 +117,8 @@ export function SaleForm({
         functionName: "balanceOf",
         args: [getAddress(account!.address)],
       }),
-    enabled: !!account && (intent.kind === "bid" || intent.kind === "fill"),
+    enabled: !!account && (intent.kind === "bid" ||
+      (intent.kind === "fill" && intent.row.order.kind === 0)),
     staleTime: 10_000,
   });
   let amount: bigint | undefined,
@@ -385,15 +388,8 @@ export function SaleForm({
               )}
             </div>
           )}
-          <p className="sale-fineprint">
-            {intent.kind === "list"
-              ? "Approve this NFT if needed, then sign the listing. Signing does not transfer ownership. Ethereum gas is separate."
-              : intent.kind === "bid"
-                ? "Approve the exact WISE amount, then sign your bid. Funds are not escrowed. The owner may accept until expiry or onchain cancellation."
-                : intent.kind === "cancel"
-                  ? "Cancellation requires an Ethereum transaction. Closing this dialog does not cancel an order."
-                  : "Approve WISE if needed, then confirm the transfer in your wallet. Ethereum gas is separate."}
-          </p>
+          {intent.kind === "fill" && <TradeCounterparty row={intent.row} />}
+          <p className="sale-fineprint">{tradeInstructions(intent)}</p>
         </section>
       </div>
       {tradingBlocked && (
