@@ -2,7 +2,7 @@
   border: 1px solid var(--border);
   border-radius: 20px;
   background: var(--panel);
-  overflow: hidden;
+  overflow: visible;
 }
 .market-heading {
   display: flex;
@@ -12,9 +12,9 @@
   padding: 24px;
 }
 .market-heading h2 {
-  font-size: 23px;
+  font-size: 20px;
   letter-spacing: -0.04em;
-  margin: 0 0 8px;
+  margin: 0 0 4px;
 }
 .market-heading h2::before {
   content: "";
@@ -91,54 +91,15 @@ select:focus-visible {
   font-size: 15px;
   cursor: pointer;
 }
+.market-tabs > span {
+  margin-left: auto;
+  align-self: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
 .market-tabs button[aria-pressed="true"] {
   border-color: var(--accent);
   color: var(--accent);
-}
-.market-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 16px 24px;
-  background: color-mix(in srgb, var(--muted) 5%, transparent);
-  font-size: 14px;
-}
-.market-toolbar > input {
-  width: 200px;
-  background: var(--panel);
-  color: inherit;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  padding: 10px 12px;
-  font: inherit;
-}
-.market-inactive {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 12px;
-}
-.market-inactive input {
-  accent-color: var(--accent);
-}
-.market-toolbar-end {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.market-refresh {
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--border);
-  background: none;
-  color: var(--muted);
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  cursor: pointer;
 }
 .market-empty {
   padding: 64px 24px;
@@ -150,42 +111,6 @@ select:focus-visible {
   justify-content: center;
   padding: 20px;
 }
-.market-table {
-  min-width: 1100px;
-  width: 100%;
-  font-size: 14px;
-}
-.market-table th {
-  font-weight: 400;
-  font-size: 13px;
-  white-space: nowrap;
-}
-.market-table th,
-.market-table td {
-  padding: 18px 16px;
-}
-.market-table td {
-  vertical-align: middle;
-}
-.market-table small {
-  font-size: 12px;
-  white-space: nowrap;
-  margin-top: 6px;
-  color: var(--muted);
-}
-.market-table tbody tr:hover {
-  background: color-mix(in srgb, var(--accent) 5%, transparent);
-}
-.market-table .market-price {
-  white-space: nowrap;
-}
-.market-status {
-  font-size: 12px;
-  color: var(--accent);
-}
-.market-status[data-status="Mature"] {
-  color: #c59b44;
-}
 .market-row-actions {
   display: flex;
   gap: 8px;
@@ -194,8 +119,8 @@ select:focus-visible {
 .market-table .market-primary,
 .market-table .market-secondary {
   font-size: 13px;
-  min-height: 34px;
-  padding: 8px 10px;
+  min-height: 32px;
+  padding: 7px 12px;
 }
 .market-muted {
   color: var(--muted);
@@ -330,16 +255,12 @@ select:focus-visible {
     font-size: 12px;
     padding: 10px;
   }
-  .market-toolbar {
-    padding: 16px;
-    gap: 12px;
+  .market-tabs {
+    padding-inline: 20px;
+    gap: 20px;
   }
-  .market-toolbar > input {
-    flex: 1;
-    min-width: 140px;
-  }
-  .market-toolbar-end {
-    margin-left: 0;
+  .market-tabs > span {
+    display: none;
   }
   .market-grid {
     padding: 16px;

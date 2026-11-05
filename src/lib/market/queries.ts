@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { getAddress } from "viem";
 import { marketApi, parseBook, type MarketBook } from "./api";
 import type { SalesDeployment, SaleRow } from "../blend/sales";
@@ -49,9 +49,9 @@ export function useBook(id: StakeCollectionId, deployment?: SalesDeployment) {
     refetchInterval: 30_000,
   });
 }
-export function useOrderPosition(row: SaleRow) {
+function orderPositionQuery(row: SaleRow) {
   const id = stakeCollection(row.order.collection).id;
-  return useQuery({
+  return {
     queryKey: [
       "market-position",
       row.order.collection,
@@ -103,5 +103,20 @@ export function useOrderPosition(row: SaleRow) {
     },
     staleTime: 30_000,
     retry: 1,
-  });
+  };
+}
+
+export function useOrderPosition(row: SaleRow) {
+  return useQuery(orderPositionQuery(row));
+}
+
+export function useOrderPositions(rows: SaleRow[]) {
+  const key = (row: SaleRow) =>
+    `${row.order.collection}:${row.order.tokenId}:${row.order.owner}`;
+  const unique = [...new Map(rows.map((row) => [key(row), row])).values()];
+  const queries = useQueries({ queries: unique.map(orderPositionQuery) });
+  const byPosition = new Map(
+    unique.map((row, index) => [key(row), queries[index]]),
+  );
+  return rows.map((row) => byPosition.get(key(row))!);
 }

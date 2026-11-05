@@ -86,7 +86,17 @@ export function useMarkets() {
     })),
   });
 }
-export type MarketBook = { orders: SaleRow[]; nextCursor: string | null };
+export type MarketActivityEvent = {
+  block_number: string;
+  tx_hash: string;
+  event_name: string;
+  payload?: Record<string, string>;
+};
+export type MarketBook = {
+  orders: SaleRow[];
+  nextCursor: string | null;
+  activity?: MarketActivityEvent[];
+};
 export function parseBook(
   raw: MarketBook,
   deployment: SalesDeployment,
@@ -94,6 +104,15 @@ export function parseBook(
   if (!Array.isArray(raw.orders)) throw new Error("Invalid order book.");
   return {
     ...raw,
+    activity: Array.isArray(raw.activity)
+      ? raw.activity.filter(
+          (event) =>
+            event &&
+            /^0x[a-fA-F0-9]{64}$/.test(event.tx_hash) &&
+            /^\d+$/.test(event.block_number) &&
+            typeof event.event_name === "string",
+        )
+      : [],
     orders: raw.orders.map((row) => {
       const parsed = parseSignedSale(row, deployment);
       if (parsed.hash.toLowerCase() !== row.hash.toLowerCase())

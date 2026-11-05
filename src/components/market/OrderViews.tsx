@@ -1,5 +1,4 @@
 import { useActiveAccount } from "thirdweb/react";
-import { ArrowDownUp } from "lucide-react";
 import { AddressIdentity } from "../AddressIdentity";
 import { StakeCard } from "../StakeCard";
 import { useMarketActions } from "../MarketActions";
@@ -8,15 +7,10 @@ import { useOrderPosition } from "../../lib/market/queries";
 import { type SaleRow, sameAddress } from "../../lib/blend/sales";
 import type { SignaturePosition } from "../../lib/blend/live-portfolio";
 import { stakeCollection } from "../../lib/blend/stake-collections";
-import {
-  stakeDate,
-  stakeTimeline,
-  stakeYield,
-} from "../../lib/blend/stake-art";
-import { useWiseUsd, wiseAmount, usdAmount } from "../../lib/portfolio";
+import { useWiseUsd, usdAmount } from "../../lib/portfolio";
 import { formatAmount } from "../../lib/blend/domain";
 
-function RowActions({
+export function RowActions({
   row,
   position,
 }: {
@@ -69,72 +63,6 @@ function RowActions({
         Place Bid
       </button>
     </div>
-  );
-}
-export function OrderRow({ row, bids }: { row: SaleRow; bids: boolean }) {
-  const position = useOrderPosition(row),
-    { data: usd } = useWiseUsd();
-  const p = position.data,
-    timeline = p ? stakeTimeline(p) : undefined,
-    yieldValue = p ? stakeYield(p) : null;
-  const label = `${stakeCollection(row.order.collection).name} #${row.order.tokenId}`;
-  return (
-    <tr>
-      <td>
-        <span className="stake-type" tabIndex={0} aria-label={label}>
-          <ArrowDownUp size={18} />
-          <span role="tooltip">{label}</span>
-        </span>
-      </td>
-      <td>
-        <AddressIdentity address={row.order.owner} />
-      </td>
-      {bids && (
-        <td>
-          <AddressIdentity address={row.order.maker} />
-        </td>
-      )}
-      <td className="market-price">
-        {formatAmount(BigInt(row.order.amount), 6)} WISE
-        <small>{usdAmount(BigInt(row.order.amount), usd)}</small>
-      </td>
-      <td>
-        <span className="market-status" data-status={timeline?.status}>
-          {timeline?.status ?? "Checking…"}
-        </span>
-        {p && <small>{stakeDate(p.maturesAt)}</small>}
-        {!orderAvailable(row) && (
-          <small>
-            {row.status === "checking"
-              ? "Order verification pending"
-              : row.status.replaceAll("-", " ")}
-          </small>
-        )}
-      </td>
-      <td>
-        {p ? `${wiseAmount(p.principal)} WISE` : "—"}
-        <small>{usdAmount(p?.principal, usd)}</small>
-      </td>
-      <td>
-        {yieldValue === null ? "—" : `${yieldValue.toFixed(2)}%`}
-        <small>Simple, historical</small>
-      </td>
-      <td>
-        {p ? `${wiseAmount(p.unclaimedInterest)} WISE` : "—"}
-        <small>{usdAmount(p?.unclaimedInterest, usd)}</small>
-      </td>
-      <td>
-        <RowActions row={row} position={p} />
-        {position.isError && (
-          <button
-            className="market-retry"
-            onClick={() => void position.refetch()}
-          >
-            Retry stake details
-          </button>
-        )}
-      </td>
-    </tr>
   );
 }
 export function OrderCard({ row }: { row: SaleRow }) {

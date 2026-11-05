@@ -18,7 +18,7 @@ import {
 import { useWalletAccess } from "../lib/wallet";
 import "./my-stakes.css";
 
-export function MyStakesPage() {
+export function MyStakesPage({ embedded = false }: { embedded?: boolean }) {
   const { open, busy } = useMarketActions();
   const [view, setView] = useState<"cards" | "table">("cards");
   const account = useActiveAccount(),
@@ -30,14 +30,24 @@ export function MyStakesPage() {
   );
   return (
     <>
-      <title>My stakes | WiseOne | Garuda Extension</title>
-      <div className="stakes-page-heading">
-        <GarudaPageKicker
-          label="YOUR POSITIONS"
-          description="Choose the position you want to use. Its ownership stays in your wallet until a trade settles."
-        />
+      {!embedded && <title>My stakes | WiseOne | Garuda Extension</title>}
+      <div
+        className={
+          embedded ? "market-portfolio-toolbar" : "stakes-page-heading"
+        }
+      >
+        {!embedded && (
+          <GarudaPageKicker
+            label="YOUR POSITIONS"
+            description="Choose the position you want to use. Its ownership stays in your wallet until a trade settles."
+          />
+        )}
         <div className="stakes-title-row">
-          <h1>Start with your stake.</h1>
+          {embedded ? (
+            <strong>Your NFT stakes ({positions.length})</strong>
+          ) : (
+            <h1>Start with your stake.</h1>
+          )}
           <div
             className="stake-view-switch"
             role="group"

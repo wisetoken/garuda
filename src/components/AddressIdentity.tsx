@@ -16,8 +16,29 @@ export function AddressIdentity({ address }: { address: string }) {
     staleTime: 3_600_000,
     retry: false,
   });
+  const { data: owlAvatar } = useQuery({
+    queryKey: ["owl-avatar", address.toLowerCase()],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/opensea/nfts/${address}?collection=owlmybabies&limit=1`,
+        { signal: AbortSignal.timeout(10_000) },
+      );
+      if (!response.ok) throw new Error("Avatar unavailable");
+      const data = (await response.json()) as {
+        nfts?: { display_image_url?: string; image_url?: string }[];
+      };
+      return (
+        data.nfts?.[0]?.display_image_url || data.nfts?.[0]?.image_url || null
+      );
+    },
+    staleTime: 3_600_000,
+    retry: false,
+  });
+  const avatar =
+    [owlAvatar, data?.avatar].find((value) => value?.startsWith("https://")) ??
+    "/shadow-owl.jpg";
   const short = `${address.slice(0, 6)}…${address.slice(-4)}`,
-    hue = parseInt(address.slice(2, 6), 16) % 360;
+    avatarLabel = data?.name ?? short;
   return (
     <a
       className="address-identity"
@@ -26,25 +47,20 @@ export function AddressIdentity({ address }: { address: string }) {
       rel="noreferrer"
       title={address}
     >
-      <span
-        className="address-avatar"
-        style={{
-          background: `linear-gradient(135deg,hsl(${hue} 48% 62%),hsl(${(hue + 60) % 360} 40% 28%))`,
-        }}
-      >
-        {data?.avatar?.startsWith("https://") ? (
-          <img
-            src={data.avatar}
-            alt=""
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          address.slice(2, 4).toUpperCase()
-        )}
+      <span className="address-avatar">
+        <img
+          src={avatar}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={(event) => {
+            if (!event.currentTarget.src.endsWith("/shadow-owl.jpg"))
+              event.currentTarget.src = "/shadow-owl.jpg";
+          }}
+        />
       </span>
       <span>
-        {data?.name ?? short}
+        {avatarLabel}
         {data?.name && <small>{short}</small>}
       </span>
     </a>
