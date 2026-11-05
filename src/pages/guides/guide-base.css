@@ -1,0 +1,29 @@
+/* Theme and controls shared by the two educational guides. */
+:is(.garuda-problem, .garuda-guide) {
+  --ba-panel: var(--panel);
+  --ba-line: var(--border);
+  --ba-mint: var(--accent);
+  --ba-muted: var(--text-secondary);
+  --background: #080809;
+  --panel-soft: #1f2025;
+  font-size: 15px;
+  line-height: 1.55;
+}
+.app-shell[data-theme="light"] :is(.garuda-problem, .garuda-guide) {
+  --background: #eef3f2;
+  --panel-soft: #f3f8f7;
+}
+:where(.garuda-problem, .garuda-guide) :where(h1, h2, h3, p) { margin: 0; }
+:is(.garuda-problem, .garuda-guide) :is(button, a, input) { font: inherit; }
+:is(.garuda-problem, .garuda-guide) a { color: inherit; text-decoration: none; }
+:is(.garuda-problem, .garuda-guide) :focus-visible { outline: 2px solid var(--ba-mint); outline-offset: 5px; }
+:is(.garuda-problem, .garuda-guide) .ba-primary { display: inline-flex; align-items: center; justify-content: center; gap: 20px; background: var(--ba-mint); color: white; border: 0; border-radius: 8px; padding: 14px 22px; font-weight: 600; font-size: 14px; min-height: 48px; }
+:is(.garuda-problem, .garuda-guide) .ba-primary:hover { background: color-mix(in srgb,var(--accent) 85%,white); }
+.garuda-guide .ba-text-button { display: inline-flex; align-items: center; justify-content: center; gap: 12px; border: 0; background: none; color: var(--text-secondary); padding: 12px 0; font-size: 14px; }
+.garuda-guide h1 { max-width: none; }
+.garuda-guide .ba-section-heading { margin-bottom: 36px; }
+.garuda-guide .ba-section-heading h1 { font-size: clamp(36px,4vw,54px); font-weight: 450; line-height: 1.15; letter-spacing: -2px; margin: 14px 0; }
+:is(.garuda-problem, .garuda-guide) .wiseone-stake-mark { object-fit: contain; filter: hue-rotate(-45deg) saturate(1.4); }
+:is(.garuda-problem, .garuda-guide) .garuda-page-info { padding: 0; flex-shrink: 0; }
+:is(.garuda-problem, .garuda-guide) .garuda-page-info:hover,
+:is(.garuda-problem, .garuda-guide) .garuda-page-info:focus-visible { color: var(--text-primary); }

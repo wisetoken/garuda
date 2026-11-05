@@ -1,0 +1,7 @@
+.arkiv-source { display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px;border-bottom:1px solid var(--border);flex-wrap:wrap; }
+.arkiv-source > div { display:flex;align-items:center;gap:8px; }
+.arkiv-source span,.arkiv-source p { color:var(--muted);font-size:14px;margin:0; }
+.arkiv-source button { background:transparent;color:var(--muted);border:1px solid transparent;border-radius:8px;padding:6px 10px;font:inherit; }
+.arkiv-source button[aria-pressed=true] { color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border-color:color-mix(in srgb,var(--accent) 25%,transparent); }
+.arkiv-source button:focus-visible,.arkiv-publication:focus-visible { outline:2px solid var(--accent);outline-offset:3px; }
+.arkiv-publication { display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--accent);margin:8px 0; }
