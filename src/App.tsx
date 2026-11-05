@@ -1,3 +1,5 @@
+import { resolveScreen } from './navigation';
+import { InformationPage } from './pages/InformationPage';
 import { useSearchParams } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { MarketPage } from './pages/MarketPage';
@@ -5,17 +7,15 @@ import { MyStakesPage } from './pages/MyStakesPage';
 import { LendPage } from './pages/LendPage';
 
 const pages = { trade: MarketPage, stakes: MyStakesPage, lend: LendPage };
-export type Screen = keyof typeof pages;
 
 export function App() {
   const [params] = useSearchParams();
-  const requested = params.get('screen');
-  const screen: Screen = requested === 'stakes' || requested === 'lend' ? requested : 'trade';
-  const Page = pages[screen];
+  const screen = resolveScreen(params.get('screen'));
+  const Page = screen === 'trade' || screen === 'stakes' || screen === 'lend' ? pages[screen] : null;
 
   return (
     <AppShell activeScreen={screen}>
-      <Page />
+      {Page ? <Page /> : <InformationPage screen={screen as 'fund' | 'problem' | 'how' | 'privacy'} />}
     </AppShell>
   );
 }

@@ -8,7 +8,7 @@ type PlaceholderPageProps = {
 export function PlaceholderPage({ section, title, description, placeholder }: PlaceholderPageProps) {
   return (
     <>
-      <title>{`${section} | Garuda`}</title>
+      <title>{`${section} | WiseOne | Garuda Extension`}</title>
       <div className="page-label"><span>{section}</span><span className="preview-badge">In development</span></div>
       <h1>{title}</h1>
       <p className="page-description">{description}</p>

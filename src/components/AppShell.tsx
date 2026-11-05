@@ -1,34 +1,41 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import type { Screen } from '../App';
-
-const navigation: { screen: Screen; label: string; href: string }[] = [
-  { screen: 'trade', label: 'Market', href: '/garuda/?screen=trade&collection=signature&view=market' },
-  { screen: 'stakes', label: 'My stakes', href: '/garuda/?screen=stakes' },
-  { screen: 'lend', label: 'Lend', href: '/garuda/?screen=lend' },
-];
+import { navigation, screenHref, type Screen } from '../navigation';
 
 export function AppShell({ activeScreen, children }: { activeScreen: Screen; children: ReactNode }) {
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try { return localStorage.getItem('garuda:theme:v1') === 'light' ? 'light' : 'dark'; }
+    catch { return 'dark'; }
+  });
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    try { localStorage.setItem('garuda:theme:v1', next); } catch { /* Theme still works without storage. */ }
+  }
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-theme={theme}>
       <a className="skip-link" href="#main">Skip to content</a>
       <header className="app-header">
         <div className="container header-content">
-          <a className="brand" href="/">Garuda <span>A WiseOne extension</span></a>
-          <nav aria-label="Main navigation">
-            {navigation.map(({ screen, label, href }) => (
-              <Link key={screen} to={href} aria-current={screen === activeScreen ? 'page' : undefined}>
-                {label}
-              </Link>
+          <Link className="brand" to={screenHref('trade')} aria-label="WiseOne Garuda market">
+            <img src="/wiseone-logo.png" alt="" width="44" height="44" />
+            <strong>WiseOne</strong><span>Garuda extension<i aria-hidden="true" /></span>
+          </Link>
+          <nav aria-label="Garuda navigation">
+            {navigation.map(({ screen, label }) => (
+              <Link key={screen} to={screenHref(screen)} aria-current={screen === activeScreen ? 'page' : undefined}>{label}</Link>
             ))}
           </nav>
+          <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
+            <span aria-hidden="true">{theme === 'dark' ? '☼' : '☾'}</span>
+          </button>
         </div>
       </header>
       <main className="container app-content" id="main" tabIndex={-1}>{children}</main>
       <footer className="app-footer">
         <div className="container footer-content">
-          <p>Garuda / App preview</p>
-          <a href="/">Back to the project draft <span aria-hidden="true">↗</span></a>
+          <p className="footer-brand">WiseOne <span>Garuda extension</span></p>
+          <div className="footer-links"><span className="network"><i aria-hidden="true" />Ethereum</span><a href="https://github.com/wisetoken/signature-stakes" target="_blank" rel="noreferrer">Contracts <span aria-hidden="true">↗</span></a></div>
         </div>
       </footer>
     </div>

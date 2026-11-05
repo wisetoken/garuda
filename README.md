@@ -1,4 +1,4 @@
-# Garuda
+# WiseOne | Garuda Extension
 
 A WiseOne NFT stake marketplace with planned stake-backed lending.
 
@@ -36,3 +36,5 @@ Stop the development server before starting the production preview; both use por
 - `src/styles.css`: the app's base styling.
 
 The app defaults to Market. Direct links use `/garuda/?screen=trade`, `/garuda/?screen=stakes`, and `/garuda/?screen=lend`. Browser back and forward navigation are supported.
+
+The shared app shell follows the existing WiseOne Garuda app: teal owl branding, seven navigation destinations, dark/light appearance, and an Ethereum footer. Feature pages remain placeholders until their integrations are migrated. The homepage is deferred.
