@@ -1,9 +1,9 @@
 /* Keep component styles and portal-mounted UI from replacing the custom cursors. */
 @media (any-hover: hover) and (any-pointer: fine) {
     body {
-        --app-cursor-default: url('/cursors/cursor.svg') 26 25, auto;
-        --app-cursor-click: url('/cursors/cursor-pointer.svg') 34 20, pointer;
-        --app-cursor-text: url('/cursors/cursor-text.svg') 40 40, text;
+        --app-cursor-default: url('/cursors/cursor.svg?v=60') 20 19, auto;
+        --app-cursor-click: url('/cursors/cursor-pointer.svg?v=60') 26 15, pointer;
+        --app-cursor-text: url('/cursors/cursor-text.svg?v=60') 30 30, text;
         cursor: var(--app-cursor-default) !important;
     }
 
@@ -24,6 +24,6 @@
     }
 
     dialog::backdrop {
-        cursor: url('/cursors/cursor.svg') 26 25, auto !important;
+        cursor: url('/cursors/cursor.svg?v=60') 20 19, auto !important;
     }
 }
