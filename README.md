@@ -170,7 +170,9 @@ npm run server
 npm run dev
 ```
 
-Open [Market](http://127.0.0.1:3211/garuda/?screen=trade&collection=signature&view=market), [My stakes](http://127.0.0.1:3211/garuda/?screen=stakes), [The Problem](http://127.0.0.1:3211/garuda/?screen=problem), or [The Solution](http://127.0.0.1:3211/garuda/?screen=how).
+Open [Market](http://127.0.0.1:3212/garuda/?screen=trade&collection=signature&view=market), [My stakes](http://127.0.0.1:3212/garuda/?screen=stakes), [The Problem](http://127.0.0.1:3212/garuda/?screen=problem), or [The Solution](http://127.0.0.1:3212/garuda/?screen=how).
+
+The development server uses Vite hot module replacement and React Fast Refresh. Saving app components or CSS updates the open page automatically, preserving component state where possible; HTML changes reload the page. Keep `npm run dev` running while you work. No rebuild is needed for source edits.
 
 | Configuration | Purpose |
 | --- | --- |
@@ -193,10 +195,10 @@ For a local production-build preview:
 
 ```sh
 npm run build
-npm run preview -- --port 3212
+npm run preview
 ```
 
-Open [the preview](http://127.0.0.1:3212/garuda/). A production host must provide equivalent API routing and run the market service separately; Vite's proxy is not part of the static build.
+Open [the build preview](http://127.0.0.1:3214/garuda/). This serves the last build and does not hot reload; use `npm run dev` on port `3212` while editing. A production host must provide equivalent API routing and run the market service separately; Vite's proxy is not part of the static build.
 
 ## Verification
 

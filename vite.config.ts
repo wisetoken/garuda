@@ -8,8 +8,8 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [react()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-    server: { host: '127.0.0.1', port: 3211, strictPort: true, proxy },
-    preview: { host: '127.0.0.1', port: 3211, strictPort: true, proxy },
+    server: { host: '127.0.0.1', port: 3212, strictPort: true, proxy },
+    preview: { host: '127.0.0.1', port: 3214, strictPort: true, proxy },
     build: { rolldownOptions: { input: {
       concept: fileURLToPath(new URL('./index.html', import.meta.url)),
       app: fileURLToPath(new URL('./garuda/index.html', import.meta.url)),
