@@ -1,17 +1,38 @@
 # Garuda
 
-An early concept for a WiseOne NFT stake marketplace with planned stake-backed lending.
+A WiseOne NFT stake marketplace with planned stake-backed lending.
 
-This first version is a standalone HTML draft describing the application we intend to build: a market, a view of your stakes, and stake-specific borrowing and lending offers. It contains no wallet connections, transactions, backend, or smart-contract integration.
+The repository currently contains a static concept page and a minimal React, TypeScript, and Vite app shell. Market, My stakes, and Lend are placeholder screens with working navigation. There are no wallet connections, live positions, transactions, APIs, or smart-contract integrations yet.
 
-## Preview
+## Development
 
-Open `index.html` in a browser. No installation or build step is needed.
-
-Alternatively, serve this directory locally:
+Use Node.js 22.12 or newer and npm.
 
 ```sh
-python3 -m http.server 8080 --bind 127.0.0.1
+npm ci
+npm run dev
 ```
 
-Then open <http://127.0.0.1:8080>.
+Open <http://127.0.0.1:3211/> for the concept page or <http://127.0.0.1:3211/garuda/> for the app. The separate port keeps the existing development app available.
+
+## Checks and production preview
+
+```sh
+npm run typecheck
+npm run build
+npm run preview
+```
+
+Stop the development server before starting the production preview; both use port 3211. The build writes both HTML entry points and app assets to `dist/`.
+
+## Structure
+
+- `index.html`: the standalone project concept, also readable directly in a browser.
+- `garuda/index.html`: the React app entry point.
+- `src/main.tsx`: React and router setup.
+- `src/App.tsx`: selects a screen from the URL.
+- `src/components/`: the shared app shell and placeholder layout.
+- `src/pages/`: separate Market, My stakes, and Lend screens.
+- `src/styles.css`: the app's base styling.
+
+The app defaults to Market. Direct links use `/garuda/?screen=trade`, `/garuda/?screen=stakes`, and `/garuda/?screen=lend`. Browser back and forward navigation are supported.
