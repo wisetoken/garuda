@@ -81,3 +81,12 @@ h1 { max-width: 900px; margin: 0; font-size: clamp(36px, 5vw, 60px); font-weight
   .brand span { display: none; }
   .header-content nav { display: flex; flex-wrap: wrap; gap: 4px 18px; }
 }
+
+/* Match the original app's contained header and stake display tokens. */
+.app-header { width: min(1320px,100%); margin-inline: auto; }
+.header-content { width: auto; margin: 0; padding: 24px 52px; min-height: 92px; }
+.app-shell { --text-primary: #f1eee8; --text-secondary: #a3a3a0; --text-muted: #787b7b; --border-strong: #2a2d2f; --accent-soft: #142d2c; --warning: #c79c45; }
+.app-shell[data-theme="light"] { --text-primary: #14221e; --text-secondary: #626d69; --text-muted: #68736e; --border-strong: #c3d1cb; --accent-soft: #d8ede7; --warning: #946d20; }
+.app-footer { width: min(1320px,100%); margin-inline: auto; }
+@media (max-width:1320px) { .header-content { padding-inline: 32px; } }
+@media (max-width:600px) { .header-content { padding: 16px 20px 8px; } }

@@ -1,3 +1,4 @@
+import { Sun, Moon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { navigation, screenHref, type Screen } from '../navigation';
@@ -27,7 +28,7 @@ export function AppShell({ activeScreen, children }: { activeScreen: Screen; chi
             ))}
           </nav>
           <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
-            <span aria-hidden="true">{theme === 'dark' ? '☼' : '☾'}</span>
+            {theme === 'dark' ? <Sun size={20} aria-hidden="true" /> : <Moon size={20} aria-hidden="true" />}
           </button>
         </div>
       </header>

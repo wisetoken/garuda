@@ -38,3 +38,5 @@ Stop the development server before starting the production preview; both use por
 The app defaults to Market. Direct links use `/garuda/?screen=trade`, `/garuda/?screen=stakes`, and `/garuda/?screen=lend`. Browser back and forward navigation are supported.
 
 The shared app shell follows the existing WiseOne Garuda app: teal owl branding, seven navigation destinations, dark/light appearance, and an Ethereum footer. Feature pages remain placeholders until their integrations are migrated. The homepage is deferred.
+
+My stakes now includes the migrated card presentation, a table view, and the introductory info tooltip. It currently uses explicitly labeled sample positions for design review; these are not connected wallet balances, and transaction buttons are disabled.
