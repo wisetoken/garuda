@@ -22,7 +22,7 @@ import {
   stakeTimeline,
   stakeYield,
 } from "../../lib/blend/stake-art";
-import { parseAmount, formatAmount } from "../../lib/blend/domain";
+import { parseAmount, formatAmount, amountInput } from "../../lib/blend/domain";
 import { saleAmounts } from "../../lib/blend/seaport";
 import {
   sameAddress,
@@ -58,7 +58,9 @@ export function SaleForm({
   const account = useActiveAccount(),
     { data: usd } = useWiseUsd(),
     markets = useMarkets();
-  const [price, setPrice] = useState(""),
+  const [price, setPrice] = useState(() =>
+      intent.kind === "list" ? amountInput(intent.position.principal) : "",
+    ),
     [days, setDays] = useState(7),
     [touched, setTouched] = useState(false);
   const collection =
