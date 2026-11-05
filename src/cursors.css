@@ -1,0 +1,29 @@
+/* Keep component styles and portal-mounted UI from replacing the custom cursors. */
+@media (any-hover: hover) and (any-pointer: fine) {
+    body {
+        --app-cursor-default: url('/cursors/cursor.svg') 26 25, auto;
+        --app-cursor-click: url('/cursors/cursor-pointer.svg') 34 20, pointer;
+        --app-cursor-text: url('/cursors/cursor-text.svg') 40 40, text;
+        cursor: var(--app-cursor-default) !important;
+    }
+
+    body *, body *::before, body *::after {
+        cursor: inherit !important;
+    }
+
+    body :is(a[href], button, input, select, summary, label[for], [role="button"], [role="link"], [role="switch"], [role="checkbox"], [role="radio"], [role="tab"], [role="option"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], :where(.market-table tbody tr)):not(:disabled):not([aria-disabled="true"]) {
+        cursor: var(--app-cursor-click) !important;
+    }
+
+    body :is(input:not([type]), input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="url"], input[type="tel"], input[type="number"], textarea, [contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]):not(:disabled):not([aria-disabled="true"]) {
+        cursor: var(--app-cursor-text) !important;
+    }
+
+    body :is(:disabled, [aria-disabled="true"]) {
+        cursor: var(--app-cursor-default) !important;
+    }
+
+    dialog::backdrop {
+        cursor: url('/cursors/cursor.svg') 26 25, auto !important;
+    }
+}
