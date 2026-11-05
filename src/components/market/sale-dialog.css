@@ -66,23 +66,35 @@
 .sale-identity {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
 }
 .sale-identity img {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
   object-fit: contain;
   filter: hue-rotate(320deg) saturate(1.25);
 }
+.sale-identity > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
 .sale-identity span {
-  font-size: 12px;
+  display: block;
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: 0.7px;
   color: var(--muted);
 }
 .sale-identity h3 {
-  font-size: 22px;
-  letter-spacing: -0.02em;
-  margin: 5px 0 0;
-  font-weight: 500;
+  font-size: 17px;
+  line-height: 1.4;
+  margin: 0;
+  font-weight: 550;
+  overflow-wrap: anywhere;
 }
 .sale-status {
   display: flex;
