@@ -130,13 +130,13 @@ Accepted orders and publication requests are stored together. A worker retries t
 
 The following public signed orders were published to the Garuda namespace and read back during verification on 6 November 2026, India time:
 
-| Order | Arkiv evidence |
-| --- | --- |
-| Signature Stake #20 listing, 20 WISE | [Listing entity](https://rabdi.explorer.arkiv.network/entity/0x3b43f78444e67a97578e67fe70a7fed914d2a5061642072670b397207c31968d) |
-| Signature Stake #40 listing, 42,000 WISE | [Listing entity](https://rabdi.explorer.arkiv.network/entity/0x6e7ca02501fff22985e5f727facdb675f56471d08f21e58c0e55be5f54f13587) |
-| Signature Stake #20 purchase bid, 15 WISE | [Bid entity](https://rabdi.explorer.arkiv.network/entity/0x757c37b009ce7f1adee68722660543c832d4ef3e2896bcfb2e0520149094b0f7) |
+| Order | Arkiv entity | Publication transaction |
+| --- | --- | --- |
+| Signature Stake #20 listing, 20 WISE | [Listing entity](https://rabdi.explorer.arkiv.network/entity/0x3b43f78444e67a97578e67fe70a7fed914d2a5061642072670b397207c31968d) | [View transaction](https://rabdi.explorer.arkiv.network/tx/0x52af21cf776b59560940b43721b2c48c0462a7ce1a88e4120070620cb89f3584) |
+| Signature Stake #40 listing, 42,000 WISE | [Listing entity](https://rabdi.explorer.arkiv.network/entity/0x6e7ca02501fff22985e5f727facdb675f56471d08f21e58c0e55be5f54f13587) | [View transaction](https://rabdi.explorer.arkiv.network/tx/0x7125d44b38861f9a5b30c113736999f96a1c38fbf813987e527967fdff131b52) |
+| Signature Stake #20 purchase bid, 15 WISE | [Bid entity](https://rabdi.explorer.arkiv.network/entity/0x757c37b009ce7f1adee68722660543c832d4ef3e2896bcfb2e0520149094b0f7) | [View transaction](https://rabdi.explorer.arkiv.network/tx/0x0cca6b67baece4aa8df1d4ef1374e542a6318f98b5721cc1ba42c3e1afa57b5c) |
 
-These links demonstrate **Arkiv publication**, not completed Ethereum purchases. The records expire, so they may no longer appear in active queries. [Verification evidence](arkiv/evidence.md) records their keys, deadlines, and the checks performed.
+All three publication transactions returned successful receipts on **Arkiv Rabdi testnet (chain 7794095)**. They create expiring listing or bid entities under `wiseone.garuda.orders.v1`; they do not execute an Ethereum purchase or bid acceptance. The records expire, so they may no longer appear in active queries. [Verification evidence](arkiv/evidence.md) records their keys, deadlines, and the checks performed.
 
 After installing dependencies, run these read-only queries; they do not load a signer:
 
