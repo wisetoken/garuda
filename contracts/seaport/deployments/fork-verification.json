@@ -1,5 +1,5 @@
 {
-  "forkBlock": 26355909,
+  "forkBlock": 26356017,
   "deploymentGas": "1807041",
   "checks": [
     "WISE #20: listing, bid acceptance, exact balances/fees, preserved stake, replay rejection",
@@ -9,9 +9,23 @@
     "USDC #20: listing, bid acceptance, exact balances/fees, preserved stake, replay rejection",
     "USDC #53: listing, bid acceptance, exact balances/fees, preserved stake, replay rejection"
   ],
+  "atomicChecks": [
+    "ETH -> WISE: paid, refunded, NFT delivered, no residual balance/approval; gas 419275",
+    "WETH -> WISE: paid, refunded, NFT delivered, no residual balance/approval; gas 428834",
+    "USDC -> WISE: paid, refunded, NFT delivered, no residual balance/approval; gas 492885",
+    "ETH -> WETH: paid, refunded, NFT delivered, no residual balance/approval; gas 325651",
+    "USDC -> WETH: paid, refunded, NFT delivered, no residual balance/approval; gas 445366",
+    "WISE -> WETH: paid, refunded, NFT delivered, no residual balance/approval; gas 428799",
+    "ETH -> USDC: paid, refunded, NFT delivered, no residual balance/approval; gas 430412",
+    "WETH -> USDC: paid, refunded, NFT delivered, no residual balance/approval; gas 445976",
+    "WISE -> USDC: paid, refunded, NFT delivered, no residual balance/approval; gas 493469",
+    "Cancelled listing: actual router transaction reverted; input tokens and NFT ownership unchanged"
+  ],
+  "routerDeploymentGas": "2052741",
   "additional": [
     "cancelled order rejected",
     "V1 proof rejected"
   ],
-  "scope": "Isolated local fork. No live orders, assets or deployment changed."
+  "scope": "Isolated local fork. No live orders, assets or deployment changed.",
+  "observedAt": "2026-11-06"
 }

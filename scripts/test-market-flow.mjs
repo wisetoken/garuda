@@ -13,6 +13,7 @@ import {
   approveBid,
   fillSale,
   cancelSale,
+  readSaleSigningContext,
 } from "../src/lib/blend/sales-wallet.ts";
 import { parseSignedSale } from "../src/lib/blend/sales.ts";
 import { settlementSuccess } from "../src/lib/market/success.ts";
@@ -221,11 +222,9 @@ test("bids replace insufficient allowance with only the exact WISE amount", asyn
     ],
   );
 });
-test("wallet change after simulation prevents the transaction", async () => {
+test("wallet change while preparing an approval prevents the transaction", async () => {
   const f = fixture();
-  f.state.afterSimulation = () => {
-    f.state.connected = false;
-  };
+  f.session.readNftApproval = async () => { f.state.connected = false; return false; };
   await assert.rejects(() => publish(f), /Wallet changed/);
   assert.equal(f.state.writes.length, 0);
   assert.deepEqual(f.state.events, []);
@@ -238,14 +237,13 @@ test("ownership change during approval prevents an obsolete listing signature", 
   await assert.rejects(() => publish(f), /Stake changed/);
   assert.deepEqual(f.state.events, []);
 });
-test("insufficient WISE prevents bid approval and signature", async () => {
+test("explicit bid approval opens the wallet without balance, deployment or simulation reads", async () => {
   const f = fixture(buyer);
-  f.state.balance = 1n;
-  await assert.rejects(
-    () => publishSale(f.session, { ...input, kind: 1 }, async () => {}),
-    /Insufficient WISE/,
-  );
-  assert.equal(f.state.writes.length, 0);
+  for (const method of ['readContract','getCode','getBlock','getChainId','simulateContract'])
+    f.session.client[method] = async () => { throw Error(`Unexpected preflight: ${method}`); };
+  await approveBid(f.session, input.amount);
+  assert.equal(f.state.writes.length, 1);
+  assert.deepEqual(f.state.writes[0].args, [d.market,input.amount]);
   assert.deepEqual(f.state.events, []);
 });
 test("failed publication retains the signed order for cancellation", async () => {
@@ -332,15 +330,8 @@ test("fills require current service validation and matching settlement events", 
   assert.equal(receipt.hash, hash);
   assert.equal(settlementSuccess(receipt).transactionHash, blockHash);
   assert.equal(settlementSuccess(receipt).action, "purchase");
-  assert.equal(f.state.events.filter((x) => x === "validated").length, 2);
+  assert.equal(f.state.events.filter((x) => x === "validated").length, 0);
   assert.equal(f.state.writes.at(-1).functionName, "fulfillAdvancedOrder");
-  const blocked = fixture(buyer);
-  delete blocked.session.validateSale;
-  await assert.rejects(
-    () => fillSale(blocked.session, signed),
-    /validation is required/,
-  );
-  assert.equal(blocked.state.writes.length, 0);
   f.state.logs = [];
   await assert.rejects(
     () => fillSale(f.session, signed),
@@ -420,18 +411,12 @@ test("accepting a bid approves the owner's NFT, not the owner's WISE", async () 
   assert.equal(wrongOwner.state.writes.length, 0);
 });
 
-test("an order becoming unavailable during approval prevents settlement", async () => {
+test("an order rejected by the chain after approval never produces a sale receipt", async () => {
   const listing = fixture(), signed = await publish(listing), f = fixture(buyer);
-  f.state.order = signed;
-  f.state.approved = true;
-  let validations = 0;
-  f.session.validateSale = async () => {
-    if (++validations > 1) throw new Error("Order no longer available");
-  };
-  await assert.rejects(fillSale(f.session, signed), /Order no longer available/);
-  assert.equal(f.state.writes.length, 1);
-  assert.equal(f.state.writes[0].functionName, "approve");
-  assert.equal(f.state.writes[0].address, d.currency);
+  f.session.validateSale = async () => { throw Error('API must not block the wallet'); };
+  f.session.client.waitForTransactionReceipt = async () => ({status:f.state.writes.at(-1).functionName === 'approve' ? 'success' : 'reverted'});
+  await assert.rejects(fillSale(f.session, signed), /Transaction reverted/);
+  assert.deepEqual(f.state.writes.map(x=>x.functionName), ['approve','fulfillAdvancedOrder']);
 });
 
 
@@ -486,4 +471,79 @@ test("failed or rejected approval never requests a bid signature", async () => {
     await assert.rejects(() => approveBid(f.session, input.amount));
     assert.deepEqual(f.state.events, []);
   }
+});
+
+
+test("a prepared listing signs without any new app RPC request", async () => {
+  const f = fixture();
+  const prepared = await readSaleSigningContext(f.session.client,d,seller.address,input.tokenId);
+  f.session.prepareSignature = async () => prepared;
+  f.session.readNftApproval = async () => true;
+  for (const method of ['readContract','getCode','getBlock','getChainId','simulateContract'])
+    f.session.client[method] = async () => { throw Error(`Unexpected preflight: ${method}`); };
+  const signed = await publish(f);
+  assert.equal(signed.order.tokenId, '40');
+  assert.equal(f.state.writes.length,0);
+  assert.deepEqual(f.state.events,['signed','saved','published']);
+});
+
+test("cancellation reaches the wallet before any app RPC read", async () => {
+  const f = fixture(), signed = await publish(f);
+  f.state.writes=[];
+  const read=f.session.client.readContract;
+  f.session.client.readContract = async args => {
+    assert.equal(f.state.writes.length,1,'only confirmation reads may follow the wallet request');
+    return read(args);
+  };
+  for (const method of ['getCode','getBlock','getChainId','simulateContract'])
+    f.session.client[method] = async () => { throw Error(`Unexpected preflight: ${method}`); };
+  await cancelSale(f.session,signed);
+  assert.equal(f.state.writes[0].functionName,'cancel');
+});
+
+test("a prepared purchase reaches the wallet even if the order API and app preflight RPC are unavailable", async () => {
+  const listing=fixture(),signed=await publish(listing),f=fixture(buyer);
+  f.session.readPaymentAllowance=async()=>input.amount;
+  f.session.validateSale=async()=>{throw Error('API unavailable')};
+  for (const method of ['readContract','getCode','getBlock','getChainId','simulateContract'])
+    f.session.client[method]=async()=>{throw Error(`Unexpected preflight: ${method}`)};
+  // An empty receipt must still fail confirmation, after reaching the wallet.
+  await assert.rejects(fillSale(f.session,signed),/No matching sale event/);
+  assert.equal(f.state.writes.length,1);
+  assert.equal(f.state.writes[0].functionName,'fulfillAdvancedOrder');
+});
+
+
+test("warm approval reads are reused and isolated by wallet and spender", async () => {
+  const {QueryClient} = await import('@tanstack/react-query');
+  const {allowanceOptions} = await import('../src/lib/market/transaction-preparation.ts');
+  const cache = new QueryClient();
+  const f = fixture();let reads=0;
+  f.session.client.readContract=async()=>{reads++;return input.amount};
+  const options=allowanceOptions(f.session.client,d,seller.address,d.currency,d.market);
+  await cache.prefetchQuery(options); // dialog opening
+  assert.equal(await cache.fetchQuery(options),input.amount); // transaction click
+  assert.equal(reads,1);
+  await cache.fetchQuery(allowanceOptions(f.session.client,d,buyer.address,d.currency,d.market));
+  await cache.fetchQuery(allowanceOptions(f.session.client,d,seller.address,d.currency,d.adapter));
+  assert.equal(reads,3);
+  await cache.invalidateQueries({queryKey:['transaction-preparation']});
+  await cache.fetchQuery(options);assert.equal(reads,4);
+  cache.clear();
+});
+
+test("native-token purchase uses the reviewed quote without another RPC preflight", async () => {
+  const {buyWithPayment} = await import('../src/lib/market/purchase-payment.ts');
+  const listing=fixture();listing.session.deployment={...d,paymentSchemaVersion:2};
+  const signed=await publish(listing),f=fixture(buyer);
+  const router=`0x${'77'.repeat(20)}`,codeHash=`0x${'88'.repeat(32)}`;
+  f.session.deployment={...d,paymentSchemaVersion:2,purchaseRouter:{address:router,codeHash}};
+  const parsed=parseSignedSale(signed,f.session.deployment);
+  const q={buyer:buyer.address,orderHash:parsed.hash,currency:d.currency,amount:input.amount,inputToken:zeroAddress,
+    estimatedInput:1000n,maxInput:1005n,slippage:50,expires:Date.now()+120000,router,routerCodeHash:codeHash,chainId:1};
+  for (const method of ['readContract','getCode','getBlock','getBalance','getChainId','simulateContract'])
+    f.session.client[method]=async()=>{throw Error(`Unexpected preflight: ${method}`)};
+  await assert.rejects(buyWithPayment(f.session,signed,q),/No matching sale event/);
+  assert.equal(f.state.writes.length,1);assert.equal(f.state.writes[0].functionName,'buy');
+  assert.equal(f.state.writes[0].value,q.maxInput);
 });

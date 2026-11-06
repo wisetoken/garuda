@@ -1,0 +1,20 @@
+{
+  "protocol": "seaport-1.6",
+  "environment": "ethereum-mainnet",
+  "chainId": 1,
+  "market": "0x0000000000000068F116a894984e2DB1123eB395",
+  "adapter": "0xb87Cf2cB81Fa97433213d2928c7b3A1424b05317",
+  "guardian": "0x22079A848266A7D2E40CF0fF71a6573D78adcF37",
+  "collection": "0x48791DbDFB38bAA58e48329148C321bF33B3c1e1",
+  "currency": "0x66a0f676479Cee1d7373f3DC2e2952778BfF5bd6",
+  "feeBps": 50,
+  "feeRecipient": "0xB8d92F2E8D1A98c18cDe85e49a0F11e3c64D0a68",
+  "marketCodeHash": "0x74499ac0cce14428e4b41541d5e44f28f5a6882a1051d0118867c2a93cd5aec0",
+  "adapterCodeHash": "0xfe2b2800e457e94fade657000d173dc06d1f1343444aa2a00861180fe95b0a4a",
+  "collectionCodeHash": "0xe939551e67d3f4ecb2be3fa2efccfb5cb45175fd254314d7ae0abd5084cd38ec",
+  "currencyCodeHash": "0x9a28e2f3ce7205c62916af26dc863137062ca1fe8e8ac07a9c757ab30f9c3624",
+  "deploymentBlock": "26356106",
+  "deploymentBlockHash": "0xecb13257ed87d8e25169378064fff24eadcb684a40174c2a18abcc4ff0afdda1",
+  "confirmations": 12,
+  "paymentSchemaVersion": 2
+}

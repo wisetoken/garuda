@@ -31,3 +31,14 @@ test('shortfall quote uses router getAmountsIn and rejects a different chain',as
  assert.equal(call.args[0],1006n);
  await assert.rejects(quoteFundingInput({getChainId:async()=>10},zeroAddress,1000n),/mainnet/);
 });
+
+
+test('native swap opens the wallet without balance checks or duplicate simulation',async()=>{
+ const writes=[];
+ const client={waitForTransactionReceipt:async()=>({status:'success'})};
+ for(const method of ['getChainId','getBalance','readContract','simulateContract'])client[method]=async()=>{throw Error('Unexpected preflight')};
+ const q={token:zeroAddress,amount:1000n,output:2000n,minimum:1990n,path:[FUNDING_WETH,FUNDING_WISE],block:1n,expires:Date.now()+120000,slippage:50};
+ await executeWiseFunding({client,wallet:{account:{address:zeroAddress},chain:{id:1},getChainId:async()=>1,writeContract:async call=>{writes.push(call);return `0x${'11'.repeat(32)}`}},address:zeroAddress,guard:async()=>{},onStep:()=>{},onHash:()=>{}},q);
+ assert.equal(writes.length,1);assert.equal(writes[0].functionName,'swapExactETHForTokens');
+ assert.equal(writes[0].args[0],1990n);assert.equal(writes[0].value,1000n);
+});

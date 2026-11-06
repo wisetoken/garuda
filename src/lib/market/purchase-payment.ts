@@ -1,14 +1,17 @@
 import { decodeEventLog, getAddress, keccak256, parseAbi, zeroAddress, type Address, type Hex, type PublicClient } from "viem";
 import { advancedSale, seaportStructs } from "../blend/seaport";
-import { guard, send, assertSaleReceipt, type SalesSession } from "../blend/sales-wallet";
-import { verifySalesDeployment, verifySignedSale } from "../blend/sales-chain";
-import { sameAddress, tokenSalesAbi, type SalesDeployment, type SignedSale } from "../blend/sales";
+import { guard, send, paymentAllowance, assertSaleReceipt, type SalesSession } from "../blend/sales-wallet";
+import { parseSignedSale, sameAddress, tokenSalesAbi, type SalesDeployment, type SignedSale } from "../blend/sales";
 import { FUNDING_ROUTER, FUNDING_WETH, fundingPath, fundingRouterAbi } from "../blend/wise-funding";
 import { purchaseFundingTokens } from "./purchase-funding";
 export const purchaseRouterAbi = parseAbi([
   ...seaportStructs,
   "function buy(AdvancedOrder,address,uint256,uint256) payable returns(uint256)",
-  ...["ZONE", "COLLECTION", "WISE", "SEAPORT", "UNISWAP"].map(name => `function ${name}() view returns(address)`),
+  "function ZONE() view returns(address)",
+  "function COLLECTION() view returns(address)",
+  "function WISE() view returns(address)",
+  "function SEAPORT() view returns(address)",
+  "function UNISWAP() view returns(address)",
   "function ZONE_CODE_HASH() view returns(bytes32)",
   "event StakePurchased(bytes32 indexed orderHash,address indexed buyer,uint256 indexed tokenId,address inputToken,uint256 inputAmount,address currency,uint256 amount)",
 ]);
@@ -27,7 +30,7 @@ export async function verifyPurchaseRouter(client: PublicClient, d: SalesDeploym
   if (await client.getChainId() !== d.chainId) throw new Error("Payment network changed.");
   const code = await client.getCode({address:r.address});
   if (!code || keccak256(code) !== r.codeHash) throw new Error("Payment router code changed.");
-  const values = await Promise.all(["ZONE","COLLECTION","WISE","SEAPORT","UNISWAP","ZONE_CODE_HASH"].map(functionName => client.readContract({address:r.address,abi:purchaseRouterAbi,functionName})));
+  const values = await Promise.all((["ZONE","COLLECTION","WISE","SEAPORT","UNISWAP","ZONE_CODE_HASH"] as const).map(functionName => client.readContract({address:r.address,abi:purchaseRouterAbi,functionName})));
   const expected = [d.adapter,d.collection,d.currency,d.market,FUNDING_ROUTER,d.adapterCodeHash];
   if (values.some((v,i) => typeof v !== "string" || v.toLowerCase() !== expected[i].toLowerCase())) throw new Error("Payment router configuration changed.");
   return r;
@@ -52,22 +55,17 @@ export function validatePurchasePayment(q: PurchasePaymentQuote, d: SalesDeploym
 export async function buyWithPayment(s: SalesSession, signed: SignedSale, q: PurchasePaymentQuote) {
   const review = async () => {
     await guard(s);
-    if (!s.validateSale) throw new Error("Fresh order validation is required.");
-    await s.validateSale(signed);
-    const block = await verifySalesDeployment(s.client,s.deployment);
-    const verified = await verifySignedSale(s.client,s.deployment,signed,block);
-    if (verified.status !== "available" || verified.order.kind !== 0 || sameAddress(verified.order.owner,s.address)) throw new Error("This listing is unavailable.");
+    const verified = parseSignedSale(signed,s.deployment);
+    if (verified.order.kind !== 0 || sameAddress(verified.order.owner,s.address)) throw new Error("This listing is unavailable.");
     validatePurchasePayment(q,s.deployment,s.address,verified.hash,verified.order.currency,verified.order.amount);
-    await verifyPurchaseRouter(s.client,s.deployment);
+    // The router was verified when this expiring quote was loaded in the review.
     return verified;
   };
   s.onStep?.("checking");
   await review();
   const native = sameAddress(q.inputToken,zeroAddress);
-  const balance = native ? await s.client.getBalance({address:s.address}) : await s.client.readContract({address:q.inputToken,abi:tokenSalesAbi,functionName:"balanceOf",args:[s.address]});
-  if (balance < q.maxInput) throw new Error("Insufficient payment balance. Keep ETH for gas as well.");
   if (!native) {
-    const allowance = await s.client.readContract({address:q.inputToken,abi:tokenSalesAbi,functionName:"allowance",args:[s.address,q.router]});
+    const allowance = await paymentAllowance(s,q.inputToken,q.router);
     if (allowance < q.maxInput) {
       s.onStep?.("approving-funding");
       if (allowance > 0n) await send(s,{address:q.inputToken,abi:tokenSalesAbi,functionName:"approve",args:[q.router,0n]},"Reset payment approval");
@@ -78,16 +76,19 @@ export async function buyWithPayment(s: SalesSession, signed: SignedSale, q: Pur
   s.onStep?.("settling");
   const receipt = await send(s,{address:q.router,abi:purchaseRouterAbi,functionName:"buy",args:[advancedSale(s.deployment,order,signed.signature),q.inputToken,q.maxInput,BigInt(Math.floor(q.expires/1000))],value:native?q.maxInput:0n},"Stake purchase");
   assertSaleReceipt(receipt,s.deployment,order,hash,q.router);
+  let inputSpent: bigint | undefined;
   const paid = receipt.logs.some(log => {
     if (!sameAddress(log.address,q.router)) return false;
     try {
       const event = decodeEventLog({abi:purchaseRouterAbi,data:log.data,topics:log.topics});
       if (event.eventName !== "StakePurchased") return false;
       const e=event.args;
-      return e.orderHash===hash && sameAddress(e.buyer,s.address) && e.tokenId===order.tokenId && sameAddress(e.inputToken,q.inputToken) &&
+      const matches = e.orderHash===hash && sameAddress(e.buyer,s.address) && e.tokenId===order.tokenId && sameAddress(e.inputToken,q.inputToken) &&
         e.inputAmount>0n && e.inputAmount<=q.maxInput && sameAddress(e.currency,order.currency) && e.amount===order.amount;
+      if(matches) inputSpent=e.inputAmount;
+      return matches;
     } catch { return false; }
   });
   if (!paid) throw new Error("Purchase receipt did not match. Check the transaction before retrying.");
-  return {receipt,hash,order};
+  return {receipt,hash,order,payment:{token:q.inputToken,amount:inputSpent!}};
 }

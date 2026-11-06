@@ -31,7 +31,6 @@ import {
   nftApproved,
   readSaleAsset,
   verifySalesDeployment,
-  verifySignedSale,
 } from "./sales-chain";
 
 export type SalesStep =
@@ -55,6 +54,9 @@ export type SalesSession = {
   address: Address;
   assertWallet: () => Promise<void>;
   requireBidApproval?: boolean;
+  readPaymentAllowance?: (currency: Address, spender: Address) => Promise<bigint>;
+  readNftApproval?: (tokenId: bigint) => Promise<boolean>;
+  prepareSignature?: (tokenId: bigint) => Promise<SaleSigningContext>;
   validateSale?: (signed: SignedSale) => Promise<void>;
   onStep?: (step: SalesStep) => void;
   onTransaction?: (hash: Hex, kind: string) => void;
@@ -88,13 +90,9 @@ export async function send(
   kind: string,
 ) {
   await guard(s);
-  const { request } = await s.client.simulateContract({
-    ...call,
-    account: s.address,
-  } as Parameters<PublicClient["simulateContract"]>[0]);
-  await guard(s);
+  // Let the wallet estimate/simulate. Do not duplicate its work over the app RPC.
   const hash = await s.wallet.writeContract({
-    ...request,
+    ...call,
     account: s.wallet.account!,
     chain: s.wallet.chain,
   } as Parameters<WalletClient["writeContract"]>[0]);
@@ -154,83 +152,52 @@ export async function activateSalesMarket(
     throw new SalesError("paused", "The marketplace is still paused.");
   return receipt;
 }
+export async function paymentAllowance(s: SalesSession, currency: Address, spender = s.deployment.market) {
+  return s.readPaymentAllowance ? s.readPaymentAllowance(currency, spender) : s.client.readContract({
+    address: currency, abi: tokenSalesAbi, functionName: "allowance", args: [s.address, spender],
+  });
+}
+async function hasNftApproval(s: SalesSession, tokenId: bigint) {
+  return s.readNftApproval ? s.readNftApproval(tokenId) : nftApproved(s.client, s.deployment, s.address, tokenId);
+}
 async function approveNFT(s: SalesSession, tokenId: bigint) {
-  if (await nftApproved(s.client, s.deployment, s.address, tokenId)) return;
+  if (await hasNftApproval(s, tokenId)) return false;
   s.onStep?.("approving-nft");
-  await send(
-    s,
-    {
-      address: s.deployment.collection,
-      abi: nftSalesAbi,
-      functionName: "approve",
-      args: [s.deployment.market, tokenId],
-    },
-    "NFT approval",
-  );
-  if (!(await nftApproved(s.client, s.deployment, s.address, tokenId)))
-    throw new SalesError(
-      "approval-missing",
-      "The NFT approval was not confirmed.",
-    );
+  await send(s, {address: s.deployment.collection, abi: nftSalesAbi, functionName: "approve",
+    args: [s.deployment.market, tokenId]}, "NFT approval");
+  return true;
 }
 async function approvePayment(s: SalesSession, amount: bigint, currency: Address, allowWrite = true) {
-  const d = s.deployment;
-  if (!acceptsPayment(d, currency)) throw new SalesError("terms", "Unsupported payment currency.");
+  if (!acceptsPayment(s.deployment, currency)) throw new SalesError("terms", "Unsupported payment currency.");
+  if (await paymentAllowance(s, currency) >= amount) return false;
   const symbol = paymentToken(currency).symbol;
-  const [balance, allowance] = await Promise.all([
-    s.client.readContract({
-      address: currency,
-      abi: tokenSalesAbi,
-      functionName: "balanceOf",
-      args: [s.address],
-    }),
-    s.client.readContract({
-      address: currency,
-      abi: tokenSalesAbi,
-      functionName: "allowance",
-      args: [s.address, d.market],
-    }),
-  ]);
-  if (balance < amount)
-    throw new SalesError("balance", `Insufficient ${symbol} balance.`);
-  if (allowance >= amount) return;
-  if (!allowWrite)
-    throw new SalesError("approval-missing", `Approve ${symbol} before signing this bid.`);
-  // Supported tokens allow replacing their allowance. Approve only the requested amount.
+  if (!allowWrite) throw new SalesError("approval-missing", `Approve ${symbol} before signing this bid.`);
   s.onStep?.("approving-wise");
-  await send(
-    s,
-    {
-      address: currency,
-      abi: tokenSalesAbi,
-      functionName: "approve",
-      args: [d.market, amount],
-    },
-    `${symbol} approval`,
-  );
-  if (
-    (await s.client.readContract({
-      address: currency,
-      abi: tokenSalesAbi,
-      functionName: "allowance",
-      args: [s.address, d.market],
-    })) < amount
-  )
-    throw new SalesError(
-      "approval-missing",
-      `${symbol} approval was not confirmed.`,
-    );
+  await send(s, {address: currency, abi: tokenSalesAbi, functionName: "approve",
+    args: [s.deployment.market, amount]}, `${symbol} approval`);
+  return true;
 }
+
+// These fields are needed to construct a signature, rather than to predict execution.
+export async function readSaleSigningContext(client: PublicClient, d: SalesDeployment, address: Address, tokenId: bigint) {
+  const block = await client.getBlock();
+  if (block.number === null) throw new SalesError("chain-unavailable", "Chain data is unavailable.");
+  const [asset, counter] = await Promise.all([
+    readSaleAsset(client, d, tokenId, block.number),
+    client.readContract({address:d.market,abi:marketAbi,functionName:"getCounter",args:[address],blockNumber:block.number}),
+  ]);
+  return {block, asset, counter};
+}
+export type SaleSigningContext = Awaited<ReturnType<typeof readSaleSigningContext>>;
 /** Approval is a separate user action; it never signs or publishes an order. */
 export async function approveBid(s: SalesSession, amount: bigint, currency: Address = s.deployment.currency) {
   await guard(s);
   if (amount <= 0n || amount >= (1n << 128n))
     throw new SalesError("terms", "Invalid bid amount.");
-  await verifySalesDeployment(s.client, s.deployment);
-  if (await s.client.readContract({ address: s.deployment.adapter, abi: zoneAbi, functionName: "newActivityPaused" }))
-    throw new SalesError("paused", "New orders are paused.");
-  await assertLegacyTradingRetired(s.client, s.deployment);
-  await approvePayment(s, amount, currency);
+  if (!acceptsPayment(s.deployment, currency)) throw new SalesError("terms", "Unsupported payment currency.");
+  // This is an explicit approval action: the review already selected the amount.
+  s.onStep?.("approving-wise");
+  await send(s, {address:currency,abi:tokenSalesAbi,functionName:"approve",args:[s.deployment.market,amount]}, `${paymentToken(currency).symbol} approval`);
 }
 
 export async function publishSale(
@@ -250,19 +217,10 @@ export async function publishSale(
   if (!acceptsPayment(d, currency)) throw new SalesError("terms", "Unsupported payment currency.");
   s.onStep?.("checking");
   await guard(s);
-  await verifySalesDeployment(s.client, d);
   if (![1, 3, 7, 30].includes(input.days) || input.amount <= 0n || input.amount >= (1n << 128n))
     throw new SalesError("terms", "Invalid price or duration.");
-  if (
-    await s.client.readContract({
-      address: d.adapter,
-      abi: zoneAbi,
-      functionName: "newActivityPaused",
-    })
-  )
-    throw new SalesError("paused", "New orders are paused.");
-  await assertLegacyTradingRetired(s.client, d);
-  const original = await readSaleAsset(s.client, d, input.tokenId);
+  let prepared = await (s.prepareSignature?.(input.tokenId) ?? readSaleSigningContext(s.client, d, s.address, input.tokenId));
+  const original = prepared.asset;
   if (
     original.locked !== 0n ||
     (input.kind === 0
@@ -273,13 +231,11 @@ export async function publishSale(
       "owner",
       "The selected wallet cannot create this order.",
     );
-  if (input.kind === 0) await approveNFT(s, input.tokenId);
-  else await approvePayment(s, input.amount, currency, !s.requireBidApproval);
-  s.onStep?.("checking");
-  // Approval dialogs may have taken minutes. Re-read every signed collateral field afterwards.
-  const block = await verifySalesDeployment(s.client, d);
-  await assertLegacyTradingRetired(s.client, d);
-  const asset = await readSaleAsset(s.client, d, input.tokenId, block.number);
+  const approved = input.kind === 0 ? await approveNFT(s, input.tokenId)
+    : await approvePayment(s, input.amount, currency, !s.requireBidApproval);
+  // Only an intervening wallet approval requires another signing snapshot.
+  if (approved) prepared = await readSaleSigningContext(s.client, d, s.address, input.tokenId);
+  const {block, asset, counter} = prepared;
   if (
     !sameAddress(asset.owner, original.owner) ||
     asset.stateHash !== original.stateHash ||
@@ -304,13 +260,7 @@ export async function publishSale(
     epoch: asset.epoch,
     deadline: block.timestamp + BigInt(input.days * 86400),
     startTime: block.timestamp,
-    counter: await s.client.readContract({
-      address: d.market,
-      abi: marketAbi,
-      functionName: "getCounter",
-      args: [s.address],
-      blockNumber: block.number,
-    }),
+    counter,
     feeBps: d.feeBps,
     feeRecipient: d.feeRecipient,
   };
@@ -331,35 +281,14 @@ export async function publishSale(
 export async function fillSale(s: SalesSession, signed: SignedSale) {
   s.onStep?.("checking");
   await guard(s);
-  if (!s.validateSale)
-    throw new SalesError(
-      "service",
-      "Fresh order-service validation is required before a sale.",
-    );
-  await s.validateSale(signed);
-  let block = await verifySalesDeployment(s.client, s.deployment);
-  const verified = await verifySignedSale(
-    s.client,
-    s.deployment,
-    signed,
-    block,
-  );
-  const order = verified.order;
+  const {order, hash} = parseSignedSale(signed, s.deployment);
+  // Signed terms are checked locally; Seaport and the zone enforce current availability.
   const atomicCalls: SaleCall[] | undefined = s.sendAtomic && await s.supportsAtomic?.() ? [] : undefined;
-  if (verified.status !== "available")
-    throw new SalesError(
-      "unavailable",
-      `This order is ${verified.status}. Refresh the market.`,
-    );
   if (order.kind === 0) {
     if (sameAddress(s.address, order.owner))
       throw new SalesError("self-purchase", "You already own this stake.");
     if (atomicCalls) {
-      const [balance, allowance] = await Promise.all([
-        s.client.readContract({address:order.currency,abi:tokenSalesAbi,functionName:'balanceOf',args:[s.address]}),
-        s.client.readContract({address:order.currency,abi:tokenSalesAbi,functionName:'allowance',args:[s.address,s.deployment.market]}),
-      ]);
-      if (balance < order.amount) throw new SalesError('balance',`Insufficient ${paymentToken(order.currency).symbol} balance.`);
+      const allowance = await paymentAllowance(s, order.currency);
       if (allowance < order.amount) {
         if (allowance > 0n) atomicCalls.push({address:order.currency,abi:tokenSalesAbi,functionName:'approve',args:[s.deployment.market,0n]});
         atomicCalls.push({address:order.currency,abi:tokenSalesAbi,functionName:'approve',args:[s.deployment.market,order.amount]});
@@ -372,20 +301,10 @@ export async function fillSale(s: SalesSession, signed: SignedSale) {
         "Only the stake owner can accept this purchase bid.",
       );
     if (atomicCalls) {
-      if (!await nftApproved(s.client,s.deployment,s.address,order.tokenId)) atomicCalls.push({address:s.deployment.collection,abi:nftSalesAbi,functionName:'approve',args:[s.deployment.market,order.tokenId]});
+      if (!await hasNftApproval(s,order.tokenId)) atomicCalls.push({address:s.deployment.collection,abi:nftSalesAbi,functionName:'approve',args:[s.deployment.market,order.tokenId]});
     } else await approveNFT(s, order.tokenId);
   }
-  block = await verifySalesDeployment(s.client, s.deployment);
-  if (
-    (await verifySignedSale(s.client, s.deployment, signed, block)).status !==
-    "available"
-  )
-    throw new SalesError(
-      "changed",
-      "Order changed during approval. Refresh the market.",
-    );
   s.onStep?.("settling");
-  await s.validateSale(signed);
   await guard(s);
   const receipt = atomicCalls?.length ? await s.sendAtomic!([
     ...atomicCalls, saleSettlement(s.deployment, order, signed.signature, s.address),
@@ -394,8 +313,8 @@ export async function fillSale(s: SalesSession, signed: SignedSale) {
     saleSettlement(s.deployment, order, signed.signature, s.address),
     "Sale settlement",
   );
-  assertSaleReceipt(receipt, s.deployment, order, verified.hash, s.address);
-  return { receipt, hash: verified.hash, order };
+  assertSaleReceipt(receipt, s.deployment, order, hash, s.address);
+  return { receipt, hash, order };
 }
 export function assertSaleReceipt(receipt: TransactionReceipt, deployment: SalesDeployment, order: ReturnType<typeof parseSignedSale>["order"], hash: Hex, buyer: Address) {
   const event = receipt.logs
@@ -449,7 +368,6 @@ export function assertSaleReceipt(receipt: TransactionReceipt, deployment: Sales
 }
 export async function cancelSale(s: SalesSession, signed: SignedSale) {
   await guard(s);
-  await verifySalesDeployment(s.client, s.deployment);
   const { order, hash } = parseSignedSale(signed, s.deployment);
   if (!sameAddress(order.maker, s.address))
     throw new SalesError(

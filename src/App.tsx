@@ -1,3 +1,4 @@
+import {lazy, Suspense} from "react";
 import { MarketActionsProvider } from "./components/MarketActions";
 import { resolveScreen, screenHref } from "./navigation";
 import { InformationPage } from "./pages/InformationPage";
@@ -9,6 +10,8 @@ import { LendPage } from "./pages/LendPage";
 
 import { FundingPage } from "./pages/FundingPage";
 
+const DeploymentPage = import.meta.env.DEV ? lazy(() => import("./pages/DeploymentPage").then(m => ({default:m.DeploymentPage}))) : null;
+
 const pages = { trade: MarketPage, stakes: MyStakesPage, lend: LendPage, fund: FundingPage };
 
 export function App() {
@@ -18,6 +21,9 @@ export function App() {
     screen === "trade" || screen === "stakes" || screen === "lend" || screen === "fund"
       ? pages[screen]
       : null;
+
+  if (import.meta.env.DEV && params.get("screen") === "deploy" && DeploymentPage)
+    return <AppShell activeScreen="trade"><Suspense fallback={<p>Loading deployment review…</p>}><DeploymentPage/></Suspense></AppShell>;
 
   // Keep existing bookmarks pointing to the dedicated portfolio page.
   if (screen === "trade" && params.get("view") === "positions")

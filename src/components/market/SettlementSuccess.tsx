@@ -1,3 +1,5 @@
+import {purchaseFundingTokens} from "../../lib/market/purchase-funding";
+import {displayTokenAmount} from "../funding/funding-token-display";
 import { paymentToken, formatPaymentAmount } from "../../lib/blend/payment-tokens";
 import { CheckCircle2, ExternalLink } from "lucide-react";
 import { stakeCollection } from "../../lib/blend/stake-collections";
@@ -9,6 +11,7 @@ export function SettlementSuccess({ receipt, onClose, onView }: {
 }) {
   const purchased = receipt.action === "purchase", meta = stakeCollection(receipt.collection);
   const wise = (amount: bigint) => `${formatPaymentAmount(amount, receipt.currency)} ${paymentToken(receipt.currency).symbol}`;
+  const input=receipt.payment && purchaseFundingTokens.find(t=>t.address.toLowerCase()===receipt.payment!.token.toLowerCase());
   return <SuccessFrame
     receiptKey={receipt.transactionHash}
     title={purchased ? "Stake purchased!" : "Bid accepted!"}
@@ -19,9 +22,10 @@ export function SettlementSuccess({ receipt, onClose, onView }: {
   >
     <div className="order-success-summary">
       <p>{meta.name} Stake #{receipt.tokenId}</p>
-      <strong>{wise(purchased ? receipt.gross : receipt.net)}</strong>
+      <strong>{input && receipt.payment ? `${displayTokenAmount(receipt.payment.amount,input.decimals)} ${input.symbol}` : wise(purchased ? receipt.gross : receipt.net)}</strong>
       <span>{purchased ? "You paid" : "You received"}</span>
       <dl>
+        {input && <div><dt>Listing price</dt><dd>{wise(receipt.gross)}</dd></div>}
         {!purchased && <div><dt>Accepted bid</dt><dd>{wise(receipt.gross)}</dd></div>}
         <div><dt>Marketplace fee</dt><dd>{wise(receipt.fee)}</dd></div>
         {purchased && <div><dt>Seller received</dt><dd>{wise(receipt.net)}</dd></div>}

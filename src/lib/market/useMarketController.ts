@@ -1,3 +1,4 @@
+import { allowanceOptions, nftApprovalOptions, signingOptions } from "./transaction-preparation";
 import { paymentToken, paymentTokens, parsePaymentAmount } from "../blend/payment-tokens";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -7,19 +8,16 @@ import {
   useActiveWallet,
   useActiveWalletChain,
 } from "thirdweb/react";
-import { ethereum } from "thirdweb/chains";
-import { viemAdapter } from "thirdweb/adapters/viem";
+import { directTransactionWallet } from "../wallet-transactions";
 import { getAddress, type Address } from "viem";
 import { thirdwebClient, useWalletAccess } from "../wallet";
 import { ethereumClient } from "../portfolio";
 import { stakeCollection, STAKE_COLLECTIONS } from "../blend/stake-collections";
 import { buyWithPayment, type PurchasePaymentQuote } from "./purchase-payment";
 import {
-  parseSignedSale,
   sameAddress,
   type SalesConfig,
   type SignedSale,
-  type SaleRow,
 } from "../blend/sales";
 import {
   publishSale,
@@ -31,7 +29,7 @@ import {
   type SalesStep,
 } from "../blend/sales-wallet";
 import { salesFailure } from "../blend/sales-errors";
-import { marketApi, validateConfig, orderAvailable } from "./api";
+import { marketApi, validateConfig } from "./api";
 import {
   prepareRecovery,
   rememberOrder,
@@ -160,7 +158,11 @@ export function useMarketController() {
       // Cancellation also works with the last known verified deployment during an API outage.
       let config: SalesConfig;
       try {
-        config = validateConfig(await marketApi<SalesConfig>(id, "config"), id);
+        const known = cache.getQueryData<SalesConfig>(["market-config", id]);
+        const saved = activeIntent.kind === "cancel" && !known
+          ? JSON.parse(localStorage.getItem(`garuda:market-config:${id}:v1`) ?? "null") : undefined;
+        config = validateConfig(known ?? saved ?? await cache.fetchQuery({queryKey:["market-config",id],
+          queryFn:()=>marketApi<SalesConfig>(id,"config"), staleTime:30_000}), id);
       } catch (e) {
         if (activeIntent.kind !== "cancel") throw e;
         config = validateConfig(
@@ -186,11 +188,7 @@ export function useMarketController() {
         client: ethereumClient,
         deployment: d,
         address,
-        wallet: viemAdapter.walletClient.toViem({
-          account,
-          client: thirdwebClient,
-          chain: ethereum,
-        }) as unknown as SalesSession["wallet"],
+        wallet: directTransactionWallet(account, wallet),
         assertWallet: async () => {
           const current = context.current;
           if (
@@ -204,14 +202,9 @@ export function useMarketController() {
               "Wallet or network changed. Review the action again on Ethereum.",
             );
         },
-        validateSale: async (signed) => {
-          const hash = parseSignedSale(signed, d).hash;
-          const row = await marketApi<SaleRow>(id, `sales/${hash}`);
-          if (row.hash !== hash || !orderAvailable(row))
-            throw new Error(
-              "This order is no longer available. Refresh the market.",
-            );
-        },
+        readPaymentAllowance: (currency, spender) => cache.fetchQuery(allowanceOptions(ethereumClient,d,address,currency,spender)),
+        readNftApproval: tokenId => cache.fetchQuery(nftApprovalOptions(ethereumClient,d,address,tokenId)),
+        prepareSignature: tokenId => cache.fetchQuery(signingOptions(ethereumClient,d,address,tokenId)),
         onStep: (value) => {
           phase.current = value;
           setStep(value);
@@ -304,7 +297,8 @@ export function useMarketController() {
       showToast(salesFailure(e, phase.current), { tone: "error" });
       refresh();
     } finally {
-      await cache.invalidateQueries({ queryKey: ["bid-allowance"] });
+      void cache.invalidateQueries({ queryKey: ["transaction-preparation"] });
+      void cache.invalidateQueries({ queryKey: ["bid-allowance"] });
       lock.current = false;
       setBusy(false);
     }
@@ -336,7 +330,8 @@ export function useMarketController() {
           : "Transaction reverted. Refresh and review before trying again.",
         { tone: receipt.status === "success" ? "info" : "error", link },
       );
-      await cache.invalidateQueries({ queryKey: ["bid-allowance"] });
+      void cache.invalidateQueries({ queryKey: ["transaction-preparation"] });
+      void cache.invalidateQueries({ queryKey: ["bid-allowance"] });
       refresh();
     } catch {
       showToast(

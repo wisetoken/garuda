@@ -19,29 +19,24 @@ test("cached recovery settings disable submission without an outage message whil
   assert.equal(result.failure, undefined);
 });
 
-test("initial stake reads and payer balance reads disable actions silently", () => {
+test("initial display and balance reads do not delay the wallet action", () => {
   for (const overrides of [{ live: pending() }, { kind: "bid", paying: true, balance: pending() }, { kind: "fill", availability: pending() }]) {
     const result = reviewReadiness(review(overrides));
-    assert.equal(result.blocked, true);
-    assert.equal(result.checking, true);
+    assert.equal(result.blocked, false);
+    assert.equal(result.checking, false);
     assert.equal(result.failure, undefined);
   }
 });
 
-test("failed reads keep actions blocked and provide one retryable notification", () => {
-  for (const overrides of [{ config: failed({ enabled: true, recoveryOnly: true }) }, { live: failed({ canList: true }) }, { kind: "fill", availability: failed() }, { kind: "bid", paying: true, balance: failed(100n) }]) {
-    const result = reviewReadiness(review(overrides));
-    assert.equal(result.blocked, true);
-    assert.equal(result.checking, false);
-    assert.match(result.failure, /^Could not/);
+test("failed background reads do not disable a previously loaded market", () => {
+  for (const overrides of [{live:failed({canList:true})},{kind:'fill',availability:failed()},{kind:'bid',paying:true,balance:failed()}]) {
+    assert.deepEqual(reviewReadiness(review(overrides)),{checking:false,blocked:false,failure:undefined});
   }
+  const noConfig=reviewReadiness(review({config:failed()}));
+  assert.equal(noConfig.blocked,true);assert.match(noConfig.failure,/Could not/);
 });
-
-test("retry suppresses the old failure and a successful verification enables submission", () => {
-  const retrying = reviewReadiness(review({ live: { ...failed(), isFetching: true } }));
-  assert.equal(retrying.blocked, true);
-  assert.equal(retrying.failure, undefined);
-  assert.deepEqual(reviewReadiness(review()), { checking: false, blocked: false, failure: undefined });
+test("background refreshes keep an available action ready", () => {
+  assert.deepEqual(reviewReadiness(review({live:{...ready({canList:true}),isFetching:true},config:{...ready({enabled:true}),isFetching:true}})),{checking:false,blocked:false,failure:undefined});
 });
 
 test("paused markets, invalid stake state and expired orders still cannot be submitted", () => {

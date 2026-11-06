@@ -31,6 +31,7 @@ export type SettlementSuccess = {
   collection: string;
   tokenId: string;
   action: "purchase" | "accept-bid";
+  payment?: {token: string; amount: bigint};
   currency: string;
   gross: bigint;
   fee: bigint;
@@ -38,13 +39,14 @@ export type SettlementSuccess = {
   destination: string;
 };
 export type MarketSuccess = OrderSuccess | SettlementSuccess;
-export function settlementSuccess(result: Awaited<ReturnType<typeof fillSale>>): SettlementSuccess {
+export function settlementSuccess(result: Awaited<ReturnType<typeof fillSale>> & {payment?: {token:string;amount:bigint}}): SettlementSuccess {
   const { receipt, hash, order } = result;
   if (receipt.status !== "success" || !/^0x[0-9a-f]{64}$/i.test(receipt.transactionHash ?? "") ||
       !/^0x[0-9a-f]{64}$/i.test(hash)) throw new Error("A confirmed settlement receipt is required.");
   const collection = stakeCollection(order.collection);
   return {
     kind: "settlement", hash, transactionHash: receipt.transactionHash,
+    ...(result.payment ? {payment:result.payment} : {}),
     currency: order.currency, collection: order.collection, tokenId: String(order.tokenId),
     action: order.kind === 0 ? "purchase" : "accept-bid",
     ...saleAmounts(order),

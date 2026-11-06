@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createPublicClient, createWalletClient, defineChain, http, keccak256, parseAbi, parseEther, parseUnits, toHex } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import { seaportAbi, seaportComponents, seaportTypedData, saleSettlement, saleAmounts } from '../src/lib/blend/seaport.ts';
+import { quotePurchasePayment, buyWithPayment } from '../src/lib/market/purchase-payment.ts';
+import { purchaseFundingTokens } from '../src/lib/market/purchase-funding.ts';
+import { advancedSale, seaportAbi, seaportComponents, seaportTypedData, saleSettlement, saleAmounts } from '../src/lib/blend/seaport.ts';
 import { publishSale, fillSale, cancelSale, activateSalesMarket } from '../src/lib/blend/sales-wallet.ts';
 import { parseSignedSale, parseSalesDeployment } from '../src/lib/blend/sales.ts';
 import { verifySignedSale } from '../src/lib/blend/sales-chain.ts';
@@ -25,6 +27,10 @@ const [guardian,seller,buyer] = Array.from({length:3},()=>createWalletClient({ac
 const nftAbi = parseAbi(['function ownerOf(uint256) view returns(address)','function safeTransferFrom(address,address,uint256)','function approve(address,uint256)']);
 const erc20Abi = parseAbi(['function balanceOf(address) view returns(uint256)','function approve(address,uint256) returns(bool)']);
 try {
+  // A long-lived fork retains its old clock after snapshot rollback; keep quote deadlines representative.
+  const current=await client.getBlock();
+  await client.request({method:'evm_setNextBlockTimestamp',params:[Number(current.timestamp)>Math.floor(Date.now()/1000)?Number(current.timestamp)+1:Math.floor(Date.now()/1000)]});
+  await client.request({method:'evm_mine'});
   for(const w of [guardian,seller,buyer]) await client.request({method:'anvil_setBalance',params:[w.account.address,toHex(parseEther('100'))]});
   const deployed = await receipt(await guardian.deployContract({abi:artifact.abi,bytecode:artifact.bytecode.object,args:[original.collection,original.currency,original.collectionCodeHash,original.currencyCodeHash,original.marketCodeHash,guardian.account.address,50n,original.feeRecipient]}));
   const zone=deployed.contractAddress;
@@ -45,6 +51,10 @@ try {
   try {await receipt(await createWalletClient({account:original.guardian,chain,transport}).writeContract({address:original.adapter,abi:artifact.abi,functionName:'setNewActivityPaused',args:[true]}));}
   finally {await client.request({method:'anvil_stopImpersonatingAccount',params:[original.guardian]});}
   await activateSalesMarket(session(guardian),async()=>{});
+  const routerArtifact = JSON.parse(await readFile(new URL('../contracts/seaport/out/GarudaPurchaseRouter.sol/GarudaPurchaseRouter.json',import.meta.url)));
+  const routerReceipt = await receipt(await guardian.deployContract({abi:routerArtifact.abi,bytecode:routerArtifact.bytecode.object,args:[zone]}));
+  const router = routerReceipt.contractAddress;
+  deployment.purchaseRouter = {address:router,codeHash:keccak256(await client.getCode({address:router}))};
   const owner=id=>client.readContract({address:original.collection,abi:nftAbi,functionName:'ownerOf',args:[id]});
   for(const id of [20n,53n]) {
     const from=await owner(id);
@@ -100,13 +110,48 @@ try {
     last={d,make,run};
     checks.push(`${token.symbol} #${id}: listing, bid acceptance, exact balances/fees, preserved stake, replay rejection`);
   }
+  const atomicChecks=[];
+  for(const output of currencies) for(const input of purchaseFundingTokens.filter(t=>t.address!==output.address)) {
+    const id=20n, amount=parseUnits(output.amount,output.decimals);
+    const beforeSnapshot=await readZone('snapshot',[id]);
+    const signed=await publishSale(session(seller),{kind:0,tokenId:id,amount,days:7,nonce:++nonce,currency:output.address},async()=>{});
+    const parsed=parseSignedSale(signed,deployment);
+    const q=await quotePurchasePayment(client,deployment,{buyer:buyer.account.address,orderHash:parsed.hash,currency:output.address,amount,inputToken:input.address,slippage:50});
+    const before=await balances(output.address);
+    const inputBefore=input.symbol==='ETH'?await client.getBalance({address:buyer.account.address}):await balance(input.address,buyer.account.address);
+    const {receipt:paid}=await buyWithPayment(session(buyer),signed,q);
+    const after=await balances(output.address);
+    assert.equal(after[0]-before[0],saleAmounts(parsed.order).net);
+    assert.equal(after[2]-before[2],saleAmounts(parsed.order).fee);
+    assert.equal(after[1],before[1],'Buyer keeps pre-existing settlement tokens');
+    const inputAfter=input.symbol==='ETH'?await client.getBalance({address:buyer.account.address}):await balance(input.address,buyer.account.address);
+    assert.ok(inputBefore>inputAfter);
+    if(input.symbol!=='ETH') assert.ok(inputBefore-inputAfter<=q.maxInput);
+    assert.equal((await owner(id)).toLowerCase(),buyer.account.address.toLowerCase());
+    assert.deepEqual(await readZone('snapshot',[id]),beforeSnapshot);
+    for(const t of currencies) {
+      assert.equal(await balance(t.address,router),0n);
+      for(const spender of [deployment.market,FUNDING_ROUTER]) assert.equal(await client.readContract({address:t.address,abi:parseAbi(['function allowance(address,address) view returns(uint256)']),functionName:'allowance',args:[router,spender]}),0n);
+    }
+    assert.equal(await client.getBalance({address:router}),0n);
+    await assert.rejects(buyWithPayment(session(buyer),signed,q));
+    await receipt(await buyer.writeContract({address:original.collection,abi:nftAbi,functionName:'safeTransferFrom',args:[buyer.account.address,seller.account.address,id]}));
+    atomicChecks.push(`${input.symbol} -> ${output.symbol}: paid, refunded, NFT delivered, no residual balance/approval; gas ${paid.gasUsed}`);
+  }
   const cancelled=await last.make(0,1_000_000n,seller,seller.account.address);
   await cancelSale(session(seller),cancelled.signed);
   await assert.rejects(last.run(buyer,cancelled));
+  const cancelledParsed=parseSignedSale(cancelled.signed,deployment);
+  const cancelledQuote=await quotePurchasePayment(client,deployment,{buyer:buyer.account.address,orderHash:cancelledParsed.hash,currency:cancelledParsed.order.currency,amount:cancelledParsed.order.amount,inputToken:FUNDING_WETH,slippage:50});
+  await receipt(await buyer.writeContract({address:FUNDING_WETH,abi:erc20Abi,functionName:'approve',args:[router,cancelledQuote.maxInput]}));
+  const beforeFailed=await balance(FUNDING_WETH,buyer.account.address),ownerBefore=await owner(cancelledParsed.order.tokenId);
+  const failed=await client.waitForTransactionReceipt({hash:await buyer.writeContract({address:router,abi:routerArtifact.abi,functionName:'buy',args:[advancedSale(deployment,cancelledParsed.order,cancelled.signature),FUNDING_WETH,cancelledQuote.maxInput,BigInt(Math.floor(cancelledQuote.expires/1000))],gas:1_000_000n})});
+  assert.equal(failed.status,'reverted');assert.equal(await balance(FUNDING_WETH,buyer.account.address),beforeFailed);assert.equal(await owner(cancelledParsed.order.tokenId),ownerBefore);assert.equal(await balance(FUNDING_WETH,router),0n);
+  atomicChecks.push('Cancelled listing: actual router transaction reverted; input tokens and NFT ownership unchanged');
   const legacy=await last.make(0,1_000_000n,seller,seller.account.address);
   // V1 encoding directed to the V2 zone is rejected on chain, even with a valid maker signature.
   const legacyDeployment={...last.d,paymentSchemaVersion:1,currency:legacy.o.currency};
   const legacySignature=await seller.signTypedData(seaportTypedData(legacyDeployment,legacy.o));
   await assert.rejects(client.simulateContract({...saleSettlement(legacyDeployment,legacy.o,legacySignature,buyer.account.address),account:buyer.account.address}));
-  console.log(JSON.stringify({forkBlock:info.forkConfig.forkBlockNumber,deploymentGas:deployed.gasUsed.toString(),checks,additional:['cancelled order rejected','V1 proof rejected'],scope:'Isolated local fork. No live orders, assets or deployment changed.'},null,2));
+  console.log(JSON.stringify({forkBlock:info.forkConfig.forkBlockNumber,deploymentGas:deployed.gasUsed.toString(),checks,atomicChecks,routerDeploymentGas:routerReceipt.gasUsed.toString(),additional:['cancelled order rejected','V1 proof rejected'],scope:'Isolated local fork. No live orders, assets or deployment changed.'},null,2));
 } finally {assert.equal(await client.request({method:'evm_revert',params:[outer]}),true);}

@@ -1,3 +1,4 @@
+import { allowanceOptions, nftApprovalOptions, signingOptions } from "../../lib/market/transaction-preparation";
 import { paymentToken, paymentTokens, supportedPaymentTokens, parsePaymentAmount, formatPaymentAmount, paymentUsd } from "../../lib/blend/payment-tokens";
 import { usePaymentPrices } from "../../lib/market/payment-prices";
 import { useFundingBalances } from "../../lib/blend/wallet-funding";
@@ -8,7 +9,7 @@ import { CurrencyPicker } from "./CurrencyPicker";
 import { DurationPicker } from "./DurationPicker";
 import { TokenAmountInput } from "./TokenAmountInput";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useActiveAccount } from "thirdweb/react";
 import { getAddress, type Address } from "viem";
 import { ArrowUpRight, ExternalLink, LoaderCircle } from "lucide-react";
@@ -137,16 +138,21 @@ export function SaleForm({
     refetchInterval: 30_000,
   });
   const spender = config.data?.enabled ? config.data.deployment.market : undefined;
+  const deployment = config.data?.enabled ? config.data.deployment : undefined;
+  const preparation = deployment && account && correctChain ? {d:deployment,owner:getAddress(account.address)} : undefined;
   const allowance = useQuery({
-    queryKey: ["bid-allowance", account?.address.toLowerCase(), currency, spender],
-    queryFn: () => ethereumClient.readContract({
-      address: currency, abi: tokenSalesAbi, functionName: "allowance",
-      args: [getAddress(account!.address), spender!],
+    ...(preparation ? allowanceOptions(ethereumClient,preparation.d,preparation.owner,currency,spender!) : {
+      queryKey:["transaction-preparation","disconnected"], queryFn:async()=>0n,
     }),
-    enabled: intent.kind === "bid" && !!account && !!spender && correctChain,
-    staleTime: 0,
-    refetchInterval: 15_000,
+    enabled: intent.kind === "bid" && !!preparation && !busy,
+    refetchInterval: busy ? false : 15_000,
   });
+  useQueries({queries: preparation && !busy ? [
+    ...((intent.kind === "list" || intent.kind === "bid") ? [signingOptions(ethereumClient,preparation.d,preparation.owner,BigInt(tokenId))] : []),
+    ...(intent.kind === "list" || (intent.kind === "fill" && intent.row.order.kind === 1) ? [nftApprovalOptions(ethereumClient,preparation.d,preparation.owner,BigInt(tokenId))] : []),
+    ...(intent.kind === "fill" && intent.row.order.kind === 0 ? [allowanceOptions(ethereumClient,preparation.d,preparation.owner,
+      payWith, payWith !== currency && deployment?.purchaseRouter ? deployment.purchaseRouter.address : preparation.d.market)] : []),
+  ].map(options=>({...options,refetchInterval:15_000})) : []});
   const balanceLabel = balance.data !== undefined
     ? `${tokenAmount(balance.data)} ${token.symbol}`
     : account && balance.isFetching ? "Loading…" : "—";
@@ -178,8 +184,6 @@ export function SaleForm({
       (buy && sameAddress(account.address, owner)) ||
       (intent.kind === "cancel" &&
         !sameAddress(account.address, intent.row.order.maker)));
-  const insufficient = paying && amount !== undefined && balance.data !== undefined &&
-    amount > balance.data;
   const title =
     intent.kind === "list"
       ? "List your stake"
@@ -191,7 +195,7 @@ export function SaleForm({
             ? "Review purchase"
             : "Accept this bid";
   const needsApproval = intent.kind === "bid" && amount !== undefined && allowance.data !== undefined && allowance.data < amount;
-  const allowanceBlocked = intent.kind === "bid" && (allowance.data === undefined || allowance.isError);
+  const allowanceBlocked = intent.kind === "bid" && allowance.data === undefined;
   useErrorToast("bid-allowance", intent.kind === "bid" && allowance.isError && !allowance.isFetching && `Could not check ${token.symbol} approval. Please try again.`, () => void allowance.refetch());
   const action =
     intent.kind === "list"
@@ -213,11 +217,9 @@ export function SaleForm({
   useErrorToast("sale-review", !busy && readiness.failure, retryReview);
   useErrorToast("sale-wallet-read", !paying && intent.kind !== "cancel" && balance.isError && !balance.isFetching && `Could not read your ${token.symbol} balance. Please try again.`, () => void balance.refetch());
   useErrorToast("sale-owner", !!wrongOwner && "Connect the appropriate owner or buyer wallet for this action.");
-  const showInsufficientBalance = !converting && !!account && insufficient && !balance.isError &&
-    !busy && !readiness.checking;
-  const paymentBlocked = converting && (!paymentReview.quote || paymentReview.loading || paymentReview.insufficient || paymentReview.unknownBalance || paymentReview.expired);
+  const paymentBlocked = converting && (!paymentReview.quote || paymentReview.loading || paymentReview.expired);
   const submitBlocked = paymentBlocked || !account || !correctChain || busy || blocked || !!wrongOwner ||
-    readiness.blocked || allowanceBlocked || (!converting && insufficient) || amount === undefined;
+    readiness.blocked || allowanceBlocked || amount === undefined;
   function validateAmount() {
     setTouched(true);
     if (price.trim() && amount === undefined) showToast(amountError || `Enter a valid ${token.symbol} amount.`, { id: "sale-amount", tone: "error" });
@@ -332,7 +334,7 @@ export function SaleForm({
                 Place a bid instead <ArrowUpRight size={16} />
               </button>
             )}
-            {buy && account && (
+            {buy && account && !converting && (
               <div className="sale-wallet-balance">
                 <span>Wallet balance</span>
                 <strong>
@@ -369,7 +371,7 @@ export function SaleForm({
           </button>
         ) : (
           <button
-            className={`stake-primary${showInsufficientBalance ? " sale-insufficient-balance" : ""}`}
+            className="stake-primary"
             type="submit"
             disabled={submitBlocked}
             aria-busy={busy || readiness.checking}
@@ -377,7 +379,7 @@ export function SaleForm({
             {(busy || readiness.checking) && <LoaderCircle className="sale-loading" size={18} aria-hidden="true" />}
             <span aria-live="polite">{
               busy ? busyLabel : readiness.checking || (allowanceBlocked && allowance.isFetching) ? "Checking…" :
-                converting ? paymentReview.loading ? "Getting payment quote…" : paymentReview.insufficient ? "Insufficient payment balance" : !config.data?.enabled || !config.data.deployment.purchaseRouter ? "Payment option unavailable" : !paymentReview.quote ? "Refresh payment quote" : `Buy with ${purchaseFundingTokens.find(t => t.address === payWith)?.symbol ?? "tokens"}` : showInsufficientBalance ? `Insufficient ${token.symbol} balance` : action
+                converting ? paymentReview.loading ? "Getting payment quote…" : !config.data?.enabled || !config.data.deployment.purchaseRouter ? "Payment option unavailable" : !paymentReview.quote ? "Refresh payment quote" : `Buy with ${purchaseFundingTokens.find(t => t.address === payWith)?.symbol ?? "tokens"}` : action
             }</span>
           </button>
         )}

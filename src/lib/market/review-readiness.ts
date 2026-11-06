@@ -11,22 +11,21 @@ type Review = {
   balance: QueryState<bigint>;
 };
 
-export function reviewReadiness({ kind, paying, config, live, availability, balance }: Review) {
+export function reviewReadiness({ kind, config, live, availability }: Review) {
   if (kind === "cancel") return { checking: false, blocked: false, failure: undefined };
-  const queries = [config, live, ...(kind === "fill" ? [availability] : []), ...(paying ? [balance] : [])];
-  const checking = queries.some(query => query.isFetching || (query.isPending && !query.isError));
+  // Background balance, stake-detail and availability refreshes must not hold
+  // the wallet button hostage. Current execution is enforced by the contracts.
+  const checking = !config.data && !config.isError || !!(config.data?.enabled && config.data.recoveryOnly && config.isFetching);
   const marketBlocked = !config.data?.enabled || config.data.recoveryOnly || config.data.newActivityPaused;
-  const blocked = checking || queries.some(query => query.isError) || marketBlocked || !live.data?.canList ||
-    (kind === "fill" && (!availability.data || !orderAvailable(availability.data)));
+  const unavailable = kind === "fill" && availability.data && !orderAvailable(availability.data);
+  const invalidStake = live.data && !live.data.canList;
+  const blocked = checking || marketBlocked || !!unavailable || !!invalidStake;
   let failure: string | undefined;
   if (!checking) {
-    if (config.isError) failure = "Could not check the market. Please try again.";
-    else if (live.isError) failure = "Could not verify this stake. Please try again.";
-    else if (kind === "fill" && availability.isError) failure = "Could not verify this order. Please try again.";
-    else if (paying && balance.isError) failure = "Could not read your payment token balance. Please try again.";
+    if (config.isError && (!config.data || (config.data.enabled && config.data.recoveryOnly))) failure = "Could not check the market. Please try again.";
     else if (config.data && marketBlocked) failure = "New trading is paused. You can still cancel existing orders.";
-    else if (kind === "fill" && availability.data && !orderAvailable(availability.data)) failure = "This order can no longer be filled. Choose another order.";
-    else if (live.data && !live.data.canList) failure = "This stake cannot be traded in its current state.";
+    else if (unavailable) failure = "This order can no longer be filled. Choose another order.";
+    else if (invalidStake) failure = "This stake cannot be traded in its current state.";
   }
   return { checking, blocked, failure };
 }

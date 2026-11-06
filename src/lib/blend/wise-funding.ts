@@ -46,31 +46,28 @@ export async function quoteWiseFunding(client:PublicClient,token:Address,amount:
  return {token,outputToken,amount,output,minimum:minimumFundingOutput(output,bps),path,block,expires:Date.now()+120000,slippage:bps};
 }
 export async function executeWiseFunding(s:{client:PublicClient;wallet:Pick<WalletClient,"account"|"chain"|"getChainId"|"writeContract">;address:Address;guard:()=>Promise<void>;onStep:(s:string)=>void;onHash:(hash:Hex,kind?:string)=>void;onConfirmed?:(hash:Hex)=>void;onPhase?:(phase:"approving"|"swapping"|"confirming")=>void;beforeSwap?:()=>Promise<void>},q:FundingQuote) {
- const check=async()=>{await s.guard();if(await s.client.getChainId()!==1 || await s.wallet.getChainId()!==1 || s.wallet.account?.address.toLowerCase()!==s.address.toLowerCase()) throw new Error('Wallet or network changed. Review again.');if(Date.now()>q.expires) throw new Error('Quote expired. Refresh and review again.');};
+ const check=async()=>{await s.guard();if(await s.wallet.getChainId()!==1 || s.wallet.account?.address.toLowerCase()!==s.address.toLowerCase()) throw new Error('Wallet or network changed. Review again.');if(Date.now()>q.expires) throw new Error('Quote expired. Refresh and review again.');};
  await check();
  const target = q.outputToken ?? FUNDING_WISE;
  const path = fundingPath(q.token,target), wrap = path.length === 1;
  if(q.amount<=0n || q.minimum<=0n || q.minimum!== (wrap ? q.amount : minimumFundingOutput(q.output,q.slippage)) || q.path.join(':').toLowerCase()!==path.join(':').toLowerCase()) throw new Error('Invalid swap quote. Refresh it.');
- await check();
  const native=q.token===zeroAddress;
- const balance=native?await s.client.getBalance({address:s.address}):await s.client.readContract({address:q.token,abi:fundingTokenAbi,functionName:'balanceOf',args:[s.address]});
- if(balance<q.amount) throw new Error('Insufficient balance. Keep ETH for gas as well.');
  if(!native) {
  const allowance=await s.client.readContract({address:q.token,abi:fundingTokenAbi,functionName:'allowance',args:[s.address,FUNDING_ROUTER]});
  if(allowance<q.amount) {
  await check();s.onPhase?.('approving');s.onStep('Approve the exact input amount in your wallet.');
- const {request}=await s.client.simulateContract({account:s.address,address:q.token,abi:fundingTokenAbi,functionName:'approve',args:[FUNDING_ROUTER,q.amount]});
+ const request={address:q.token,abi:fundingTokenAbi,functionName:'approve',args:[FUNDING_ROUTER,q.amount]};
  await check();const hash=await s.wallet.writeContract({...request,account:s.wallet.account!,chain:s.wallet.chain} as Parameters<WalletClient["writeContract"]>[0]);s.onHash(hash,'Token approval');s.onPhase?.('confirming');
  const receipt=await s.client.waitForTransactionReceipt({hash,timeout:180000});s.onConfirmed?.(hash);if(receipt.status!=='success') throw new Error('Approval reverted.');
  }
  }
  await s.beforeSwap?.();await check();s.onPhase?.('swapping');s.onStep('Review and confirm the swap in your wallet.');
  const deadline=BigInt(Math.floor(q.expires/1000));
- const {request}=wrap
- ? await s.client.simulateContract({account:s.address,address:FUNDING_WETH,abi:parseAbi(['function deposit() payable']),functionName:'deposit',value:q.amount})
+ const request=wrap
+ ? {address:FUNDING_WETH,abi:parseAbi(['function deposit() payable']),functionName:'deposit',value:q.amount}
  : native
- ? await s.client.simulateContract({account:s.address,address:FUNDING_ROUTER,abi:fundingRouterAbi,functionName:'swapExactETHForTokens',args:[q.minimum,q.path,s.address,deadline],value:q.amount})
- : await s.client.simulateContract({account:s.address,address:FUNDING_ROUTER,abi:fundingRouterAbi,functionName:'swapExactTokensForTokens',args:[q.amount,q.minimum,q.path,s.address,deadline]});
+ ? {address:FUNDING_ROUTER,abi:fundingRouterAbi,functionName:'swapExactETHForTokens',args:[q.minimum,q.path,s.address,deadline],value:q.amount}
+ : {address:FUNDING_ROUTER,abi:fundingRouterAbi,functionName:'swapExactTokensForTokens',args:[q.amount,q.minimum,q.path,s.address,deadline]};
  await check();const hash=await s.wallet.writeContract({...request,account:s.wallet.account!,chain:s.wallet.chain} as Parameters<WalletClient["writeContract"]>[0]);s.onHash(hash,wrap?'WETH wrap':'Uniswap swap');s.onPhase?.('confirming');s.onStep('Swap submitted. Waiting for Ethereum confirmation.');
  const receipt=await s.client.waitForTransactionReceipt({hash,timeout:180000});s.onConfirmed?.(hash);if(receipt.status!=='success') throw new Error('Swap reverted.');return hash;
 }
