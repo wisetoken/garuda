@@ -26,10 +26,10 @@ export function TablePopover({ label, trigger, children, end = false, active = f
     };
     const scroll = (event: Event) => { if (!(event.target instanceof Node) || !menu.current?.contains(event.target)) update(); };
     update();
-    menu.current?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
+    const focusFrame = requestAnimationFrame(() => menu.current?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true }));
     window.addEventListener("resize", update);
     window.addEventListener("scroll", scroll, true);
-    return () => { window.removeEventListener("resize", update); window.removeEventListener("scroll", scroll, true); };
+    return () => { cancelAnimationFrame(focusFrame); window.removeEventListener("resize", update); window.removeEventListener("scroll", scroll, true); };
   }, [open, end, variant]);
   useEffect(() => {
     if (!open) return;

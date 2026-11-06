@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { rangeError, type MarketRangeFilters as Ranges } from "../../lib/market/filter-query";
 export function MarketRangeFilters({ filters, onChange }: { filters: Ranges; onChange: (filters: Ranges) => void }) {
-  const [draft, setDraft] = useState<Ranges>(filters);
+  const { minPrice, maxPrice, maturesFrom, maturesTo } = filters;
+  const [draft, setDraft] = useState<Ranges>(() => ({ minPrice, maxPrice, maturesFrom, maturesTo }));
+  useEffect(() => { setDraft({ minPrice, maxPrice, maturesFrom, maturesTo }); }, [minPrice, maxPrice, maturesFrom, maturesTo]);
   const error = rangeError(draft);
   return <details className="table-filter-ranges">
     <summary>Price & maturity</summary>

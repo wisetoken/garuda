@@ -85,8 +85,7 @@ export function MarketToolbar(props: Props) {
               <FilterToggle label="Show inactive" checked={filters.showInactive}
                 onToggle={() => setFilters({ ...filters, showInactive: !filters.showInactive })} />
             </div>}
-            <MarketRangeFilters key={[filters.minPrice, filters.maxPrice, filters.maturesFrom, filters.maturesTo].join(":")}
-              filters={filters} onChange={ranges => setFilters({ ...filters, ...ranges })} />
+            <MarketRangeFilters filters={filters} onChange={ranges => setFilters({ ...filters, ...ranges })} />
             <p className="table-filter-note">Counts and stake status reflect loaded results.</p>
             <button
               className="table-filter-reset"
