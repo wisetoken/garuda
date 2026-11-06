@@ -1,7 +1,7 @@
 import { GarudaPageKicker } from "../../components/GarudaPageKicker";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ArrowUpRight, Check, ChevronDown, Clock3, Layers, LockKeyhole } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, Clock3, Layers, LockKeyhole } from "lucide-react";
 import "./guide-base.css";
 import "./garuda-problem.css";
 
@@ -76,8 +76,6 @@ export function GarudaProblem() {
       <div><span className="gp-section-number">LOOK AT THE WHOLE POSITION</span><h2 id="problem-compare-title">Earlier isn’t automatically better.</h2><p>Compare what you pay with what the stake can still deliver.</p></div>
       <dl className="gp-checks"><div><dt>Current shares</dt><dd>Scraping interest during an active stake reduces its shares. Check what remains, not only what was issued.</dd></div><div><dt>Time left to earn</dt><dd>More shares help on overlapping earning days. A shorter remaining term can still mean less total future interest; a mature stake has no earning days left.</dd></div><div><dt>Price & remaining rights</dt><dd>Asking price is separate from principal. Consider unclaimed rewards, fees, gas, and the price you actually pay.</dd></div><div><dt>Changing rewards</dt><dd>Daily payouts depend on the reward pool and competing active shares. Historical APY does not lock in a future rate.</dd></div></dl>
     </section>
-
-    <details className="gp-scope"><summary>Does this work for every WISE stake?<ChevronDown size={17} aria-hidden="true" /></summary><div><p>Garuda trades supported NFT stakes. A standard WISE stake belongs to the wallet that created it and cannot be transferred or retroactively converted into a Signature NFT by Garuda.</p><p>You can scrape earned interest from a Signature stake without ending it, but this does not release principal and can reduce future share weight. Legacy Advanced stakes do not support interest scraping. New lending is a preview and is not enabled yet.</p><SourceLink href={signatureSource}>Supported stake capabilities</SourceLink></div></details>
 
     <footer className="gp-footer"><div><h2>A new owner. An uninterrupted stake.</h2><p>Explore the market, or see how ownership changes.</p></div><div className="gp-footer-links"><Link className="ba-primary" to="/garuda/?screen=trade&collection=signature&view=market">Explore the market <ArrowRight size={17} aria-hidden="true" /></Link><Link className="gp-jump" to="/garuda/?screen=how">The Solution <ArrowUpRight size={16} aria-hidden="true" /></Link></div></footer>
   </article>;

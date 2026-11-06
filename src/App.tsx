@@ -7,13 +7,15 @@ import { MarketPage } from "./pages/MarketPage";
 import { MyStakesPage } from "./pages/MyStakesPage";
 import { LendPage } from "./pages/LendPage";
 
-const pages = { trade: MarketPage, stakes: MyStakesPage, lend: LendPage };
+import { FundingPage } from "./pages/FundingPage";
+
+const pages = { trade: MarketPage, stakes: MyStakesPage, lend: LendPage, fund: FundingPage };
 
 export function App() {
   const [params] = useSearchParams();
   const screen = resolveScreen(params.get("screen"));
   const Page =
-    screen === "trade" || screen === "stakes" || screen === "lend"
+    screen === "trade" || screen === "stakes" || screen === "lend" || screen === "fund"
       ? pages[screen]
       : null;
 

@@ -71,6 +71,7 @@
 .gp-two-sides p { font-size: 16px; margin: 0; max-width: 430px; }
 .gp-solution-limit { margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--ba-line); }
 .gp-solution-limit p { font-size: 15px; margin: 0; max-width: 820px; }
+.gp-solution-limit .gp-source { margin-top: 22px; }
 .gp-compare { display: grid; grid-template-columns: minmax(0,.8fr) minmax(0,1.2fr); gap: 70px; padding: 60px 0 36px; }
 .gp-compare > div > p { font-size: 16px; max-width: 320px; }
 .gp-checks { margin: 0; }
@@ -78,13 +79,6 @@
 .gp-checks > div:first-child { padding-top: 0; }
 .gp-checks dt { font-size: 17px; margin-bottom: 8px; }
 .gp-checks dd { margin: 0; color: var(--ba-muted); font-size: 16px; line-height: 1.7; }
-.gp-scope { border-bottom: 1px solid var(--ba-line); }
-.gp-scope summary { display: flex; align-items: center; justify-content: space-between; gap: 20px; list-style: none; padding: 22px 0; cursor: pointer; font-size: 16px; }
-.gp-scope summary::-webkit-details-marker { display: none; }
-.gp-scope summary:hover { color: var(--ba-mint); }
-.gp-scope[open] summary svg { transform: rotate(180deg); }
-.gp-scope > div { max-width: 850px; padding-bottom: 24px; }
-.gp-scope p { margin: 0 0 12px; font-size: 16px; }
 .gp-footer { display: flex; justify-content: space-between; align-items: center; gap: 32px; padding: 36px 0 10px; }
 .gp-footer h2 { font-size: 24px; margin: 0 0 8px; letter-spacing: -.5px; }
 .gp-footer p { margin: 0; font-size: 15px; }

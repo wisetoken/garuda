@@ -1,8 +1,9 @@
+import { extendOfferMessage } from "../../src/lib/market/arkiv-extension";
 import { createPublicClient, createWalletClient, ExpirationTime } from "@arkiv-network/sdk";
 import { rabdi } from "@arkiv-network/sdk/chains";
 import { u64 } from "@arkiv-network/sdk/schema";
 import { and, eq, gt, asc, desc } from "@arkiv-network/sdk/query";
-import { bytesToHex, http, type Hex } from "viem";
+import { bytesToHex, http, verifyMessage, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { SalesError } from "../../src/lib/blend/sales";
 import type { SalesService } from "./service";
@@ -30,6 +31,19 @@ export function arkivRuntime(env = process.env) {
 }
 
 export async function discoverArkiv(service: SalesService, input: ArkivFilters, runtime = arkivRuntime(), preview = false) {
+  try { return await discoverArkivRows(service, input, runtime, preview); }
+  catch (error) {
+    let cause: unknown = error;
+    for (let depth = 0; cause && typeof cause === "object" && depth < 5; depth++) {
+      const details = cause as { status?: number; cause?: unknown };
+      if (details.status === 429) throw new SalesError("rate-limit", "Arkiv's RPC is rate limiting discovery. Try the order catalog or retry later.");
+      cause = details.cause;
+    }
+    throw error;
+  }
+}
+
+async function discoverArkivRows(service: SalesService, input: ArkivFilters, runtime = arkivRuntime(), preview = false) {
   if (!runtime) throw new SalesError("arkiv-disabled", "Arkiv discovery is not configured.");
   const filters = parseArkivFilters(input);
   if (!(await service.store.limit("arkiv-read", 60))) throw new SalesError("rate-limit", "Arkiv is busy. Try again shortly.");
@@ -129,4 +143,39 @@ export async function publishArkiv(service: SalesService, hash: string, runtime 
     } catch { throw new Error("Arkiv write could not be verified. Check publication before retrying."); }
     return { entityKey: result.entityKey, txHash: result.txHash, expiresAt: String(result.expiresAt), created: true };
   });
+}
+
+export { extendOfferMessage } from "../../src/lib/market/arkiv-extension";
+
+export async function arkivLifetime(service: SalesService, hash: string, entityKey: string, runtime = arkivRuntime()) {
+  if (!runtime || !/^0x[0-9a-f]{64}$/i.test(entityKey)) throw new SalesError("invalid-request", "Arkiv entity unavailable.");
+  const entity = await runtime.reader.getEntity(entityKey as Hex, ArkivListings);
+  if (parseOrderEntity(entity, service.store.deployment, 2).hash !== hash) throw new Error("Arkiv entity does not match the order.");
+  return { expiresBlock: String(entity.$expiresAt) };
+}
+
+export async function extendArkiv(service: SalesService, hash: string, entityKey: string, signature: string, expiresAt: number, runtime = arkivRuntime()) {
+  if (!Number.isSafeInteger(expiresAt) || expiresAt <= Math.floor(Date.now()/1000) || expiresAt > Math.floor(Date.now()/1000) + 90*86400) throw new SalesError("invalid-request", "Choose a storage expiry within the next 90 days.");
+  if (!runtime?.writer) throw new SalesError("arkiv-disabled", "Arkiv publication is not configured.");
+  if (!/^0x[0-9a-f]{64}$/i.test(entityKey) || !/^0x[0-9a-f]+$/i.test(signature))
+    throw new SalesError("invalid-request", "Invalid extension request.");
+  if (await runtime.reader.getChainId() !== 7794095) throw new Error("Arkiv Rabdi required.");
+  if (service.store.deployment.environment !== "ethereum-mainnet") throw new Error("Only Ethereum orders can be published to Rabdi.");
+  if (!(await service.store.limit("arkiv-extend", 6))) throw new SalesError("rate-limit", "Please wait before extending another Arkiv offer.");
+  const row = await service.get(hash);
+  if (row.status !== "available") throw new SalesError("order-unavailable", `Order is ${row.status}.`);
+  const ownerSigned = await verifyMessage({
+    address: row.order.owner as Hex,
+    message: extendOfferMessage(hash, entityKey, expiresAt),
+    signature: signature as Hex,
+  }).catch(() => false);
+  if (!ownerSigned) throw new SalesError("not-owner", "Only the stake owner can extend this Arkiv offer.");
+  const entity = await runtime.reader.getEntity(entityKey as Hex, ArkivListings);
+  if (parseOrderEntity(entity, service.store.deployment, 2).hash !== hash)
+    throw new Error("Arkiv entity does not match the signed order.");
+  const result = await runtime.writer.extendEntity({
+    entityKey: entityKey as Hex,
+    expiration: ExpirationTime.atDate(new Date(expiresAt * 1000)),
+  });
+  return { entityKey: result.entityKey, txHash: result.txHash, expiresAt: String(result.expiresAt) };
 }

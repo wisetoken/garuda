@@ -17,9 +17,9 @@ export function SaleStakeDetails({ name, tokenId, position, usd, fallback }: {
   const elapsedDays = position ? Math.max(0, Math.floor((Math.min(observedAt, position.maturesAt) - position.startAt) / 86400)) : 0;
   const remainingDays = position ? Math.max(0, Math.ceil((position.maturesAt - observedAt) / 86400)) : 0;
   const days = (value: number) => `${value.toLocaleString()} ${value === 1 ? "day" : "days"}`;
-  const duration = !timeline ? undefined : timeline.status === "Active"
-    ? `${days(elapsedDays)} elapsed · ${days(remainingDays)} remaining`
-    : timeline.status === "Mature" ? `${days(elapsedDays)} elapsed · Matured` : timeline.caption;
+  const term = !timeline ? undefined : timeline.status === "Active"
+    ? [`${days(elapsedDays)} elapsed`, `${days(remainingDays)} remaining`]
+    : timeline.status === "Mature" ? [`${days(elapsedDays)} elapsed`, "Matured"] : [timeline.caption];
   return (
     <section className="sale-position" aria-label={`${name} stake details`}>
       <div className="sale-identity">
@@ -50,10 +50,10 @@ export function SaleStakeDetails({ name, tokenId, position, usd, fallback }: {
               <dt>Annualized yield</dt>
               <dd>
                 {yieldValue === null ? "—" : `${yieldValue.toFixed(2)}%`}
-                {duration && <small>{duration}</small>}
               </dd>
             </div>
           </dl>
+          {term && <p className="sale-term">{term.map(part => <span key={part}>{part}</span>)}</p>}
           <div className="sale-dates">
             <div>
               <span>Started / UTC</span>

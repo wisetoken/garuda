@@ -6,7 +6,7 @@ const SolutionPage = lazy(() => import('./guides/GarudaGuide').then(module => ({
 const BackupPage = lazy(() => import('./BackupAccessPage').then(module => ({ default: module.BackupAccessPage })));
 
 const content = {
-  fund: { section: 'Get WISE', title: 'Get ready for your next position.', description: 'The WISE funding interface will be brought over from the existing app.' },
+  fund: { section: 'Get WISE', title: 'Get ready for your next position.', description: 'Swap ETH, WETH, USDC or DAI into WISE.' },
   privacy: { section: 'CROPS', title: 'Your access should outlast this website.', description: 'Recovery tools and private connection controls will be brought over with their supporting integrations.' },
 };
 

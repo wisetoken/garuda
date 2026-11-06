@@ -1,0 +1,14 @@
+.extend-offer-dialog { width:min(580px,calc(100vw - 32px));text-align:left;white-space:normal; }
+.extend-offer-content { padding:24px;overflow:auto;font-size:14px;line-height:1.6; }
+.extend-offer-content p { margin:0 0 20px; }
+.extend-offer-content dl { display:grid;gap:16px;margin:20px 0; }
+.extend-offer-content dt { color:var(--muted); }
+.extend-offer-content dd { margin:3px 0 0;font-weight:600; }
+.extend-offer-content a { color:var(--accent); }
+.extend-offer-content fieldset { border:0;padding:0;margin:24px 0; }
+.extend-offer-content legend { margin-bottom:10px; }
+.extend-offer-durations { display:flex;gap:10px; }
+.extend-offer-durations button { flex:1;min-height:44px;border:1px solid var(--border);border-radius:10px;background:var(--panel);color:inherit;font:inherit;cursor:pointer; }
+.extend-offer-durations button[aria-pressed=true] { border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel)); }
+.extend-offer-content footer { display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap; }
+.extend-offer-content button:focus-visible { outline:2px solid var(--accent);outline-offset:3px; }

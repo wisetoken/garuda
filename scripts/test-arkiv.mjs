@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { stringToHex, bytesToHex } from 'viem';
 import { readFile } from 'node:fs/promises';
-import { discoverArkiv,publishArkiv,arkivScope } from '../server/market/arkiv.ts';
+import { discoverArkiv,publishArkiv,arkivLifetime,extendArkiv,extendOfferMessage,arkivScope } from '../server/market/arkiv.ts';
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { serializeSale,parseSignedSale,SalesError } from '../src/lib/blend/sales.ts';
 import { processPublication } from '../server/market/publication.ts';
 import { orderAttributes, parseOrderEntity, ArkivListings } from '../server/market/arkiv-schema.ts';
@@ -159,4 +160,51 @@ test('indexed preview renders snapshots without Ethereum checks and cannot grant
  assert.equal(result.orders.length,1);assert.equal(result.orders[0].status,'checking');
  assert.equal(result.orders[0].stakeSnapshot.principal,metadata.snapshot.principal);
  assert.equal(result.blockNumber,'');assert.equal(result.blockHash,undefined);
+});
+
+test('only the stake owner can extend the Arkiv entity',async()=>{
+ const {s,v2,hash}=fixture();
+ const stranger=privateKeyToAccount(generatePrivateKey());
+ const signature=await stranger.signMessage({message:extendOfferMessage(hash,v2.$key, Math.floor(Date.now()/1000)+30*86400)});
+ let called=false;
+ const r=runtime([v2]);
+ r.writer.extendEntity=async()=>{called=true};
+ r.reader.getEntity=async()=>v2;
+ await assert.rejects(extendArkiv(s,hash,v2.$key,signature,Math.floor(Date.now()/1000)+30*86400,r),/stake owner/);
+ assert.equal(called,false);
+ await assert.rejects(extendArkiv(s,hash,'not-a-key',signature,Math.floor(Date.now()/1000)+30*86400,r),/Invalid extension/);
+});
+
+test('owner signature extends Arkiv storage and leaves the signed order untouched',async()=>{
+ const {s,v2,hash,stored}=fixture();
+ const owner=privateKeyToAccount(generatePrivateKey());
+ s.get=async()=>({...stored,status:'available',order:{...stored.order,owner:owner.address}});
+ const target=Math.floor(Date.now()/1000)+30*86400;
+ const signature=await owner.signMessage({message:extendOfferMessage(hash,v2.$key,target)});
+ let extended;
+ const r=runtime([v2]);
+ r.writer.extendEntity=async params=>{extended=params;return {entityKey:v2.$key,txHash:'0xtx',expiresAt:99n}};
+ r.reader.getEntity=async()=>v2;
+ await assert.rejects(extendArkiv(s,hash,v2.$key,signature,target+86400,r),/stake owner/);
+ await assert.rejects(extendArkiv(s,hash,v2.$key,signature,0,r),/90 days/);
+ await assert.rejects(extendArkiv(s,hash,v2.$key,signature,target+100*86400,r),/90 days/);
+ const receipt=await extendArkiv(s,hash,v2.$key,signature,target,r);
+ assert.equal(receipt.entityKey,v2.$key);assert.equal(receipt.expiresAt,'99');
+ assert.equal(extended.entityKey,v2.$key);
+ assert.equal(extended.expiration.expiresAt.getTime(),target*1000);
+ assert.equal(stored.order.deadline,s.store.get && (await s.store.get()).order.deadline);
+});
+
+test('storage expiry returns the Arkiv block, never the signed trading timestamp',async()=>{
+ const {s,v2,hash}=fixture();
+ const r=runtime([v2]);
+ r.reader.getEntity=async()=>({...v2,$expiresAt:291974n});
+ assert.deepEqual(await arkivLifetime(s,hash,v2.$key,r),{expiresBlock:'291974'});
+ await assert.rejects(arkivLifetime(s,'0x'+'00'.repeat(32),v2.$key,r),/does not match/);
+});
+
+test('Arkiv RPC throttling is reported as rate limiting, not an empty market',async()=>{
+ const {s}=fixture();const r=runtime();
+ r.reader.getChainId=async()=>{throw {cause:{status:429}};};
+ await assert.rejects(discoverArkiv(s,{},r,true),error=>error.code==='rate-limit' && /order catalog/.test(error.message));
 });

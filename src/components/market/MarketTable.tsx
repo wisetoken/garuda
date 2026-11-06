@@ -118,7 +118,7 @@ export function MarketTable({
           columns={visible.map((column) => ({
             ...column,
             sortable: column.id !== "type" && column.id !== "actions",
-            label: column.id === "price" ? bids ? "Bid price" : "Asking price" : column.label,
+            label: column.id === "price" ? bids ? "Bid price" : "Asking price" : column.id === "actions" && bids ? "Bid Actions" : column.label,
           }))}
           sort={sort}
           direction={direction}

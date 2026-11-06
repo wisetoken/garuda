@@ -133,6 +133,18 @@
   color: var(--muted);
   margin-top: 5px;
 }
+.sale-term {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin: -6px 0 16px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.sale-term span:last-child {
+  text-align: right;
+}
 .sale-dates {
   display: flex;
   justify-content: space-between;

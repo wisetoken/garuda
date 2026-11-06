@@ -1,9 +1,11 @@
 import { ArkivPublication } from "./ArkivSource";
 import { RowMenu } from "./RowMenu";
-import { ExternalLink, HandCoins } from "lucide-react";
+import { CalendarPlus, ExternalLink, HandCoins } from "lucide-react";
+import { useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { AddressIdentity } from "../AddressIdentity";
 import { StakeCard } from "../StakeCard";
+import { ExtendOfferDialog } from "./ExtendOfferDialog";
 import { useMarketActions } from "../MarketActions";
 import { orderAvailable } from "../../lib/market/api";
 import { useOrderPosition } from "../../lib/market/queries";
@@ -22,6 +24,7 @@ export function RowActions({
 }) {
   const account = useActiveAccount(),
     { open, busy } = useMarketActions();
+  const [extendOpen, setExtendOpen] = useState(false);
   const maker = !!account && sameAddress(account.address, row.order.maker),
     owner = !!account && sameAddress(account.address, row.order.owner),
     available = orderAvailable(row);
@@ -33,24 +36,20 @@ export function RowActions({
         disabled={busy || ["sold", "cancelled-or-filled"].includes(row.status)}
         onClick={() => open({ kind: "cancel", row, initialPosition: position })}
       >
-        {row.order.kind === 0 ? "Cancel Sale" : "Cancel Bid"}
+        {row.order.kind === 0 ? "Cancel Sale" : "Cancel"}
       </button>
     );
-  else if (row.order.kind === 1)
-    primary = owner ? (
+  else if (row.order.kind === 1 && owner)
+    primary = (
       <button
         className="market-primary"
         disabled={busy || !available || !position}
         onClick={() => position && open({ kind: "fill", row, initialPosition: position })}
       >
-        Accept Bid
+        Accept
       </button>
-    ) : (
-      <span className="market-muted">
-        {available ? "Awaiting owner" : "Unavailable"}
-      </span>
     );
-  else primary = (
+  else if (row.order.kind === 0) primary = (
     <button className="market-primary" disabled={busy || !available || !position || owner}
       onClick={() => position && open({ kind: "fill", row, initialPosition: position })}>Buy Stake</button>
   );
@@ -58,8 +57,11 @@ export function RowActions({
   const entity = key && /^0x[0-9a-f]{64}$/i.test(key) ? key : undefined;
   const canBid = !maker && row.order.kind === 0 && !owner;
   return <div className="market-row-actions">
+    {extendOpen && entity && <ExtendOfferDialog row={row} entity={entity} onClose={() => setExtendOpen(false)} />}
     {primary}
     {(entity || canBid) && <RowMenu label={`More actions for ${stakeCollection(row.order.collection).name} Stake #${row.order.tokenId}`}>
+      {owner && entity && <button type="button" role="menuitem" disabled={busy || !available}
+        onClick={() => setExtendOpen(true)}><CalendarPlus aria-hidden="true" />Extend offer</button>}
       {canBid && <button type="button" role="menuitem" disabled={busy || !position?.canList}
         onClick={() => position && open({ kind: "bid", position })}><HandCoins aria-hidden="true" />Place Bid</button>}
       {entity && <a role="menuitem" href={`https://rabdi.explorer.arkiv.network/entity/${entity}`} target="_blank" rel="noopener noreferrer"><ExternalLink aria-hidden="true" />View on Arkiv</a>}

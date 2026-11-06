@@ -34,6 +34,8 @@
 .table-column-footer button:hover { color: var(--text-primary); }
 .table-columns-empty { margin: 0; padding: 12px; color: var(--muted); }
 .table-filter-search { margin: 6px 8px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; }
+.table-popover .table-filter-search input:focus,
+.table-popover .table-filter-search input:focus-visible { outline: none; }
 .table-filter-search input { font-size: 13px; }
 .table-filter-group { padding: 4px; }
 .table-filter-group > p { margin: 0; padding: 4px 8px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }

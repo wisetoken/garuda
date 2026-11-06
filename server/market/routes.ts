@@ -52,6 +52,32 @@ export function registerMarketRoutes(
       return c.json({orderHash:hash,publication:states.get(hash) ?? null});
     } catch { return c.json({error:"Publication status unavailable."},503); }
   });
+  app.get(`${prefix}/arkiv/:hash/lifetime`, async c => {
+    const hash = c.req.param("hash").toLowerCase();
+    if (!/^0x[0-9a-f]{64}$/i.test(hash)) return c.json({error:"Invalid order hash."},400);
+    try {
+      const service = await resolve();
+      if (!service) return c.json({error:"Market unavailable."},503);
+      const {arkivLifetime} = await import("./arkiv");
+      return c.json(await arkivLifetime(service, hash, c.req.query("entityKey") ?? ""));
+    } catch { return c.json({error:"Current Arkiv expiry could not be loaded."},503); }
+  });
+  app.post(`${prefix}/arkiv/:hash/extend`, async c => {
+    const hash = c.req.param("hash").toLowerCase();
+    if (!/^0x[0-9a-f]{64}$/.test(hash)) return c.json({error:"Invalid order hash."},400);
+    let body: { entityKey?: unknown; signature?: unknown; expiresAt?: unknown };
+    try { body = await c.req.json(); } catch { return c.json({error:"Invalid extension request."},400); }
+    try {
+      const service = await resolve();
+      if (!service) return c.json({error:"Market unavailable."},503);
+      const {extendArkiv} = await import("./arkiv");
+      return c.json(await extendArkiv(service, hash, String(body.entityKey ?? ""), String(body.signature ?? ""), Number(body.expiresAt)));
+    } catch (e) {
+      const code = e instanceof SalesError ? e.code : "";
+      const status = code === "not-owner" ? 403 : code === "invalid-request" ? 400 : code === "rate-limit" ? 429 : code === "order-unavailable" ? 409 : 503;
+      return c.json({error:e instanceof SalesError ? e.message : "Arkiv offer could not be extended. The signed order is unchanged."}, status);
+    }
+  });
   app.post(`${prefix}/arkiv/:hash`, async c => {
     const hash = c.req.param("hash").toLowerCase();
     if (!/^0x[0-9a-f]{64}$/.test(hash)) return c.json({error:"Invalid order hash."},400);

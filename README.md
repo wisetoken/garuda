@@ -48,7 +48,7 @@ Status as of **6 November 2026**:
 | Market discovery | Arkiv is the default source; an explicit **All orders** catalog shows the service's order book | Ethereum checks determine whether a discovered order can still execute |
 | Advanced stakes | Portfolio display and collection-aware infrastructure | Trading stays disabled until a verified Advanced validator deployment is configured |
 | Product guides | The Problem and The Solution, including stake ownership and share comparisons | Expand alongside the product |
-| Get WISE | Navigation and page structure | Funding and swap flow is not enabled in this app yet |
+| Get WISE | ETH, WETH, USDC and DAI swaps into WISE through Uniswap v2; balances, quotes, slippage limits and wallet confirmations | Mainnet transaction execution requires the connected owner’s approval; Flash/TWAP is not enabled |
 | Lending | Navigation and page structure | Borrower requests, lender offers, collateral, repayment, and default handling are planned |
 | CROPS | Independent backup HTML; direct Arkiv order recovery and export; cancellation, permission revocation, and matured Signature redemption | External wallet and reachable Ethereum RPC required; private reads are not enabled |
 | Homepage | Initial concept page at `/` | Full homepage comes after the app flows |
@@ -266,7 +266,7 @@ These tests accept a loopback Anvil endpoint on chain **31337**, use generated t
 
 The application comes first. The next phase strengthens market reliability, public deployment configuration, dependency review, and transaction feedback while retaining both direct purchases and accepted bids.
 
-Funding follows with a Get WISE flow. Lending then adds borrower requests and stake-specific lender offers, with explicit collateral custody, repayment, expiration, and default behavior. Signing and funding those loans will require verified contracts and settlement tests before being enabled.
+Get WISE now supports direct Uniswap v2 funding. Lending next adds borrower requests and stake-specific lender offers, with explicit collateral custody, repayment, expiration, and default behavior. Signing and funding those loans will require verified contracts and settlement tests before being enabled.
 
 CROPS now provides independent backup access for Signature stakes. Private Ethereum reads and wider stake support remain future work. Advanced trading follows its validator configuration. The full homepage and broader product presentation come after these application foundations. Sponsor evidence will expand as integrations gain real usage; Swarm remains a possible addition.
 
