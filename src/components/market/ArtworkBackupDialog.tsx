@@ -41,6 +41,7 @@ export function ArtworkBackupDialog({row,onClose}: {row:SaleRow;onClose:()=>void
     return ()=>{element.close();document.body.style.overflow=overflow;if(trigger?.isConnected)trigger.focus();};
   },[]);
   const receipt=status.data?.state==='ready'?status.data.receipt:undefined;
+  const nftPath=`${collection.address}/${encodeURIComponent(row.order.tokenId)}`;
   return <dialog ref={dialog} className="market-activity-dialog artwork-backup-dialog" aria-labelledby={titleId}
     onCancel={event=>{event.preventDefault();onClose();}}>
     <header className="market-activity-heading"><div><h2 id={titleId}><ImageIcon size={22} />Artwork backup</h2><p>{collection.name} Stake #{row.order.tokenId}</p></div>
@@ -55,6 +56,8 @@ export function ArtworkBackupDialog({row,onClose}: {row:SaleRow;onClose:()=>void
         <div className="artwork-backup-links">
           <a className="market-secondary" download={`stake-${receipt.tokenId}-swarm-backup.json`} href={`data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(receipt,null,2))}`}>Save references</a>
           {receipt.arkivEntity && /^0x[0-9a-f]{64}$/i.test(receipt.arkivEntity) && <a href={`https://rabdi.explorer.arkiv.network/entity/${receipt.arkivEntity}`} target="_blank" rel="noopener noreferrer">View reference on Arkiv ↗</a>}
+          <a href={`https://opensea.io/item/ethereum/${nftPath}`} target="_blank" rel="noopener noreferrer">View NFT on OpenSea ↗</a>
+          <a href={`https://etherscan.io/nft/${nftPath}`} target="_blank" rel="noopener noreferrer">View NFT on Etherscan ↗</a>
         </div>
         <p className="market-muted">Storage depends on funded postage and network availability. This is not a permanent-storage guarantee.</p>
       </> : <div className="artwork-backup-empty"><ImageIcon size={40} aria-hidden="true" /><h3>{status.data?.state==='disabled'?'Swarm backup is not enabled':status.data?.state==='unavailable'?'No artwork backup was completed':'Artwork backup is pending'}</h3>

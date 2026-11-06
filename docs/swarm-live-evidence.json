@@ -97,5 +97,45 @@
     ],
     "receiptsMatchVerifiedArkivRecords": true,
     "filesReverified": true
+  },
+  "submissionProof": {
+    "checkedAt": "2026-11-06T22:58:25.578Z",
+    "mode": "upload",
+    "arkivEntity": "0xdb4995a90ca41235939cac4f14a54e89be1d97244ece56965f50202ef9c4f439",
+    "publisher": "0x8d5b491D2c843F6B996De1EC66269809138cA60A",
+    "gateway": "https://api.gateway.ethswarm.org",
+    "image": {
+      "reference": "7b38bf6f2497909a0eb67d73e80eed04c9f729b63a7e846df20b59f7fa5eb9b1",
+      "sha256": "725d2b46b366b7aa898aef0b8704f700e36e9ad828b98fc6e2cb85dc972bf75c"
+    },
+    "metadata": {
+      "reference": "ed9dbaa741588c32391aeb41ca10dd793c5ccf7b58a58c856d3842b87e0f390e",
+      "sha256": "c2b746b1b8d3988e82074babd85ef96c6e110fbb072e8f87a506491731475b7a"
+    },
+    "arkivManifestVerified": true,
+    "filesVerified": true,
+    "upload": {
+      "reference": "19d59dae8d1ddfda79cd426c96000d1eeeea5495e9eee338afa63b477fb84688",
+      "sha256": "725d2b46b366b7aa898aef0b8704f700e36e9ad828b98fc6e2cb85dc972bf75c",
+      "url": "https://api.gateway.ethswarm.org/bzz/19d59dae8d1ddfda79cd426c96000d1eeeea5495e9eee338afa63b477fb84688/",
+      "verified": true,
+      "service": "https://api.gateway.ethswarm.org",
+      "postageProvider": "Swarm public gateway",
+      "actualBatchId": null,
+      "note": "Verification copy of existing public artwork; this command does not publish an Arkiv entity."
+    },
+    "command": "node --import tsx scripts/swarm-proof.mjs upload",
+    "usesGarudaApi": false,
+    "createsArkivEntity": false
+  },
+  "postage": {
+    "mode": "public-gateway",
+    "service": "https://api.gateway.ethswarm.org",
+    "provider": "Swarm public gateway",
+    "requestBatchPlaceholder": "0000000000000000000000000000000000000000000000000000000000000000",
+    "actualBatchId": null,
+    "buyerWallet": null,
+    "status": "Actual funded batch ID and purchaser/provider confirmation not obtained; zero placeholder is not the batch ID.",
+    "publicStampsEndpointStatus": 404
   }
 }

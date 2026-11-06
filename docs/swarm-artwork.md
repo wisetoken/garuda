@@ -1,5 +1,7 @@
 # Swarm artwork backups
 
+For the **Arkiv + Swarm bonus (existing projects)**, see the required [submission document](../arkiv/swarm.md): exact entity fields, a live #53 example, upload/read commands, postage provenance, demo evidence status and friction. The integration works, but the gateway's actual funded batch ID and final video attribution are still missing.
+
 Status: enabled on [production Garuda](https://garuda.wise.one/garuda/) as of 7 November 2026. Real uploads and Arkiv publication were first verified locally; the production cron subsequently recovered the existing manifests and verified their files using its own database. Signature listings #53 and #61 and a bid for #61 have recorded backups. The #61 production artwork viewer and reference export were browser-checked. See [live receipts and verification evidence](swarm-live-evidence.json). Other deployments must opt in separately.
 
 Garuda can generate an artwork snapshot when a listing or bid is accepted, upload the SVG and JSON metadata to Swarm, and publish a separate reference entity on Arkiv. Users open **Artwork backup** from an order's menu to view it, change the read gateway or download its references. The same artwork renderer already exists in WiseOne/yoda; the new work is the storage, verification and reference path.

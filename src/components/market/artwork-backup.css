@@ -12,4 +12,5 @@
 .artwork-backup-content dd { margin:0 0 12px;overflow-wrap:anywhere;font-family:monospace; }
 .artwork-backup-content summary { cursor:pointer; }
 .artwork-backup-links { display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:20px 0; }
+.artwork-backup-links > a { white-space:nowrap; }
 .artwork-backup-content a { color:var(--accent); }

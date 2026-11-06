@@ -171,9 +171,17 @@ The implemented Arkiv integration targets the [ETHGlobal Mumbai Build on Arkiv t
 | [Uniswap v2](https://docs.uniswap.org/contracts/v2/overview) | Atomic multi-token stake purchases and standalone Get WISE swaps | Mainnet router deployed and source-verified; [live USDC purchase](#mainnet-example-buy-a-wise-stake-with-usdc), [integration code and fork evidence](#uniswap-integration) |
 | [EF CROPS](https://ethglobal.com/events/mumbai/prizes) | Independent Signature recovery, cancellation, permission revocation and matured redemption | Implemented; live read and fork execution evidence recorded; submission video and eligibility not yet established |
 | [Nym / Anon-RPC](https://ethereum.github.io/anon-rpc/) | Optional Nym routing for app Ethereum reads | Experimental and off by default; automated checks pass, but live Nym requests timed out in Garuda and the official demo. [Scope and validation](docs/anon-rpc.md) |
-| [Swarm](https://docs.ethswarm.org/) | Artwork snapshots on Swarm, discoverable through separate Arkiv references | Enabled in production; real uploads verified locally, with production cron recovery, file checksums and viewer checked. [Evidence, setup and limits](docs/swarm-artwork.md) |
+| [Arkiv + Swarm bonus](arkiv/swarm.md) | Public artwork snapshots on Swarm, discoverable through Arkiv media entities | Live in production; real uploads, Arkiv manifests, checksums and viewer verified. [Submission evidence and reproduction](arkiv/swarm.md); postage batch attribution and final video evidence remain incomplete. |
 
 Thirdweb, viem, and Seaport are implementation dependencies. Their use here does not imply sponsorship or endorsement.
+
+### Arkiv + Swarm bonus (existing projects)
+
+**An artwork copy users can retrieve without our image server.** WiseOne already had its staking application and artwork renderer. During Mumbai, Garuda added Swarm uploads for artwork snapshots associated with listings and bids, checksum verification, public Arkiv reference entities, and the **Artwork backup** viewer with gateway selection and reference export. The renderer is reused; the storage and retrieval integration is the new work. Ethereum remains authoritative, and the original NFT `tokenURI` is unchanged.
+
+Swarm stores the SVG and JSON files. Arkiv's `wiseone.garuda.media.v1` entity stores their references in the UTF-8 JSON `manifest` field: `image.reference` and `metadata.reference`. [Signature Stake #53's live entity, openable files, code paths, and upload/read commands](arkiv/swarm.md#open-a-real-example-signature-stake-53) provide a concrete example. Files are public and unencrypted; the gateway sees IP addresses and references. Arkiv media records last 90 days, while Swarm retention depends on postage and network availability.
+
+The required submission document is **[/arkiv/swarm.md](arkiv/swarm.md)**. It includes before/after scope and Swarm feedback, and explicitly identifies the remaining evidence: the public gateway's actual funded postage batch ID/provider attribution, the final video URL/timestamp, and confirmed Continuity acceptance/event-start baseline. The all-zero batch header is a gateway placeholder, not a batch we purchased. For entry, select **Build on Arkiv (existing projects)** plus **Arkiv + Swarm bonus (existing projects)**; the [prize rules](https://ethglobal.com/events/mumbai/prizes/arkiv) count these as one Arkiv partner-prize selection.
 
 ### Arkiv entities and ownership
 
@@ -448,6 +456,8 @@ Open **CROPS → Private Ethereum reads** to test Nym without a wallet, then ena
 The earlier WiseOne/yoda prototype already experimented with Nym. New work here integrates it into garuda-full with restricted bootstrap calls, response checks, explicit retry/reset, a visible connection state and privacy disclosures. No original invention of Anon-RPC or Nym is claimed. See [implementation, trust assumptions and demonstration](docs/anon-rpc.md). A functioning, honestly scoped demo supports the privacy property; use of EF tooling alone does not guarantee prize points.
 
 ### Optional artwork resilience: live Swarm copies
+
+The [Arkiv + Swarm submission document](arkiv/swarm.md) maps this upgrade to the bonus requirements, with a real entity/file pair and commands to reproduce a direct read and an upload.
 
 The new [Swarm integration](docs/swarm-artwork.md) adds another storage path for generated WiseOne NFT artwork. Previously the renderer was served through the project's metadata service. When enabled, Garuda queues artwork snapshots for accepted listings and bids, uploads the SVG and metadata to Swarm, verifies retrieval, and publishes their references on Arkiv. The **Artwork backup** viewer can switch gateways and export those references. The artwork renderer is reused existing work; the upload, reference publication and verification path are new.
 

@@ -49,6 +49,8 @@ The [standalone backup](../docs/backup-access.md) offers direct Arkiv reads, mak
 
 ## Swarm artwork references
 
+The dedicated bonus submission is [Swarm artwork: before/after, entity/file pair and reproduction](swarm.md). It identifies the exact `manifest.image.reference` and `manifest.metadata.reference` fields and distinguishes working functionality from incomplete postage and video evidence.
+
 The optional media worker uses `wiseone.garuda.media.v1` for public references to an SVG artwork snapshot and JSON metadata on Swarm. It indexes deployment scope, order hash, collection, token ID and renderer. The publisher owns these entities, with a 90-day lifetime independent of order deadlines and stake maturity. Files must pass gateway retrieval and checksum checks before the reference is published and the UI reports a completed backup.
 
 The **Artwork backup** viewer supports gateway selection and reference export. This adds another way to retrieve the generated artwork without the original metadata host; the NFT's `tokenURI` is unchanged. On 7 November 2026, real uploads for listings #53 and #61 and a bid for #61 completed through the public Swarm gateway. Both files and the Arkiv manifests were verified. Production is also enabled: its cron recovers existing manifests into its database, verifies the files and serves the completed backups; the #61 production viewer displayed the real artwork. Other deployments opt in with public-gateway or private Bee configuration. See [live evidence, setup, privacy and retention limits](../docs/swarm-artwork.md). A separate-gateway outage demonstration remains unverified.
