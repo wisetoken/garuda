@@ -96,7 +96,6 @@ export function MarketTable({
   direction,
   onSort,
   bids,
-  mine,
 }: {
   entries: MarketEntry[];
   columns: MarketColumn[];
@@ -104,7 +103,6 @@ export function MarketTable({
   direction: "asc" | "desc";
   onSort: (value: MarketSort) => void;
   bids: boolean;
-  mine: boolean;
 }) {
   const visible = columns.filter(id => id !== "bidder" || bids).map(id => marketColumns.find(column => column.id === id)!);
   return (
@@ -116,13 +114,13 @@ export function MarketTable({
     >
       <table className="market-table">
         <caption className="sr-only">
-          {mine ? "Your orders" : bids ? "Purchase bids" : "Stakes for sale"}
+          {bids ? "Purchase bids" : "Stakes for sale"}
         </caption>
         <TableHeader
           columns={visible.map((column) => ({
             ...column,
             sortable: column.id !== "type" && column.id !== "actions",
-            label: column.id === "price" ? mine ? "Order price" : bids ? "Bid price" : "Asking price" : column.label,
+            label: column.id === "price" ? bids ? "Bid price" : "Asking price" : column.label,
           }))}
           sort={sort}
           direction={direction}

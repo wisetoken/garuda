@@ -1,7 +1,7 @@
 import { MarketActionsProvider } from "./components/MarketActions";
-import { resolveScreen } from "./navigation";
+import { resolveScreen, screenHref } from "./navigation";
 import { InformationPage } from "./pages/InformationPage";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { MarketPage } from "./pages/MarketPage";
 import { MyStakesPage } from "./pages/MyStakesPage";
@@ -16,6 +16,10 @@ export function App() {
     screen === "trade" || screen === "stakes" || screen === "lend"
       ? pages[screen]
       : null;
+
+  // Keep existing bookmarks pointing to the dedicated portfolio page.
+  if (screen === "trade" && params.get("view") === "positions")
+    return <Navigate to={screenHref("stakes")} replace />;
 
   return (
     <AppShell activeScreen={screen}>

@@ -58,6 +58,15 @@
   color: white;
   background: #009d98;
 }
+[data-theme="light"] .market-primary {
+  background: #087b76;
+  border-color: #087b76;
+  color: white;
+}
+[data-theme="light"] .market-primary:hover {
+  background: #066862;
+  border-color: #066862;
+}
 .market-secondary {
   background: transparent;
   border: 1px solid var(--border);
@@ -195,26 +204,6 @@ select:focus-visible {
   cursor: pointer;
   margin-top: 8px;
 }
-.market-recovery {
-  margin-top: 24px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
-  font-size: 14px;
-  color: var(--muted);
-}
-.market-recovery summary {
-  cursor: pointer;
-  color: inherit;
-}
-.recovery-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 0;
-  border-top: 1px solid var(--border);
-}
 .market-notice {
   position: fixed;
   z-index: 100;
@@ -261,10 +250,6 @@ select:focus-visible {
   }
   .market-grid {
     padding: 16px;
-  }
-  .recovery-row {
-    align-items: start;
-    flex-direction: column;
   }
 }
 

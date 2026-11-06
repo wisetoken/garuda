@@ -19,7 +19,7 @@ export const marketColumns = [
   { id: "actions", label: "Actions", fixed: true },
 ] as const;
 export type MarketColumn = (typeof marketColumns)[number]["id"];
-export type MarketSort = Exclude<MarketColumn, "type" | "actions">;
+export type MarketSort = Exclude<MarketColumn, "type" | "actions"> | "account" | "progress" | "shares" | "orderStatus";
 export type StakeStatus = SignaturePosition["status"];
 export type MarketFilters = MarketRangeFilters & {
   search: string;
@@ -63,6 +63,10 @@ export function filterEntries(entries: MarketEntry[], filters: MarketFilters) {
 }
 function sortValue({ row, position: p }: MarketEntry, field: MarketSort) {
   switch (field) {
+    case "account": return BigInt(row.order.tokenId);
+    case "progress": return p ? stakeTimeline(p).progress : undefined;
+    case "shares": return p?.shares;
+    case "orderStatus": return row.status;
     case "price":
       return BigInt(row.order.amount);
     case "owner":

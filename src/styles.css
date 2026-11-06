@@ -55,7 +55,7 @@ h1 { max-width: 900px; margin: 0; font-size: clamp(36px, 4vw, 54px); font-weight
 
 /* Shared WiseOne Garuda app shell, adapted from the existing application. */
 .app-shell { --muted: #a4a09b; --accent: #00b0aa; --border: rgba(255,255,255,.06); --panel: #111214; background: #080809; color: #f5efe8; color-scheme: dark; }
-.app-shell[data-theme="light"] { --muted: #51605c; --accent: #08938d; --border: rgba(18,40,38,.1); --panel: #fff; background: #eef3f2; color: #18211f; color-scheme: light; }
+.app-shell[data-theme="light"] { --muted: #51605c; --accent: #087b76; --border: rgba(18,40,38,.1); --panel: #fff; background: #eef3f2; color: #18211f; color-scheme: light; }
 .container { width: min(1216px, calc(100% - 64px)); }
 .header-content { min-height: 108px; gap: 20px; }
 .brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
@@ -95,7 +95,7 @@ h1 { max-width: 900px; margin: 0; font-size: clamp(36px, 4vw, 54px); font-weight
 .app-header { width: min(1320px,100%); margin-inline: auto; }
 .header-content { width: auto; margin: 0; padding: 24px 52px; min-height: 108px; }
 .app-shell { --text-primary: #f5efe8; --text-secondary: #a4a09b; --text-muted: #6f6a67; --border-strong: rgba(255,255,255,.1); --accent-soft: rgba(0,176,170,.14); --warning: #c79c45; }
-.app-shell[data-theme="light"] { --text-primary: #18211f; --text-secondary: #51605c; --text-muted: #859089; --border-strong: rgba(18,40,38,.16); --accent-soft: rgba(0,176,170,.12); --warning: #946d20; }
+.app-shell[data-theme="light"] { --text-primary: #18211f; --text-secondary: #51605c; --text-muted: #61716a; --border-strong: rgba(18,40,38,.16); --accent-soft: rgba(8,123,118,.09); --warning: #946d20; }
 .app-footer { width: min(1320px,100%); margin-inline: auto; }
 @media (max-width:1320px) { .app-content { width: calc(100% - 104px); } }
 @media (max-width:900px) { .header-content { padding: 22px 28px; } }

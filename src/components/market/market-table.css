@@ -3,8 +3,8 @@
   --market-orange: #ed7d35;
 }
 .app-shell[data-theme="light"] .market-panel {
-  --market-green: #178537;
-  --market-orange: #b34c15;
+  --market-green: #166f36;
+  --market-orange: #a34716;
 }
 .market-table-scroll {
   max-width: 100%;
@@ -16,6 +16,9 @@
   outline-offset: 2px;
 }
 .market-table {
+  --row-odd: color-mix(in srgb, #000 15%, var(--panel));
+  --row-even: var(--panel);
+  --row-hover: color-mix(in srgb, var(--accent) 5%, var(--panel));
   width: 100%;
   border-collapse: collapse;
   min-width: 1080px;
@@ -23,6 +26,11 @@
   line-height: 1.5;
   text-align: left;
   font-variant-numeric: tabular-nums;
+}
+.app-shell[data-theme="light"] .market-table {
+  --row-odd: #fff;
+  --row-even: #f3f7f5;
+  --row-hover: #eaf4f1;
 }
 .market-table th {
   position: relative;
@@ -83,10 +91,14 @@
   white-space: nowrap;
 }
 .market-table tbody tr {
-  background: color-mix(in srgb, #000 15%, var(--panel));
+  background: var(--row-odd);
 }
-.market-table tbody tr:hover {
-  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+.market-table tbody tr:nth-child(even) {
+  background: var(--row-even);
+}
+.market-table tbody tr:hover,
+.market-table tbody tr:focus-within {
+  background: var(--row-hover);
 }
 .market-table [data-column="type"] {
   width: 64px;

@@ -146,7 +146,7 @@
 .sale-dates > div:last-child {
   text-align: right;
 }
-.sale-dates span {
+.sale-dates > div > span {
   font-size: 11px;
   color: var(--muted);
   text-transform: uppercase;
@@ -205,8 +205,18 @@
   color: var(--muted);
 }
 
+.sale-price-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-bottom: 10px;
+}
+.sale-price-heading .sale-label { margin-bottom: 0; }
 .sale-total {
   font-size: 36px;
+  line-height: 1.2;
   letter-spacing: -0.04em;
   margin: 0;
   overflow-wrap: anywhere;
@@ -268,22 +278,6 @@
 .sale-wallet-balance > span:last-child:not(:first-child) {
   grid-column: 1/-1;
 }
-.sale-balance-warning {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-top: 16px;
-  padding: 14px 16px;
-  border: 1px solid color-mix(in srgb, var(--warning) 32%, transparent);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--warning) 8%, var(--panel));
-  font-size: 14px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-.sale-balance-warning > svg { flex-shrink: 0; margin-top: 1px; color: var(--warning); }
-.sale-balance-warning strong { font-weight: 500; color: var(--text-primary); }
-.sale-balance-warning p { margin: 4px 0 0; color: var(--muted); }
 .sale-footer {
   margin-top: 24px;
   padding-top: 20px;
@@ -319,6 +313,31 @@
   border: 0;
   color: var(--accent);
   cursor: pointer;
+}
+/* Both review columns share a header row, including when text wraps. */
+@media (min-width: 701px) {
+  .sale-layout--review {
+    grid-template-rows: minmax(100px, auto) auto;
+    row-gap: 0;
+  }
+  .sale-layout--review > .sale-position,
+  .sale-layout--review > .sale-terms {
+    display: grid;
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+    align-self: stretch;
+    min-width: 0;
+  }
+  .sale-layout--review .sale-identity { padding-bottom: 24px; }
+  .sale-layout--review .sale-price-summary {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 12px 0 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sale-layout--review .sale-breakdown { margin-top: 0; border-top: 0; }
 }
 @media (max-width: 700px) {
   .sale-dialog {
@@ -360,6 +379,13 @@
 .sale-dialog .stake-primary:disabled {
   cursor: not-allowed;
 }
+.sale-dialog .stake-primary.sale-insufficient-balance:disabled {
+  background: color-mix(in srgb, var(--warning) 12%, var(--panel));
+  border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+  color: var(--warning);
+  opacity: 1;
+  box-shadow: none;
+}
 
 .sale-counterparty {
   display: grid;
@@ -373,6 +399,14 @@
   display: grid;
   gap: 8px;
 }
+.sale-counterparty > .sale-expiry {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.sale-expiry time { margin-left: auto; text-align: right; }
 .sale-counterparty > div > span {
   color: var(--muted);
 }
@@ -382,7 +416,6 @@
 .sale-amount-usd { display: flex; justify-content: space-between; gap: 12px; margin: 0 2px 24px; color: var(--muted); font-size: 13px; }
 .sale-currency { display: flex; align-items: center; flex-shrink: 0; gap: 8px; padding-left: 12px; border-left: 1px solid var(--border); }
 .sale-currency img { object-fit: contain; }
-.sale-breakdown dd small { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; font-weight: 400; }
 .sale-dialog .stake-primary { min-height: 56px; padding: 16px 24px; font-size: 16px; }
 @media (max-width: 480px) {
   .sale-amount { padding: 12px; gap: 8px; font-size: 24px; }

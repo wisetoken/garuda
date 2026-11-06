@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useActiveAccount } from "thirdweb/react";
 import { getAddress } from "viem";
-import { ArrowUpRight, CircleAlert, LoaderCircle } from "lucide-react";
+import { ArrowUpRight, LoaderCircle } from "lucide-react";
 import {
   ethereumClient,
   useWiseUsd,
@@ -20,11 +20,6 @@ import {
   stakeCollection,
   STAKE_COLLECTIONS,
 } from "../../lib/blend/stake-collections";
-import {
-  stakeDate,
-  stakeTimeline,
-  stakeYield,
-} from "../../lib/blend/stake-art";
 import { parseAmount, formatAmount, amountInput } from "../../lib/blend/domain";
 import { saleAmounts } from "../../lib/blend/seaport";
 import {
@@ -36,6 +31,7 @@ import { marketApi, useMarkets } from "../../lib/market/api";
 import type { MarketIntent } from "../../lib/market/types";
 import { tradeInstructions } from "../../lib/market/workflow";
 import { TradeCounterparty } from "./TradeCounterparty";
+import { CancellationOrderDetails, SaleStakeDetails } from "./SaleStakeDetails";
 import { useAppToast, useErrorToast } from "../AppToast";
 import { reviewReadiness } from "../../lib/market/review-readiness";
 
@@ -91,11 +87,11 @@ export function SaleForm({
       );
       return p.positions[0];
     },
-    enabled: intent.kind !== "cancel",
+    // Cancellation details refresh independently of permission to cancel.
     staleTime: 0,
   });
   const position =
-    live.data ?? ("position" in intent ? intent.position : undefined);
+    live.data ?? ("position" in intent ? intent.position : intent.initialPosition);
   const availability = useQuery({
     queryKey: [
       "market-order-review",
@@ -159,11 +155,8 @@ export function SaleForm({
       (buy && sameAddress(account.address, owner)) ||
       (intent.kind === "cancel" &&
         !sameAddress(account.address, intent.row.order.maker)));
-  const shortfall = paying && amount !== undefined && balance.data !== undefined
-    ? amount - balance.data
-    : 0n;
-  const insufficient = shortfall > 0n;
-  const showBalanceWarning = !!account && insufficient && !balance.isError;
+  const insufficient = paying && amount !== undefined && balance.data !== undefined &&
+    amount > balance.data;
   const title =
     intent.kind === "list"
       ? "List your stake"
@@ -184,8 +177,6 @@ export function SaleForm({
           : buy
             ? "Confirm purchase"
             : "Accept Bid";
-  const timeline = position ? stakeTimeline(position) : undefined,
-    yieldValue = position ? stakeYield(position) : null;
   const readiness = reviewReadiness({ kind: intent.kind, paying: paying && !!account, config, live, availability, balance });
   const retryReview = () => {
     void config.refetch();
@@ -196,6 +187,8 @@ export function SaleForm({
   useErrorToast("sale-review", readiness.failure, retryReview);
   useErrorToast("sale-wallet-read", !paying && intent.kind !== "cancel" && balance.isError && !balance.isFetching && "Could not read your WISE balance. Please try again.", () => void balance.refetch());
   useErrorToast("sale-owner", !!wrongOwner && "Connect the appropriate owner or buyer wallet for this action.");
+  const showInsufficientBalance = !!account && insufficient && !balance.isError &&
+    !busy && !readiness.checking;
   const submitBlocked = !account || !correctChain || busy || blocked || !!wrongOwner ||
     readiness.blocked || insufficient || amount === undefined;
   function validateAmount() {
@@ -222,58 +215,14 @@ export function SaleForm({
                 : "Review the position and the exact WISE payment."}
         </p>
       </header>
-      <div className="sale-layout">
-        <section className="sale-position">
-          <div className="sale-identity">
-            <img src="/wiseone-logo.png" width="40" height="48" alt="" />
-            <div>
-              <span>WISE / Ethereum</span>
-              <h3>
-                {meta.name} Stake #{tokenId}
-              </h3>
-            </div>
-          </div>
-          {position && (
-            <>
-              <div className="sale-status">
-                <span>{timeline?.status}</span>
-                <span>{timeline?.caption}</span>
-              </div>
-              <dl className="sale-facts">
-                <div>
-                  <dt>Staked principal</dt>
-                  <dd>
-                    {wiseAmount(position.principal)} WISE
-                    <small>{usdAmount(position.principal, usd)}</small>
-                  </dd>
-                </div>
-                <div>
-                  <dt>Unclaimed interest</dt>
-                  <dd>
-                    {wiseAmount(position.unclaimedInterest)} WISE
-                    <small>{usdAmount(position.unclaimedInterest, usd)}</small>
-                  </dd>
-                </div>
-                <div>
-                  <dt>Annualized yield</dt>
-                  <dd>
-                    {yieldValue === null ? "—" : `${yieldValue.toFixed(2)}%`}
-                  </dd>
-                </div>
-              </dl>
-              <div className="sale-dates">
-                <div>
-                  <span>Started / UTC</span>
-                  <strong>{stakeDate(position.startAt)}</strong>
-                </div>
-                <div>
-                  <span>Maturity / UTC</span>
-                  <strong>{stakeDate(position.maturesAt)}</strong>
-                </div>
-              </div>
-            </>
-          )}
-        </section>
+      <div className={`sale-layout${"row" in intent ? " sale-layout--review" : ""}`}>
+        <SaleStakeDetails
+          name={meta.name}
+          tokenId={tokenId}
+          position={position}
+          usd={usd}
+          fallback={intent.kind === "cancel" ? <CancellationOrderDetails order={intent.row.order} /> : undefined}
+        />
         <section className="sale-terms">
           {intent.kind === "list" || intent.kind === "bid" ? (
             <>
@@ -308,72 +257,63 @@ export function SaleForm({
               />
             </>
           ) : (
-            <>
-              <span className="sale-label">
-                {buy ||
-                (intent.kind === "cancel" && intent.row.order.kind === 0)
-                  ? "Asking price"
-                  : "Bid price"}
-              </span>
+            <div className="sale-price-summary">
+              <div className="sale-price-heading">
+                <span className="sale-label">
+                  {buy ||
+                  (intent.kind === "cancel" && intent.row.order.kind === 0)
+                    ? "Asking price"
+                    : "Bid price"}
+                </span>
+              </div>
               <p className="sale-total">
                 {amount === undefined ? "—" : formatAmount(amount, 18)}{" "}
                 <small>WISE</small>
               </p>
-              <p className="sale-fineprint">{usdAmount(amount, usd)}</p>
-            </>
-          )}
-          {amounts && (
-            <dl className="sale-breakdown">
-              <div>
-                <dt>Buyer pays</dt>
-                <dd>{formatAmount(amounts.gross, 18)} WISE</dd>
-              </div>
-              <div>
-                <dt>Marketplace fee ({feeBps / 100}%)</dt>
-                <dd>{formatAmount(amounts.fee, 18)} WISE</dd>
-              </div>
-              <div>
-                <dt>Seller receives</dt>
-                <dd>{formatAmount(amounts.net, 18)} WISE<small>{usdAmount(amounts.net, usd)}</small></dd>
-              </div>
-            </dl>
-          )}
-          {buy && position && (
-            <button
-              className="sale-bid-link"
-              type="button"
-              disabled={busy}
-              onClick={() => onBid(position)}
-            >
-              Place a bid instead <ArrowUpRight size={16} />
-            </button>
-          )}
-          {buy && account && (
-            <div className="sale-wallet-balance">
-              <span>Wallet balance</span>
-              <strong>
-                {balance.data === undefined
-                  ? (balance.isFetching ? "Checking…" : "—")
-                  : `${wiseAmount(balance.data)} WISE`}
-              </strong>
             </div>
           )}
-          {showBalanceWarning && (
-            <div className="sale-balance-warning" id="sale-balance-warning" role="status">
-              <CircleAlert size={20} aria-hidden="true" />
-              <div>
-                <strong>Insufficient WISE balance</strong>
-                <p>
-                  Add <strong>{formatAmount(shortfall, 18)} WISE</strong> to your wallet
-                  to cover this {buy ? "purchase" : "bid"}.
-                </p>
+          <div className="sale-terms-details">
+            {amounts && (
+              <dl className="sale-breakdown">
+                <div>
+                  <dt>Buyer pays</dt>
+                  <dd>{formatAmount(amounts.gross, 18)} WISE</dd>
+                </div>
+                <div>
+                  <dt>Marketplace fee ({feeBps / 100}%)</dt>
+                  <dd>{formatAmount(amounts.fee, 18)} WISE</dd>
+                </div>
+                <div>
+                  <dt>Seller receives</dt>
+                  <dd>{formatAmount(amounts.net, 18)} WISE</dd>
+                </div>
+              </dl>
+            )}
+            {buy && (
+              <button
+                className="sale-bid-link"
+                type="button"
+                disabled={busy || !position}
+                onClick={() => { if (position) onBid(position); }}
+              >
+                Place a bid instead <ArrowUpRight size={16} />
+              </button>
+            )}
+            {buy && account && (
+              <div className="sale-wallet-balance">
+                <span>Wallet balance</span>
+                <strong>
+                  {balance.data === undefined
+                    ? (balance.isFetching ? "Checking…" : "—")
+                    : `${wiseAmount(balance.data)} WISE`}
+                </strong>
               </div>
-            </div>
-          )}
-          {intent.kind === "fill" && <TradeCounterparty row={intent.row} />}
-          {intent.kind !== "list" && intent.kind !== "bid" && (
-            <p className="sale-fineprint">{tradeInstructions(intent)}</p>
-          )}
+            )}
+            {intent.kind === "fill" && <TradeCounterparty row={intent.row} />}
+            {(intent.kind === "cancel" || (intent.kind === "fill" && !buy)) && (
+              <p className="sale-fineprint">{tradeInstructions(intent)}</p>
+            )}
+          </div>
         </section>
       </div>
       <footer className="sale-footer">
@@ -396,14 +336,16 @@ export function SaleForm({
           </button>
         ) : (
           <button
-            className="stake-primary"
+            className={`stake-primary${showInsufficientBalance ? " sale-insufficient-balance" : ""}`}
             type="submit"
             disabled={submitBlocked}
-            aria-describedby={showBalanceWarning ? "sale-balance-warning" : undefined}
             aria-busy={busy || readiness.checking}
           >
             {(busy || readiness.checking) && <LoaderCircle className="sale-loading" size={18} aria-hidden="true" />}
-            <span aria-live="polite">{busy ? busyLabel : readiness.checking ? "Checking…" : action}</span>
+            <span aria-live="polite">{
+              busy ? busyLabel : readiness.checking ? "Checking…" :
+                showInsufficientBalance ? "Insufficient WISE balance" : action
+            }</span>
           </button>
         )}
       </footer>

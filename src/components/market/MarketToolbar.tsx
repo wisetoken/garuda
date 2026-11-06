@@ -8,12 +8,12 @@ import {
   LayoutGrid,
   List,
   RefreshCw,
+  History,
   ArrowDown,
   ArrowUp,
 } from "lucide-react";
 import {
   emptyFilters,
-  marketColumns,
   type MarketColumn,
   type MarketFilters,
   type MarketSort,
@@ -21,7 +21,6 @@ import {
 
 type Props = {
   count: number;
-  mine: boolean;
   bids: boolean;
   view: "table" | "cards";
   setView: (value: "table" | "cards") => void;
@@ -36,11 +35,11 @@ type Props = {
   direction: "asc" | "desc";
   onSort: (value: MarketSort) => void;
   refresh: () => void;
+  onActivity: () => void;
 };
 export function MarketToolbar(props: Props) {
   const {
     count,
-    mine,
     bids,
     view,
     setView,
@@ -52,8 +51,9 @@ export function MarketToolbar(props: Props) {
     direction,
     onSort,
     refresh,
+    onActivity,
   } = props;
-  const priceLabel = mine ? "Order price" : bids ? "Bid price" : "Asking price";
+  const priceLabel = bids ? "Bid price" : "Asking price";
   const activeCount = stakeFilterCount(filters) + Number(filters.showInactive)
     + Number(!!(filters.minPrice || filters.maxPrice)) + Number(!!(filters.maturesFrom || filters.maturesTo));
   return (
@@ -61,7 +61,7 @@ export function MarketToolbar(props: Props) {
       <div className="market-toolbar">
         <div className="market-toolbar-start">
           <strong>
-            {mine ? "Your orders" : "Market stakes"} ({count})
+            Market stakes ({count})
           </strong>
           <TablePopover
             label="Filter stakes"
@@ -81,10 +81,10 @@ export function MarketToolbar(props: Props) {
               counts={counts}
               onChange={(next) => setFilters({ ...filters, ...next })}
             />
-            {!mine && <div className="table-filter-group"><p>Order status</p>
+            <div className="table-filter-group"><p>Order status</p>
               <FilterToggle label="Show inactive" checked={filters.showInactive}
                 onToggle={() => setFilters({ ...filters, showInactive: !filters.showInactive })} />
-            </div>}
+            </div>
             <MarketRangeFilters filters={filters} onChange={ranges => setFilters({ ...filters, ...ranges })} />
             <p className="table-filter-note">Counts and stake status reflect loaded results.</p>
             <button
@@ -94,6 +94,30 @@ export function MarketToolbar(props: Props) {
               Clear filters
             </button>
           </TablePopover>
+          {view === "cards" && (
+            <div className="market-toolbar-sort">
+              <label>
+                Sort by{" "}
+                <select
+                  aria-label="Sort market cards"
+                  value={sort}
+                  onChange={(event) => onSort(event.target.value as MarketSort)}
+                >
+                  {Object.entries({price: priceLabel, owner: "Owner", ...(bids ? {bidder: "Bidder"} : {}), amount: "Staked principal", reward: "Unclaimed interest", apy: "Annualized yield", expiry: "Order expiry", account: "Stake ID", status: "Stake status", created: "Start date", progress: "Term elapsed", shares: "Shares", orderStatus: "Order status"}).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </label>
+              <button
+                aria-label={`Sort ${direction === "asc" ? "descending" : "ascending"}`}
+                onClick={() => onSort(sort)}
+              >
+                {direction === "asc" ? (
+                  <ArrowUp size={16} />
+                ) : (
+                  <ArrowDown size={16} />
+                )}
+          </button>
+        </div>
+      )}
         </div>
         <div className="market-toolbar-end">
           <div
@@ -119,45 +143,16 @@ export function MarketToolbar(props: Props) {
           {view === "table" && <TableColumnSettings
             columns={columns.map(column => ({ ...column, label: column.id === "price" ? priceLabel : column.label }))}
             onChange={setColumns} onReset={resetColumns} exclude={bids ? [] : ["bidder"]} />}
+          <button type="button" className="market-settings-button" onClick={onActivity}
+            aria-label="Market activity" title="Activity" aria-haspopup="dialog">
+            <History size={16} aria-hidden="true" />
+          </button>
           <button type="button" className="market-settings-button" disabled={refreshing} onClick={refresh} aria-label="Refresh market">
             <RefreshCw size={16} />
           </button>
         </div>
       </div>
-      {view === "cards" && (
-        <div className="market-card-sort">
-          <label>
-            Sort by{" "}
-            <select
-              value={sort}
-              onChange={(event) => onSort(event.target.value as MarketSort)}
-            >
-              {marketColumns
-                .filter(
-                  (column) =>
-                    column.id !== "type" &&
-                    column.id !== "actions" &&
-                    (column.id !== "bidder" || bids),
-                )
-                .map((column) => (
-                  <option key={column.id} value={column.id}>
-                    {column.id === "price" ? priceLabel : column.label}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <button
-            aria-label={`Sort ${direction === "asc" ? "descending" : "ascending"}`}
-            onClick={() => onSort(sort)}
-          >
-            {direction === "asc" ? (
-              <ArrowUp size={16} />
-            ) : (
-              <ArrowDown size={16} />
-            )}
-          </button>
-        </div>
-      )}
+
     </>
   );
 }

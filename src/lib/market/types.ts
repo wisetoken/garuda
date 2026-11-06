@@ -4,6 +4,6 @@ import type { SaleRow, SignedSale } from "../blend/sales";
 export type MarketIntent =
   | { kind: "list"; position: SignaturePosition }
   | { kind: "bid"; position: SignaturePosition }
-  | { kind: "fill"; row: SaleRow }
-  | { kind: "cancel"; row: SignedSale };
+  | { kind: "fill"; row: SaleRow; initialPosition: SignaturePosition }
+  | { kind: "cancel"; row: SignedSale; initialPosition?: SignaturePosition };
 export type PendingTx = { hash: Hex; kind: string; confirmed: boolean };

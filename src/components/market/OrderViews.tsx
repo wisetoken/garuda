@@ -31,7 +31,7 @@ export function RowActions({
       <button
         className="market-secondary"
         disabled={busy || ["sold", "cancelled-or-filled"].includes(row.status)}
-        onClick={() => open({ kind: "cancel", row })}
+        onClick={() => open({ kind: "cancel", row, initialPosition: position })}
       >
         {row.order.kind === 0 ? "Cancel Sale" : "Cancel Bid"}
       </button>
@@ -41,7 +41,7 @@ export function RowActions({
       <button
         className="market-primary"
         disabled={busy || !available || !position}
-        onClick={() => open({ kind: "fill", row })}
+        onClick={() => position && open({ kind: "fill", row, initialPosition: position })}
       >
         Accept Bid
       </button>
@@ -52,7 +52,7 @@ export function RowActions({
     );
   else primary = (
     <button className="market-primary" disabled={busy || !available || !position || owner}
-      onClick={() => open({ kind: "fill", row })}>Buy Stake</button>
+      onClick={() => position && open({ kind: "fill", row, initialPosition: position })}>Buy Stake</button>
   );
   const key = row.arkivEntity ?? row.arkiv?.entityKey;
   const entity = key && /^0x[0-9a-f]{64}$/i.test(key) ? key : undefined;

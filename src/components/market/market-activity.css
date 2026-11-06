@@ -1,0 +1,57 @@
+.market-activity-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(800px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 22px;
+  background: var(--panel);
+  color: inherit;
+  overflow: hidden;
+  box-shadow: 0 32px 120px #0007;
+}
+.market-activity-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.market-activity-dialog::backdrop {
+  background: #000b;
+  backdrop-filter: blur(8px);
+}
+.market-activity-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px;
+  border-bottom: 1px solid var(--border);
+}
+.market-activity-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
+}
+.market-activity-heading h2 svg { color: var(--accent); flex-shrink: 0; }
+.market-activity-heading p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.market-activity-actions { display: flex; gap: 8px; }
+.market-activity-content { overflow: auto; min-height: 180px; }
+.market-activity-dialog .market-empty { padding: 64px 24px; }
+.market-activity-dialog .market-table-scroll { border-radius: 0; }
+.market-activity-dialog .market-activity { min-width: 560px; }
+@media (max-width: 600px) {
+  .market-activity-heading { padding: 20px; gap: 12px; }
+  .market-activity-heading h2 { font-size: 22px; }
+  .market-activity-heading h2 svg { display: none; }
+}

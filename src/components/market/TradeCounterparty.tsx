@@ -12,7 +12,7 @@ export function TradeCounterparty({ row }: { row: SaleRow }) {
           <AddressIdentity address={row.order.maker} />
         </div>
       )}
-      <div>
+      <div className="sale-expiry">
         <span>Expires / UTC</span>
         <time dateTime={expiry.toISOString()}>
           {expiry.toLocaleString("en-GB", { timeZone: "UTC", day: "numeric",

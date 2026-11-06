@@ -59,4 +59,8 @@
 .table-filter-ranges button:disabled { opacity: .4; }
 .table-filter-ranges p { color: var(--warning); font-size: 12px; }
 .table-filter-note { margin: 6px 12px; color: var(--text-muted); font-size: 11px; }
+.app-shell[data-theme="light"] .market-toolbar { background: #f7faf8; }
+.app-shell[data-theme="light"] :is(.market-filter-button, .market-settings-button) { background: #fff; box-shadow: 0 1px 2px #183d2e08; }
+.app-shell[data-theme="light"] :is(.market-filter-button, .market-settings-button):is(:hover, [aria-expanded="true"], [data-active="true"]) { background: var(--accent-soft); }
+.app-shell[data-theme="light"] .table-popover { box-shadow: 0 12px 32px #183d2e1f, 0 2px 6px #183d2e0a; }
 @media (prefers-reduced-motion: reduce) { .table-popover *, .table-filter-switch > span { transition: none; } }
