@@ -37,6 +37,24 @@ The running Garuda API returned HTTP 200 with `source: arkiv`: the listing query
 
 Use the [schema and query reference](schema.md#query) to reproduce price, principal, share and maturity searches. These are expiring records, so future reads need not return the same rows. These publications did not settle a mainnet trade or extend any offer.
 
+## Success-modal publication check
+
+Verified **6 November 2026** for a newly signed Signature Stake #40 listing at **42,000 WISE**, expiring **13 November 2026 at 03:08:35 UTC**. This is a separate order from the earlier #40 listing above.
+
+- Order hash: `0x72662714f70b11c5871993e5ef358159d96c3326184b097642c5d6a983de21a9`.
+- [Arkiv entity](https://rabdi.explorer.arkiv.network/entity/0xbb5e914a65a4967fb730bb76e69d1c923802a8aebb39700577a62de34a7dd027).
+- [Publication transaction](https://rabdi.explorer.arkiv.network/tx/0x02feeaa9008a510cd52ee5b166d20c02e64c3865dcc8603672fac0a24230458c): SDK receipt `status: success`, Rabdi block **274557**.
+
+A fresh `reader.getEntity(entityKey, ArkivListings)` returned the exact order hash, `tokenId: 40` and `kind: listing`. The browser-facing status route returned HTTP 200 with `state: published` and these identifiers. The success modal displayed both explorer links. These were read-only verification calls; no new signature, order publication or asset transfer was initiated during verification.
+
+Run this exact lookup in the [Rabdi entity explorer](https://rabdi.explorer.arkiv.network/entity-explorer):
+
+```text
+arkiv.schema = str('wiseone.garuda.orders.v2') AND $owner = addr(0x8d5b491D2c843F6B996De1EC66269809138cA60A) AND orderHash = str('0x72662714f70b11c5871993e5ef358159d96c3326184b097642c5d6a983de21a9')
+```
+
+The entity is temporary and may be absent after its expiry. The earlier unavailable/pending UI and the confirmed result are documented in [integration feedback](friction.md#saved-orders-and-confirmed-arkiv-publication-need-distinct-feedback); no publication-latency figure was measured.
+
 ## Earlier v1 references
 
 These original Garuda records remain historical references; the v2 table above is the current example set.

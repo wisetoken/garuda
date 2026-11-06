@@ -12,6 +12,8 @@
 
 Accepted orders and publication requests are saved in the same PostgreSQL transaction. A worker claims a request, validates the order, acquires a publisher lock, checks for an existing v2 entity, reads fresh stake metadata, publishes if needed and verifies the entity read-back. Failure leaves a retryable request with capped exponential backoff. Expired or invalidated orders stop publication. Restarting the service does not lose queued work.
 
+After a listing or bid is saved, its success modal shows the signed amount, deadline and order hash. It polls a lightweight database-backed publication-status endpoint every five seconds while open. Pending publication and failed status reads remain distinct from confirmed publication; entity and transaction links appear only with a validated published receipt. This keeps the signing flow responsive while the worker completes Arkiv publication. See [the live receipt](evidence.md#success-modal-publication-check) and [the status-display issue we encountered](friction.md#saved-orders-and-confirmed-arkiv-publication-need-distinct-feedback).
+
 The queue records the schema version. Existing valid signed orders can be republished as v2 without changing signatures, prices, deadlines or their original Ethereum publication blocks. V1 remains readable with duplicate suppression. Range queries use v2; metadata absent from v1 is not invented.
 
 The Market has an explicit **Arkiv / All orders** source control. The catalog exposes orders awaiting publication; its data is not labeled as Arkiv. Arkiv failures show a retry action and an explicit catalog alternative. Selected order details and cards link to the published entity. Approvals and settlement require the user's Ethereum wallet confirmation.
@@ -22,6 +24,6 @@ Reproduce the indexed searches using the [schema queries](schema.md#query). The 
 /api/garuda/sales?source=arkiv&preview=1&kind=listing&minPrice=1000000000000000000000&maturesAfter=1798761600
 ```
 
-This queries listings asking at least 1,000 WISE whose stakes mature on or after 1 January 2027. The same filters work with `kind=bid`. Partial text searches, current stake status and order availability are applied to loaded results; menu counts describe those results, not the entire index. Users can load further pages. Selecting All orders applies the same filters locally to catalog results. Share and principal minimums remain available through the API and CLI.
+This queries listings asking at least 1,000 WISE whose stakes mature on or after 1 January 2027. The same filters work with `kind=bid`. Partial text searches, current stake status and order availability are applied to loaded results; menu counts describe those results, not the entire index. Further pages load automatically as users approach the end of the results. Selecting All orders applies the same filters locally to catalog results. Share and principal minimums remain available through the API and CLI.
 
 Code: [queue](../server/market/publication.ts), [order writes and reads](../server/market/arkiv.ts), [typed schema](../server/market/arkiv-schema.ts), [stake observation](../server/market/arkiv-metadata.ts), [stake cache](../server/market/stake-cache.ts), [Market queries](../src/lib/market/queries.ts). Verification: `npm test` and [live evidence](evidence.md).
