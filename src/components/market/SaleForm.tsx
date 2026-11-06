@@ -180,7 +180,7 @@ export function SaleForm({
       : intent.kind === "bid"
         ? "Sign & publish bid"
         : intent.kind === "cancel"
-          ? "Cancel onchain"
+          ? (intent.row.order.kind === 0 ? "Cancel Sale" : "Cancel Bid")
           : buy
             ? "Confirm purchase"
             : "Accept Bid";
@@ -360,7 +360,7 @@ export function SaleForm({
             </div>
           )}
           {intent.kind === "fill" && <TradeCounterparty row={intent.row} />}
-          {intent.kind !== "list" && (
+          {intent.kind !== "list" && intent.kind !== "bid" && (
             <p className="sale-fineprint">{tradeInstructions(intent)}</p>
           )}
         </section>

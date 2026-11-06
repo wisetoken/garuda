@@ -100,7 +100,7 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
             }
             intent={intent}
             busy={busy}
-            status={busy ? labels[step] : ""}
+            status={busy && step !== "checking" ? labels[step] : ""}
             blocked={
               (!!pending && !pending.confirmed) ||
               (!!unsaved && intent.kind !== "cancel")

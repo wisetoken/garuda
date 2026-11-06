@@ -384,8 +384,8 @@
 .sale-currency-menu > p { margin: 6px 10px 12px; color: var(--muted); font-size: 12px; }
 .sale-currency-menu > button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 10px; border: 0; border-radius: 9px; background: var(--accent-soft); color: inherit; text-align: left; font: inherit; }
 .sale-currency-menu > button > span { flex: 1; color: inherit; }
-.sale-currency-menu strong { display: block; font-size: 14px; font-weight: 500; }
-.sale-currency-menu small { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); }
+.sale-currency-menu strong { display: block; font-size: 14px; font-weight: 500; line-height: 1.25; }
+.sale-currency-menu small { display: block; margin-top: 2px; font-size: 11px; line-height: 1.25; color: var(--muted); }
 .sale-currency-menu > button > svg { color: var(--accent); }
 .sale-currency-menu > button:focus-visible { outline: none; background: color-mix(in srgb, var(--accent) 18%, var(--panel)); }
 .sale-currency-menu .sale-currency-hint { margin: 12px 10px 6px; }
