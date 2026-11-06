@@ -15,7 +15,7 @@ import {
 } from "../blend/stake-snapshot";
 import { ethereumClient } from "../portfolio";
 
-export function useBook(id: StakeCollectionId, deployment?: SalesDeployment, source: "arkiv" | "catalog" = "catalog", kind?: "listing" | "bid", sort?: "price" | "principal" | "expires" | "stakeStartAt", direction: "asc" | "desc" = "asc", filters: MarketQueryFilters = {}) {
+export function useBook(id: StakeCollectionId, deployment?: SalesDeployment, source: "arkiv" | "catalog" = "catalog", kind?: "listing" | "bid", sort?: "price" | "principal" | "shares" | "expires" | "stakeStartAt", direction: "asc" | "desc" = "asc", filters: MarketQueryFilters = {}) {
   return useInfiniteQuery({
     queryKey: ["market-book", id, deployment?.adapter, source, kind, sort, direction, source === "arkiv" ? filters : null],
     enabled: !!deployment,

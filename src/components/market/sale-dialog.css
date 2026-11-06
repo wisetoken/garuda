@@ -189,6 +189,9 @@
   margin-bottom: 24px;
   background: color-mix(in srgb, var(--panel) 85%, black);
 }
+.app-shell[data-theme="light"] .sale-amount {
+  background: var(--panel);
+}
 .sale-amount:has(input:focus) {
   border-color: var(--accent);
 }

@@ -54,7 +54,7 @@ export function MarketPage() {
   const remoteFilters = useMarketFilters(filters);
   const [sort, setSort] = useState<MarketSort>("price"),
     [direction, setDirection] = useState<"asc" | "desc">("asc");
-  const indexedSort = sort === "amount" ? "principal" : sort === "expiry" ? "expires" : sort === "created" ? "stakeStartAt" : "price";
+  const indexedSort = sort === "shares" ? "shares" : sort === "amount" ? "principal" : sort === "expiry" ? "expires" : sort === "created" ? "stakeStartAt" : "price";
   const signature = useBook("signature", deployments[0], source, book === "bids" ? "bid" : "listing", indexedSort, direction, remoteFilters.query),
     advanced = useBook("advanced", deployments[1], source, book === "bids" ? "bid" : "listing", indexedSort, direction, remoteFilters.query);
   const pages = [
