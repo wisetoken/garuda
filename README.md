@@ -43,7 +43,7 @@ Status as of **6 November 2026**:
 | Area | Available now | Next step or boundary |
 | --- | --- | --- |
 | Wallet and portfolio | External wallet connection; live Signature and Advanced NFT positions; cards and table; principal, interest, maturity, historical yield, and indexed creation links | Creation links depend on indexer coverage |
-| Signature marketplace | Listings, purchase bids, buying, accepting bids, and onchain cancellation; WISE, WETH and USDC offer currencies; atomic Uniswap payments; owner/bidder identities; filters, sorting, cards and table | The marketplace is deployed, source-verified and active; settlement has been verified on disposable mainnet forks and in [one recorded mainnet purchase](#example-a-completed-ownership-change) |
+| Signature marketplace | Listings, purchase bids, buying, accepting bids, and onchain cancellation; WISE, WETH and USDC offer currencies; atomic Uniswap payments; owner/bidder identities; filters, sorting, cards and table | The marketplace is deployed, source-verified and active; settlement has been verified on disposable mainnet forks and in recorded mainnet purchases using [WISE](#example-a-completed-ownership-change) and [USDC through Uniswap](#mainnet-example-buy-a-wise-stake-with-usdc) |
 | Order publication | Signed-order validation, PostgreSQL persistence, automatic Arkiv publication, retries, and entity links | A funded Rabdi publisher is needed for Arkiv writes |
 | Market discovery | Arkiv is the default source; an explicit **All orders** catalog shows the service's order book | Ethereum checks determine whether a discovered order can still execute |
 | Advanced stakes | Portfolio display and collection-aware infrastructure | Trading stays disabled until a verified Advanced validator deployment is configured |
@@ -168,7 +168,7 @@ The implemented Arkiv integration targets the [ETHGlobal Mumbai Build on Arkiv t
 | Integration | Current role | Status |
 | --- | --- | --- |
 | [Arkiv](https://docs.arkiv.network/) | Expiring order discovery and reusable stake snapshots | Implemented; Rabdi writes and user-facing reads verified |
-| [Uniswap v2](https://docs.uniswap.org/contracts/v2/overview) | Atomic multi-token stake purchases and standalone Get WISE swaps | Mainnet router deployed and source-verified; [integration code and fork evidence](#uniswap-integration) |
+| [Uniswap v2](https://docs.uniswap.org/contracts/v2/overview) | Atomic multi-token stake purchases and standalone Get WISE swaps | Mainnet router deployed and source-verified; [live USDC purchase](#mainnet-example-buy-a-wise-stake-with-usdc), [integration code and fork evidence](#uniswap-integration) |
 | [EF CROPS](https://ethglobal.com/events/mumbai/prizes) | Independent Signature recovery, cancellation, permission revocation and matured redemption | Implemented; live read and fork execution evidence recorded; submission video and eligibility not yet established |
 | [Nym / Anon-RPC](https://ethereum.github.io/anon-rpc/) | Optional Nym routing for app Ethereum reads | Experimental and off by default; automated checks pass, but live Nym requests timed out in Garuda and the official demo. [Scope and validation](docs/anon-rpc.md) |
 | [Swarm](https://docs.ethswarm.org/) | Artwork snapshots on Swarm, discoverable through separate Arkiv references | Integration prepared and tested with fixtures; disabled pending Bee, funded postage and a live retrieval demonstration. [Setup and limits](docs/swarm-artwork.md) |
@@ -323,6 +323,32 @@ Local checks still bind the account, network, signed terms, spender, amount, sli
 The [multi-currency stake validator and Uniswap payment router](#ethereum-contracts) are deployed, source-verified and active on Ethereum. Makers can price Signature listings and bids in **WISE, WETH or USDC**. Buyers can pay in a different supported token without leaving the purchase dialog.
 
 **Pay with the token you hold.** Beside the asking price, buyers select ETH, WETH, USDC or WISE and see an automatic quote and maximum payment. **Buy with [token]** uses an exact-output Uniswap swap and Seaport settlement in one transaction. The seller receives the currency in their signed listing; the buyer receives the NFT. Unused input is refunded, existing settlement-token balances are kept, and a failed purchase reverts the swap too. ERC-20 inputs may require a separate, bounded approval before the purchase.
+
+### Mainnet example: buy a WISE stake with USDC
+
+**The buyer paid USDC. The seller received WISE. Signature Stake #20 changed hands in the same transaction.** On **6 November 2026 at 15:07:47 UTC**, [this successful Ethereum purchase](https://etherscan.io/tx/0x54a58a665321e511677005afe36bd78f0694f704684651911632bbf0885a13f4) used Garuda’s payment router and Uniswap v2 to fill a **20 WISE** listing.
+
+The route was **USDC → WETH → WISE**: **2.420128 USDC** passed through **0.001089413521038741 WETH** to obtain exactly **20 WISE**.
+
+| Purchase result | Amount or outcome |
+| --- | --- |
+| USDC supplied to the router | 2.431332 USDC |
+| Actual payment spent | **2.420128 USDC** |
+| Unused payment returned to the buyer | **0.011204 USDC** |
+| Seller received | **19.9 WISE** |
+| Marketplace fee (0.5%) | 0.1 WISE |
+| NFT delivered to the buyer | **Signature Stake #20** |
+
+The confirmed receipt at block **26,356,604** records both swap hops, seller and fee payments, NFT delivery, the USDC refund, and the router’s `StakePurchased` event. [Receipt and decoded transfer evidence](docs/uniswap-mainnet-purchase.json).
+
+<details>
+<summary>View the purchase on Etherscan</summary>
+
+[![Successful Garuda stake purchase: USDC to WETH to WISE, with seller payment and USDC refund](docs/images/uniswap-usdc-stake-purchase.jpg)](https://etherscan.io/tx/0x54a58a665321e511677005afe36bd78f0694f704684651911632bbf0885a13f4)
+
+</details>
+
+### Integration and verification
 
 The integration calls Uniswap v2 Router02 directly on Ethereum; no hosted API key is needed. Routes use WETH as the bridge when needed, including WISE → WETH → USDC. ETH → WETH uses direct wrapping. The standalone **Get WISE** page also supports DAI. Bids must already have the selected settlement currency and Seaport allowance: accepting an offchain bid cannot require its absent maker to confirm a swap.
 

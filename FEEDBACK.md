@@ -8,6 +8,8 @@ Router02's `getAmountsIn` and exact-output swaps let us quote a fixed marketplac
 
 All nine atomic payment routes passed against real Ethereum contracts on a disposable fork at block 26,356,017: eight Uniswap routes plus direct ETH → WETH wrapping. WISE, WETH and USDC were each tested as settlement currencies. We also verified 12 direct marketplace settlements and an actual reverted router transaction for a cancelled order. See the [results](contracts/seaport/deployments/fork-verification.json), [fork runner](scripts/verify-seaport-v2-fork.mjs) and [integration details](README.md#uniswap-integration).
 
+A real Ethereum purchase confirmed the complete flow: **2.420128 USDC → WETH → 20 WISE**, **19.9 WISE** to the seller, **0.1 WISE** in marketplace fees, Signature Stake **#20** delivered to the buyer, and **0.011204 USDC** refunded. The swap, purchase and refund all appear in [one successful transaction](https://etherscan.io/tx/0x54a58a665321e511677005afe36bd78f0694f704684651911632bbf0885a13f4). See the [mainnet example and screenshot](README.md#mainnet-example-buy-a-wise-stake-with-usdc) and [receipt evidence](docs/uniswap-mainnet-purchase.json).
+
 ## What took extra work
 
 **Paying a fixed obligation.** Our first flow used a buffered exact-input swap followed by a separate purchase. User testing made the problem clear: buyers wanted to pay in their own token, not manage a conversion first. We replaced it with a restricted exact-output router. An official example for “pay with token A, settle a fixed price in token B,” including maximum input, refunds and decimals, would help integrators.
