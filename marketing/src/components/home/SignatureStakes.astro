@@ -1,8 +1,7 @@
 ---
 import SectionBadge from '../SectionBadge.astro';
-import { stakeCards as appStakeCards, stakeHeading, stakeIntro } from '../../../../src/pages/guides/stake-content';
+import { stakeCards, stakeHeading, stakeIntro } from '../../../../src/pages/guides/stake-content';
 import '../../../../src/pages/guides/stake-ecosystem.css';
-const stakeCards = appStakeCards.map(card => card.key !== 'garuda' ? card : { ...card, description: 'Buy, sell or bid on Signature stakes. Stake-backed lending and borrowing come next.', intro: 'A marketplace for Signature stakes, with stake-backed lending planned next.', rows: card.rows.map(([title, text]) => title === 'Borrow against a stake' ? ['Stake-backed lending · coming next', 'The next step is using a Signature stake as collateral for a loan, with terms covering the loan amount, repayment cost and due date.'] : [title, text]) });
 ---
 <section class="signature" id="signature-stakes" aria-labelledby="signature-heading">
   <div class="signature-intro">
