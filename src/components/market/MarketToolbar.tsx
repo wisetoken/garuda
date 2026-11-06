@@ -94,12 +94,11 @@ export function MarketToolbar(props: Props) {
               Clear filters
             </button>
           </TablePopover>
-          {view === "cards" && (
             <div className="market-toolbar-sort">
               <label>
                 Sort by{" "}
                 <select
-                  aria-label="Sort market cards"
+                  aria-label="Sort market stakes"
                   value={sort}
                   onChange={(event) => onSort(event.target.value as MarketSort)}
                 >
@@ -115,9 +114,8 @@ export function MarketToolbar(props: Props) {
                 ) : (
                   <ArrowDown size={16} />
                 )}
-          </button>
-        </div>
-      )}
+              </button>
+            </div>
         </div>
         <div className="market-toolbar-end">
           <div
