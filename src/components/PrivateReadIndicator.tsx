@@ -6,8 +6,9 @@ import { privateReadSession, privateReadsEnabled } from '../lib/private-rpc';
 export function PrivateReadIndicator() {
   const status = useSyncExternalStore(privateReadSession.subscribe,privateReadSession.getSnapshot,privateReadSession.getSnapshot);
   if (!privateReadsEnabled() || status.phase === 'error') return null;
-  return <Link to="/garuda/?screen=privacy#private-reads" className="private-read-indicator"
-    title="Supported app reads use Nym. Wallet and API traffic are separate.">
-    <ShieldCheck size={16} aria-hidden="true" />{status.phase === 'starting' ? 'Connecting Nym…' : 'Private reads'}
+  const label = status.phase === 'starting' ? 'Connecting Nym…' : 'Private reads';
+  return <Link to="/garuda/?screen=privacy#private-reads" className="theme-toggle private-read-indicator" aria-label={label}>
+    <ShieldCheck size={20} aria-hidden="true" />
+    <span className="private-read-tooltip" aria-hidden="true">{label}</span>
   </Link>;
 }

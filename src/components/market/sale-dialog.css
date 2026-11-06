@@ -480,7 +480,7 @@
 .sale-currency-identity svg { color: var(--accent); }
 .sale-currency-menu > button > .sale-currency-balance { min-width: 0; margin-left: auto; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
-.sale-currency-trigger > img { width: 28px; height: 28px; }
+.sale-currency-trigger > img { width: 28px; height: 28px; flex: 0 0 28px; }
 .sale-currency-menu > button > img { width: 32px; height: 32px; flex-basis: 32px; }
 .sale-currency-menu > button { background: transparent; }
 .sale-currency-menu > button[aria-checked="true"], .sale-currency-menu > button:hover { background: var(--accent-soft); }

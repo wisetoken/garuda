@@ -45,7 +45,7 @@
 .payment-drawer-network::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
 .payment-drawer-quote { border: 1px solid var(--border-strong); border-radius: 16px; padding: 18px; background: linear-gradient(130deg, var(--accent-soft), transparent 100%); }
 .payment-drawer-quote-label { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 12px; color: var(--muted); }
-.payment-drawer-quote-label img { width: 28px; height: 28px; object-fit: contain; }
+.payment-drawer-quote-label img { width: 28px; height: 28px; flex: 0 0 28px; object-fit: contain; }
 .payment-drawer-amount { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 10px 0 18px; font-size: clamp(26px, 5vw, 34px); font-weight: 500; letter-spacing: -.035em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .payment-drawer-amount small { font-size: 18px; letter-spacing: -.02em; }
 .payment-drawer-listing, .payment-drawer-validity { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--muted); }
@@ -61,7 +61,7 @@
 .payment-drawer-route li { display: flex; align-items: center; flex: 1; min-width: 0; }
 .payment-drawer-route li:first-child { flex: 0 0 64px; }
 .payment-route-token { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 64px; }
-.payment-route-token img { width: 32px; height: 32px; object-fit: contain; }
+.payment-route-token img { width: 32px; height: 32px; flex: 0 0 32px; object-fit: contain; }
 .payment-route-token strong { font-size: 12px; font-weight: 500; }
 .payment-route-hop { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--muted); }
 .payment-route-hop small { font-size: 10px; }

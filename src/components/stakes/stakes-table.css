@@ -1,6 +1,11 @@
 .stakes-table-panel > .market-toolbar {
   border-radius: 20px 20px 0 0;
 }
+.stakes-table-panel > .market-table-scroll {
+  border-bottom-left-radius: 19px;
+  border-bottom-right-radius: 19px;
+  clip-path: inset(0 round 0 0 19px 19px);
+}
 .portfolio-stakes-table tbody tr {
   cursor: auto;
 }
