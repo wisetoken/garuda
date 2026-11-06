@@ -7,12 +7,6 @@
 .purchase-funding-options > p { display: flex; justify-content: space-between; margin: 4px 8px 8px; font-size: 11px; color: var(--muted); }
 .purchase-funding-options > .purchase-picker-note { display: block; margin: 10px 8px 4px; line-height: 1.5; }
 .purchase-funding-options button > svg { color: var(--accent); flex-shrink: 0; }
-.purchase-funding-amount small { font-size: 16px; }
-.purchase-funding-review { margin-top: 20px; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: color-mix(in srgb, var(--accent) 3%, var(--panel)); }
-.purchase-funding-pay { padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); }
-.purchase-funding-label { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; color: var(--muted); font-size: 11px; }
-.purchase-funding-amount { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; }
-.purchase-funding-amount > strong { font-size: 26px; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
 .purchase-funding-picker { position: relative; flex-shrink: 0; }
 .purchase-funding-token { display: inline-flex; align-items: center; gap: 6px; border: 0; padding: 6px 0; background: none; color: var(--text-primary); font: inherit; font-size: 15px; font-weight: 600; }
 .purchase-funding-token img { width: 28px; height: 28px; flex: 0 0 28px; object-fit: contain; }
@@ -29,17 +23,12 @@
     border-radius: 8px;
 }
 .purchase-funding-options small { margin-left: auto; font-size: 12px; color: var(--muted); }
-.purchase-funding-receive { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 12px; }
-.purchase-funding-receive > svg { color: var(--accent); flex-shrink: 0; }
-.purchase-funding-receive > span { color: var(--muted); }
-.purchase-funding-receive strong { margin-left: auto; font-weight: 500; }
-.purchase-funding-slippage { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 16px; color: var(--muted); font-size: 12px; }
-.purchase-funding-slippage > div { display: flex; gap: 4px; }
-.purchase-funding-slippage button { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: inherit; font: inherit; }
-.purchase-funding-slippage button[aria-pressed=true] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-.purchase-funding-note { margin: 14px 0 16px; font-size: 11px; line-height: 1.6; color: var(--muted); }
-.purchase-funding-submit { width: 100%; min-height: 44px; justify-content: center; font-size: 14px; }
-.purchase-funding-refresh { display: block; margin: 10px auto 0; padding: 0; background: none; border: 0; color: var(--muted); font: inherit; font-size: 11px; }
-.purchase-funding-refresh:hover:not(:disabled) { color: var(--accent); }
 .purchase-funding-error { font-size: 12px; color: var(--danger, #f87171); }
-@media (max-width: 420px) { .purchase-funding-review { padding: 12px; } .purchase-price-line { gap: 16px; } .purchase-price-line .sale-total { font-size: 30px; } }
+@media (max-width: 420px) { .purchase-price-line { gap: 16px; } .purchase-price-line .sale-total { font-size: 30px; } }
+.purchase-price-amount { min-width: 0; }
+.purchase-price-amount .sale-total { overflow-wrap: anywhere; }
+.purchase-payment-details { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-size: 12px; }
+.purchase-payment-details:hover { color: var(--text-primary); }
+.purchase-payment-details:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 2px; }
+.purchase-quote-status { margin: 12px 0 0; color: var(--muted); font-size: 12px; }
+.purchase-quote-status button, .purchase-funding-error button { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; cursor: pointer; }

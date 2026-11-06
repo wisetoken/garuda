@@ -1,7 +1,7 @@
 import { paymentToken, formatPaymentAmount } from "../../lib/blend/payment-tokens";
 import { useEffect, useId, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, LoaderCircle } from "lucide-react";
 import { formatUnits, type Address, type Hex } from "viem";
 import { ethereumClient } from "../../lib/portfolio";
 import { useFundingBalances } from "../../lib/blend/wallet-funding";
@@ -9,6 +9,7 @@ import { purchaseFundingTokens } from "../../lib/market/purchase-funding";
 import { quotePurchasePayment, type PaymentReviewState } from "../../lib/market/purchase-payment";
 import type { SalesDeployment } from "../../lib/blend/sales";
 import { FundingTokenIcon, displayTokenAmount } from "../funding/funding-token-display";
+import { PaymentDetailsDrawer } from "./PaymentDetailsDrawer";
 import "./purchase-funding.css";
 
 type Props = {
@@ -19,13 +20,35 @@ type Props = {
 };
 
 export function PurchaseFunding(props: Props) {
-  const { currency, payWith, price, buyer, orderHash, busy, onPayWithChange } = props;
+  const { currency, payWith, price, buyer, orderHash, busy, blocked, deployment, onPayWithChange, onReviewChange } = props;
   const [open, setOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false), detailsId = useId();
   const picker = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null), id = useId();
   const target = paymentToken(currency);
   const token = purchaseFundingTokens.find(t => t.address === payWith) ?? target;
   const choices = [target, ...purchaseFundingTokens.filter(t => t.address !== currency)];
   const balances = useFundingBalances(buyer);
+  const converting = payWith !== currency;
+  const [slippage, setSlippage] = useState(50), [expired, setExpired] = useState(false);
+  const available = balances.data?.[payWith.toLowerCase()];
+  const quotes = useQuery({
+    queryKey: ["purchase-payment-quote", buyer, orderHash, currency, payWith, price.toString(), slippage, deployment?.purchaseRouter?.address],
+    queryFn: () => quotePurchasePayment(ethereumClient, deployment!, {currency, buyer: buyer!, orderHash, amount: price, inputToken: payWith, slippage}),
+    enabled: converting && !!buyer && !!deployment?.purchaseRouter && !blocked && !busy,
+    retry: false, staleTime: 60_000, refetchOnWindowFocus: false,
+  });
+  const quote = converting && !quotes.isError ? quotes.data : undefined;
+  useEffect(() => {
+    setExpired(false);
+    if (!quote) return;
+    const timer = window.setTimeout(() => setExpired(true), Math.max(0, quote.expires - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [quote]);
+  const insufficient = quote && available !== undefined && quote.maxInput > available;
+  const usable = !!quote && !expired && !quotes.isFetching;
+  useEffect(() => {
+    onReviewChange({quote:usable ? quote : undefined,loading:quotes.isFetching,insufficient:!!insufficient,unknownBalance:available===undefined,expired});
+  }, [quote, usable, quotes.isFetching, insufficient, available, expired, onReviewChange]);
   useEffect(() => {
     if (!open) return;
     picker.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
@@ -35,7 +58,15 @@ export function PurchaseFunding(props: Props) {
   }, [open]);
   return <section className="purchase-payment" aria-label="Purchase payment">
     <div className="purchase-price-line">
-      <div><p className="sale-label">Asking price</p><p className="sale-total">{formatPaymentAmount(price, currency)} <small>{target.symbol}</small></p></div>
+      <div className="purchase-price-amount">
+        <p className="sale-label">{converting ? "Estimated payment" : "Asking price"}</p>
+        <p className="sale-total" aria-live="polite" aria-busy={converting && quotes.isFetching}
+          title={quote && !expired ? formatUnits(quote.estimatedInput, token.decimals) : undefined}>
+          {converting ? quote && !expired ? displayTokenAmount(quote.estimatedInput, token.decimals)
+            : quotes.isFetching ? <LoaderCircle className="sale-loading" size={26} aria-label="Getting payment quote"/> : "—"
+            : formatPaymentAmount(price, currency)} <small>{token.symbol}</small>
+        </p>
+      </div>
       <div className="purchase-funding-picker" ref={picker}
         onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}
         onKeyDown={event => {
@@ -65,46 +96,19 @@ export function PurchaseFunding(props: Props) {
         </div>}
       </div>
     </div>
-    {payWith !== currency && <FundingReview key={`${buyer}:${orderHash}:${payWith}:${currency}`} {...props}/>}
+    {converting && <>
+      {quotes.isError && <p className="purchase-funding-error" role="alert">Quote unavailable. <button type="button" disabled={busy || blocked || quotes.isFetching} onClick={() => void quotes.refetch()}>Try again</button></p>}
+      {expired && !quotes.isError && <p className="purchase-quote-status" role="status"><button type="button" disabled={busy || blocked || quotes.isFetching} onClick={() => void quotes.refetch()}>{quotes.isFetching ? "Updating quote…" : "Quote expired · refresh"}</button></p>}
+      <button type="button" className="purchase-payment-details" aria-haspopup="dialog" aria-expanded={detailsOpen} aria-controls={detailsId}
+        onClick={() => setDetailsOpen(true)}>Payment details <ChevronRight size={15} aria-hidden="true"/></button>
+      <PaymentDetailsDrawer id={detailsId} open={detailsOpen} onClose={() => setDetailsOpen(false)}
+        currency={currency} payWith={payWith} price={price} router={deployment?.purchaseRouter?.address}
+        quote={quote} loading={quotes.isFetching} expired={expired} error={quotes.isError}
+        slippage={slippage} onSlippageChange={setSlippage} busy={busy}
+        balance={!buyer ? "Connect wallet" : available === undefined ? (balances.isFetching ? "Checking…" : "Unavailable") : `${displayTokenAmount(available, token.decimals)} ${token.symbol}`}
+        onRetryBalance={buyer && available === undefined && !busy && !balances.isFetching ? () => void balances.refetch() : undefined}
+        canRefresh={!!deployment?.purchaseRouter && !!buyer && !busy && !blocked && !quotes.isFetching}
+        onRefresh={() => void quotes.refetch()}/>
+    </>}
   </section>;
-}
-
-function FundingReview({ currency, buyer, orderHash, price, payWith, busy, blocked, deployment, onReviewChange }: Props) {
-  const target = paymentToken(currency), token = purchaseFundingTokens.find(t => t.address === payWith)!;
-  const [slippage, setSlippage] = useState(50), [expired, setExpired] = useState(false);
-  const balances = useFundingBalances(buyer);
-  const available = balances.data?.[payWith.toLowerCase()];
-  const quotes = useQuery({
-    queryKey: ["purchase-payment-quote", buyer, orderHash, currency, payWith, price.toString(), slippage, deployment?.purchaseRouter?.address],
-    queryFn: () => quotePurchasePayment(ethereumClient, deployment!, {currency, buyer: buyer!, orderHash, amount: price, inputToken: payWith, slippage}),
-    enabled: !!buyer && !!deployment?.purchaseRouter && !blocked && !busy,
-    retry: false, staleTime: 60_000, refetchOnWindowFocus: false,
-  });
-  const quote = quotes.isError ? undefined : quotes.data;
-  useEffect(() => {
-    setExpired(false);
-    if (!quote) return;
-    const timer = window.setTimeout(() => setExpired(true), Math.max(0, quote.expires - Date.now()));
-    return () => window.clearTimeout(timer);
-  }, [quote]);
-  const insufficient = quote && available !== undefined && quote.maxInput > available;
-  const usable = !!quote && !expired && !quotes.isFetching;
-  const wrap = token.symbol === "ETH" && target.symbol === "WETH";
-  useEffect(() => {
-    onReviewChange({quote:usable ? quote : undefined,loading:quotes.isFetching,insufficient:!!insufficient,unknownBalance:available===undefined,expired});
-  }, [quote, usable, quotes.isFetching, insufficient, available, expired, onReviewChange]);
-  return <div className="purchase-funding-review">
-    <div className="purchase-funding-pay">
-      <div className="purchase-funding-label"><span>Estimated payment · {token.symbol}</span><span>{!buyer ? "Connect wallet" : available === undefined ? (balances.isFetching ? "Checking balance…" : "Balance unavailable") : `Balance: ${displayTokenAmount(available, token.decimals)}`}</span></div>
-      <div className="purchase-funding-amount"><strong title={quote ? formatUnits(quote.estimatedInput, token.decimals) : undefined}>{quote ? displayTokenAmount(quote.estimatedInput, token.decimals) : "—"} <small>{token.symbol}</small></strong></div>
-    </div>
-    <div className="purchase-funding-receive"><ArrowDown size={16} aria-hidden="true"/><span>Seller’s asking price</span><strong>{formatPaymentAmount(price,currency,6)} {target.symbol}</strong></div>
-    {!wrap && <div className="purchase-funding-slippage"><span>Slippage</span><div role="group" aria-label="Swap slippage">{[10, 50, 100].map(value => <button key={value} type="button" disabled={busy} aria-pressed={slippage === value} onClick={() => setSlippage(value)}>{value / 100}%</button>)}</div></div>}
-    {quote && <div className="purchase-funding-receive"><span>Maximum payment</span><strong>{displayTokenAmount(quote.maxInput, token.decimals)} {token.symbol}</strong></div>}
-    <p className="purchase-funding-note">{wrap ? "Pay in ETH. It is wrapped into WETH within this purchase." : `Pay in ${token.symbol}. Uniswap supplies the exact ${target.symbol} for this purchase.`} Unused payment is returned. If the purchase fails, the swap reverts too. Gas is separate.</p>
-    {!deployment?.purchaseRouter && <p className="purchase-funding-note">Other payment tokens will be available for new listings after the market update.</p>}
-    {quotes.isError && <p className="purchase-funding-error" role="alert">Could not get a payment quote. Try again or choose another token.</p>}
-    {!!deployment?.purchaseRouter && <button type="button" className="purchase-funding-refresh" disabled={busy || blocked || !buyer || quotes.isFetching} onClick={() => void quotes.refetch()}>{quotes.isFetching ? "Getting payment quote…" : expired ? "Quote expired · refresh" : usable ? "Refresh quote · valid for 2 minutes" : "Get payment quote"}</button>}
-    {buyer && available === undefined && <button type="button" className="purchase-funding-refresh" disabled={busy || balances.isFetching} onClick={() => void balances.refetch()}>{balances.isFetching ? "Checking balances…" : "Retry token balances"}</button>}
-  </div>;
 }

@@ -1,0 +1,99 @@
+/* Match WiseOne's staking/referral preferences panel. A native dialog keeps this
+   drawer above the purchase dialog, with its own focus trap and Escape handler. */
+.payment-details-drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  box-sizing: border-box;
+  width: min(100%, 28rem);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: var(--panel);
+  color: var(--text-primary);
+  box-shadow: -18px 0 48px #0005;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: transform 300ms ease-out, opacity 300ms ease-out, display 300ms allow-discrete, overlay 300ms allow-discrete;
+}
+.payment-details-drawer[open] { display: flex; flex-direction: column; opacity: 1; transform: translateX(0); }
+.payment-details-drawer::backdrop { background: #000; opacity: 0; transition: opacity 300ms ease-out, display 300ms allow-discrete, overlay 300ms allow-discrete; }
+.payment-details-drawer[open]::backdrop { opacity: .45; }
+@starting-style {
+  .payment-details-drawer[open] { opacity: 0; transform: translateX(100%); }
+  .payment-details-drawer[open]::backdrop { opacity: 0; }
+}
+.payment-drawer-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.payment-drawer-header h2 { margin: 0; font-size: 17px; font-weight: 550; letter-spacing: -.025em; }
+.payment-drawer-header p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.payment-drawer-close { display: grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; border: 1px solid var(--border-strong); border-radius: 50%; background: transparent; color: var(--muted); }
+.payment-drawer-close svg { transition: transform 300ms ease; }
+.payment-drawer-close:hover { background: var(--accent-soft); color: var(--text-primary); }
+.payment-drawer-close:hover svg { transform: rotate(90deg); }
+.payment-drawer-body { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+.payment-drawer-provider { display: flex; align-items: center; gap: 12px; }
+.payment-drawer-provider > img { width: 36px; height: 36px; object-fit: contain; }
+.payment-drawer-provider > div { display: grid; gap: 3px; }
+.payment-drawer-provider > div > span { color: var(--muted); font-size: 11px; }
+.payment-drawer-provider strong { font-size: 17px; font-weight: 550; }
+.payment-drawer-network { display: flex; align-items: center; gap: 6px; margin-left: auto; color: var(--muted); font-size: 11px; }
+.payment-drawer-network::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.payment-drawer-quote { border: 1px solid var(--border-strong); border-radius: 16px; padding: 18px; background: linear-gradient(130deg, var(--accent-soft), transparent 100%); }
+.payment-drawer-quote-label { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 12px; color: var(--muted); }
+.payment-drawer-quote-label img { width: 28px; height: 28px; object-fit: contain; }
+.payment-drawer-amount { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 10px 0 18px; font-size: clamp(26px, 5vw, 34px); font-weight: 500; letter-spacing: -.035em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.payment-drawer-amount small { font-size: 18px; letter-spacing: -.02em; }
+.payment-drawer-listing, .payment-drawer-validity { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--muted); }
+.payment-drawer-listing { padding-top: 14px; border-top: 1px solid var(--border-strong); }
+.payment-drawer-listing strong { color: var(--text-primary); font-size: 13px; font-weight: 500; text-align: right; overflow-wrap: anywhere; }
+.payment-drawer-validity { margin-top: 14px; font-size: 11px; }
+.payment-drawer-validity button { display: inline-flex; align-items: center; gap: 5px; border: 0; padding: 0; background: none; color: var(--accent); font: inherit; }
+.payment-drawer-validity button:disabled { opacity: .5; }
+.payment-drawer-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.payment-drawer-section-heading h3 { margin: 0; font-weight: 500; font-size: 13px; }
+.payment-drawer-section-heading > span { font-size: 11px; color: var(--muted); }
+.payment-drawer-route ol { display: flex; align-items: center; list-style: none; margin: 18px 0 0; padding: 0; }
+.payment-drawer-route li { display: flex; align-items: center; flex: 1; min-width: 0; }
+.payment-drawer-route li:first-child { flex: 0 0 64px; }
+.payment-route-token { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 64px; }
+.payment-route-token img { width: 32px; height: 32px; object-fit: contain; }
+.payment-route-token strong { font-size: 12px; font-weight: 500; }
+.payment-route-hop { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--muted); }
+.payment-route-hop small { font-size: 10px; }
+.payment-drawer-route p, .payment-drawer-settings p { font-size: 12px; line-height: 1.6; color: var(--muted); margin: 14px 0 0; }
+.payment-drawer-settings { padding-top: 20px; border-top: 1px solid var(--border); }
+.payment-drawer-slippage { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); font-size: 12px; }
+.payment-drawer-slippage > div { display: flex; gap: 4px; }
+.payment-drawer-slippage button { padding: 6px 9px; border: 1px solid var(--border-strong); border-radius: 7px; background: transparent; color: inherit; font: inherit; }
+.payment-drawer-slippage button[aria-pressed=true] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.payment-drawer-settings dl { margin: 16px 0 0; display: grid; gap: 12px; font-size: 12px; }
+.payment-drawer-settings dl > div { display: flex; justify-content: space-between; gap: 16px; }
+.payment-drawer-settings dt { color: var(--muted); }
+.payment-drawer-settings dd { margin: 0; text-align: right; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.payment-balance-retry { border: 0; padding: 0 0 0 8px; background: none; color: var(--accent); font: inherit; }
+.payment-drawer-references { display: grid; gap: 14px; padding-top: 20px; border-top: 1px solid var(--border); }
+.payment-drawer-references a { display: flex; align-items: center; gap: 8px; color: var(--muted); text-decoration: none; font-size: 12px; padding: 0; }
+.payment-drawer-references a > svg { margin-left: auto; flex-shrink: 0; }
+.payment-drawer-references a:hover { color: var(--accent); }
+.payment-drawer-footer { flex-shrink: 0; padding: 16px 24px max(16px, env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: var(--panel); }
+.payment-drawer-footer button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 42px; padding: 10px 16px; border: 1px solid var(--border-strong); border-radius: 10px; color: var(--text-primary); background: var(--accent-soft); font: inherit; font-size: 13px; font-weight: 500; }
+.payment-drawer-footer button:hover { border-color: var(--accent); }
+.payment-details-drawer :is(button, a):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.app-shell[data-theme="light"] .payment-details-drawer .funding-wallet-token-icon { box-sizing: border-box; padding: 4px; border-radius: 8px; background: #101c24; }
+@media (min-width: 1100px) {
+  .sale-dialog:has(.payment-details-drawer) { transition: width 300ms ease-out, right 300ms ease-out; }
+  .sale-dialog:has(.payment-details-drawer[open]) { right: 28rem; width: min(920px, calc(100vw - 28rem - 48px)); }
+}
+@media (max-width: 360px) {
+  .payment-drawer-body { padding: 18px; gap: 20px; }
+  .payment-drawer-header, .payment-drawer-footer { padding-inline: 18px; }
+  .payment-drawer-slippage { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .payment-details-drawer, .payment-details-drawer::backdrop, .payment-drawer-close svg, .sale-dialog:has(.payment-details-drawer) { transition: none; }
+}
