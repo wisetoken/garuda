@@ -42,7 +42,7 @@ export function MarketPage() {
   );
   const [params, setParams] = useSearchParams();
   const activityOpen = params.get("view") === "activity";
-  const [view, setView] = useState<"table" | "cards">("table");
+  const [view, setView] = useState<"table" | "cards">("cards");
   const book = params.get("book") === "bids" ? "bids" : "listings";
   const source = params.get("source") === "catalog" ? "catalog" : "arkiv";
   const [useCache, setUseCache] = useState(() => {
