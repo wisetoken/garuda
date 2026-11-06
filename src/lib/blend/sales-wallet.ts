@@ -1,3 +1,5 @@
+import { assertLegacyTradingRetired } from "./sales-migration";
+import { acceptsPayment, paymentSchema, paymentToken } from "./payment-tokens";
 import {
   decodeEventLog,
   getAddress,
@@ -5,6 +7,7 @@ import {
   type Hex,
   type PublicClient,
   type WalletClient,
+  type TransactionReceipt,
 } from "viem";
 import {
   seaportTypedData,
@@ -35,6 +38,8 @@ export type SalesStep =
   | "checking"
   | "approving-nft"
   | "approving-wise"
+  | "approving-funding"
+  | "swapping-funding"
   | "signing"
   | "publishing"
   | "confirming"
@@ -59,7 +64,7 @@ export type SalesSession = {
   sendAtomic?: (calls: SaleCall[]) => Promise<Awaited<ReturnType<PublicClient['waitForTransactionReceipt']>>>;
 };
 export type SaleCall = { address: Address; abi: readonly unknown[]; functionName: string; args: readonly unknown[] };
-async function guard(s: SalesSession) {
+export async function guard(s: SalesSession) {
   await s.assertWallet();
   if (
     !s.wallet.account ||
@@ -71,13 +76,14 @@ async function guard(s: SalesSession) {
       "Use the signing wallet on the configured Ethereum network.",
     );
 }
-async function send(
+export async function send(
   s: SalesSession,
   call: {
     address: Address;
     abi: readonly unknown[];
     functionName: string;
     args: readonly unknown[];
+    value?: bigint;
   },
   kind: string,
 ) {
@@ -123,6 +129,7 @@ export async function activateSalesMarket(
       "Connect the marketplace guardian wallet.",
     );
   await verifySalesDeployment(s.client, s.deployment);
+  await assertLegacyTradingRetired(s.client, s.deployment);
   await checkOrderBook();
   await guard(s);
   const paused = () =>
@@ -166,42 +173,44 @@ async function approveNFT(s: SalesSession, tokenId: bigint) {
       "The NFT approval was not confirmed.",
     );
 }
-async function approveWISE(s: SalesSession, amount: bigint, allowWrite = true) {
+async function approvePayment(s: SalesSession, amount: bigint, currency: Address, allowWrite = true) {
   const d = s.deployment;
+  if (!acceptsPayment(d, currency)) throw new SalesError("terms", "Unsupported payment currency.");
+  const symbol = paymentToken(currency).symbol;
   const [balance, allowance] = await Promise.all([
     s.client.readContract({
-      address: d.currency,
+      address: currency,
       abi: tokenSalesAbi,
       functionName: "balanceOf",
       args: [s.address],
     }),
     s.client.readContract({
-      address: d.currency,
+      address: currency,
       abi: tokenSalesAbi,
       functionName: "allowance",
       args: [s.address, d.market],
     }),
   ]);
   if (balance < amount)
-    throw new SalesError("balance", "Insufficient WISE balance.");
+    throw new SalesError("balance", `Insufficient ${symbol} balance.`);
   if (allowance >= amount) return;
   if (!allowWrite)
-    throw new SalesError("approval-missing", "Approve WISE before signing this bid.");
-  // WISE supports replacing a nonzero allowance. Approve only the requested amount.
+    throw new SalesError("approval-missing", `Approve ${symbol} before signing this bid.`);
+  // Supported tokens allow replacing their allowance. Approve only the requested amount.
   s.onStep?.("approving-wise");
   await send(
     s,
     {
-      address: d.currency,
+      address: currency,
       abi: tokenSalesAbi,
       functionName: "approve",
       args: [d.market, amount],
     },
-    "WISE approval",
+    `${symbol} approval`,
   );
   if (
     (await s.client.readContract({
-      address: d.currency,
+      address: currency,
       abi: tokenSalesAbi,
       functionName: "allowance",
       args: [s.address, d.market],
@@ -209,18 +218,19 @@ async function approveWISE(s: SalesSession, amount: bigint, allowWrite = true) {
   )
     throw new SalesError(
       "approval-missing",
-      "WISE approval was not confirmed.",
+      `${symbol} approval was not confirmed.`,
     );
 }
 /** Approval is a separate user action; it never signs or publishes an order. */
-export async function approveBid(s: SalesSession, amount: bigint) {
+export async function approveBid(s: SalesSession, amount: bigint, currency: Address = s.deployment.currency) {
   await guard(s);
   if (amount <= 0n || amount >= (1n << 128n))
     throw new SalesError("terms", "Invalid bid amount.");
   await verifySalesDeployment(s.client, s.deployment);
   if (await s.client.readContract({ address: s.deployment.adapter, abi: zoneAbi, functionName: "newActivityPaused" }))
     throw new SalesError("paused", "New orders are paused.");
-  await approveWISE(s, amount);
+  await assertLegacyTradingRetired(s.client, s.deployment);
+  await approvePayment(s, amount, currency);
 }
 
 export async function publishSale(
@@ -231,10 +241,13 @@ export async function publishSale(
     amount: bigint;
     days: number;
     nonce: bigint;
+    currency?: Address;
   },
   publish: (signed: SignedSale) => Promise<unknown>,
 ) {
   const d = s.deployment;
+  const currency = input.currency ?? d.currency;
+  if (!acceptsPayment(d, currency)) throw new SalesError("terms", "Unsupported payment currency.");
   s.onStep?.("checking");
   await guard(s);
   await verifySalesDeployment(s.client, d);
@@ -248,6 +261,7 @@ export async function publishSale(
     })
   )
     throw new SalesError("paused", "New orders are paused.");
+  await assertLegacyTradingRetired(s.client, d);
   const original = await readSaleAsset(s.client, d, input.tokenId);
   if (
     original.locked !== 0n ||
@@ -260,10 +274,11 @@ export async function publishSale(
       "The selected wallet cannot create this order.",
     );
   if (input.kind === 0) await approveNFT(s, input.tokenId);
-  else await approveWISE(s, input.amount, !s.requireBidApproval);
+  else await approvePayment(s, input.amount, currency, !s.requireBidApproval);
   s.onStep?.("checking");
   // Approval dialogs may have taken minutes. Re-read every signed collateral field afterwards.
   const block = await verifySalesDeployment(s.client, d);
+  await assertLegacyTradingRetired(s.client, d);
   const asset = await readSaleAsset(s.client, d, input.tokenId, block.number);
   if (
     !sameAddress(asset.owner, original.owner) ||
@@ -280,7 +295,7 @@ export async function publishSale(
     maker: getAddress(s.address),
     owner: asset.owner,
     collection: d.collection,
-    currency: d.currency,
+    currency,
     tokenId: input.tokenId,
     stakeId: asset.stakeId,
     stateHash: asset.stateHash,
@@ -341,15 +356,15 @@ export async function fillSale(s: SalesSession, signed: SignedSale) {
       throw new SalesError("self-purchase", "You already own this stake.");
     if (atomicCalls) {
       const [balance, allowance] = await Promise.all([
-        s.client.readContract({address:s.deployment.currency,abi:tokenSalesAbi,functionName:'balanceOf',args:[s.address]}),
-        s.client.readContract({address:s.deployment.currency,abi:tokenSalesAbi,functionName:'allowance',args:[s.address,s.deployment.market]}),
+        s.client.readContract({address:order.currency,abi:tokenSalesAbi,functionName:'balanceOf',args:[s.address]}),
+        s.client.readContract({address:order.currency,abi:tokenSalesAbi,functionName:'allowance',args:[s.address,s.deployment.market]}),
       ]);
-      if (balance < order.amount) throw new SalesError('balance','Insufficient WISE balance.');
+      if (balance < order.amount) throw new SalesError('balance',`Insufficient ${paymentToken(order.currency).symbol} balance.`);
       if (allowance < order.amount) {
-        if (allowance > 0n) atomicCalls.push({address:s.deployment.currency,abi:tokenSalesAbi,functionName:'approve',args:[s.deployment.market,0n]});
-        atomicCalls.push({address:s.deployment.currency,abi:tokenSalesAbi,functionName:'approve',args:[s.deployment.market,order.amount]});
+        if (allowance > 0n) atomicCalls.push({address:order.currency,abi:tokenSalesAbi,functionName:'approve',args:[s.deployment.market,0n]});
+        atomicCalls.push({address:order.currency,abi:tokenSalesAbi,functionName:'approve',args:[s.deployment.market,order.amount]});
       }
-    } else await approveWISE(s, order.amount);
+    } else await approvePayment(s, order.amount, order.currency);
   } else {
     if (!sameAddress(s.address, order.owner))
       throw new SalesError(
@@ -379,9 +394,13 @@ export async function fillSale(s: SalesSession, signed: SignedSale) {
     saleSettlement(s.deployment, order, signed.signature, s.address),
     "Sale settlement",
   );
+  assertSaleReceipt(receipt, s.deployment, order, verified.hash, s.address);
+  return { receipt, hash: verified.hash, order };
+}
+export function assertSaleReceipt(receipt: TransactionReceipt, deployment: SalesDeployment, order: ReturnType<typeof parseSignedSale>["order"], hash: Hex, buyer: Address) {
   const event = receipt.logs
     .flatMap((log) => {
-      if (!sameAddress(log.address, s.deployment.adapter)) return [];
+      if (!sameAddress(log.address, deployment.adapter)) return [];
       try {
         const event = decodeEventLog({
           abi: zoneAbi,
@@ -395,16 +414,17 @@ export async function fillSale(s: SalesSession, signed: SignedSale) {
     })
     .find(
       (e) =>
-        e.orderHash === verified.hash &&
+        e.orderHash === hash &&
+        (paymentSchema(deployment) === 1 ? !("currency" in e) : "currency" in e && sameAddress(e.currency, order.currency)) &&
         e.amount === order.amount &&
         e.fee === saleAmounts(order).fee &&
         e.kind === order.kind &&
         e.tokenId === order.tokenId &&
         sameAddress(e.seller, order.owner) &&
-        sameAddress(e.buyer, order.kind === 0 ? s.address : order.maker),
+        sameAddress(e.buyer, order.kind === 0 ? buyer : order.maker),
     );
   const fulfilled = receipt.logs.some((log) => {
-    if (!sameAddress(log.address, s.deployment.market)) return false;
+    if (!sameAddress(log.address, deployment.market)) return false;
     try {
       const e = decodeEventLog({
         abi: marketAbi,
@@ -413,9 +433,9 @@ export async function fillSale(s: SalesSession, signed: SignedSale) {
       });
       return (
         e.eventName === "OrderFulfilled" &&
-        e.args.orderHash === verified.hash &&
+        e.args.orderHash === hash &&
         sameAddress(e.args.offerer, order.maker) &&
-        sameAddress(e.args.zone, s.deployment.adapter)
+        sameAddress(e.args.zone, deployment.adapter)
       );
     } catch {
       return false;
@@ -426,7 +446,6 @@ export async function fillSale(s: SalesSession, signed: SignedSale) {
       "unconfirmed",
       "No matching sale event was found. Check the transaction before retrying.",
     );
-  return { receipt, hash: verified.hash, order };
 }
 export async function cancelSale(s: SalesSession, signed: SignedSale) {
   await guard(s);

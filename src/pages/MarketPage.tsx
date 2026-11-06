@@ -1,3 +1,5 @@
+import { paymentSchema } from "../lib/blend/payment-tokens";
+import { usePaymentPrices } from "../lib/market/payment-prices";
 import { useAppToast, useErrorToast } from "../components/AppToast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArkivSource } from "../components/market/ArkivSource";
@@ -31,6 +33,7 @@ import "../components/market/market-table.css";
 import "../components/market/market-controls.css";
 
 export function MarketPage() {
+  const prices = usePaymentPrices();
   const { showToast } = useAppToast();
   const queryClient = useQueryClient();
   const markets = useMarkets();
@@ -42,7 +45,15 @@ export function MarketPage() {
   const [view, setView] = useState<"table" | "cards">("table");
   const book = params.get("book") === "bids" ? "bids" : "listings";
   const source = params.get("source") === "catalog" ? "catalog" : "arkiv";
-  const [useCache, setUseCache] = useState(false);
+  const [useCache, setUseCache] = useState(() => {
+    try { return localStorage.getItem("garuda:market:use-cache:v1") === "1"; }
+    catch { return false; }
+  });
+  function onCacheChange(enabled: boolean) {
+    setUseCache(enabled);
+    try { localStorage.setItem("garuda:market:use-cache:v1", enabled ? "1" : "0"); }
+    catch { /* The choice remains for this visit. */ }
+  }
   const sourceSwitch = useRef<{ source: "arkiv" | "catalog"; started: number; cached: boolean } | null>(null);
   function setBook(value: "listings" | "bids") {
     setParams((current) => {
@@ -57,7 +68,7 @@ export function MarketPage() {
   const remoteFilters = useMarketFilters(filters);
   const [sort, setSort] = useState<MarketSort>("price"),
     [direction, setDirection] = useState<"asc" | "desc">("asc");
-  const indexedSort = sort === "shares" ? "shares" : sort === "amount" ? "principal" : sort === "expiry" ? "expires" : sort === "created" ? "stakeStartAt" : "price";
+  const indexedSort = sort === "shares" ? "shares" : sort === "amount" ? "principal" : sort === "expiry" ? "expires" : sort === "created" ? "stakeStartAt" : filters.currency || !deployments.some(d => d && paymentSchema(d) === 2) ? "price" : "publishedAt";
   function setSource(value: "arkiv" | "catalog") {
     if (value === source) return;
     const kind = value === "arkiv" ? (book === "bids" ? "bid" : "listing") : null;
@@ -65,7 +76,7 @@ export function MarketPage() {
     const cached = deployments.every((deployment, index) => {
       if (!deployment) return true;
       const id = index === 0 ? "signature" : "advanced";
-      return !!queryClient.getQueryState(["market-book", id, deployment.adapter, value, kind, indexedSort, direction, value === "arkiv" ? remoteFilters.query : null, useCache])?.data;
+      return !!queryClient.getQueryState(["market-book", id, deployment.adapter, value, kind, indexedSort, direction, value === "arkiv" ? remoteFilters.query : null])?.data;
     });
     sourceSwitch.current = { source: value, started: performance.now(), cached };
     setParams(current => { const next = new URLSearchParams(current); next.set("source", value); return next; });
@@ -80,10 +91,10 @@ export function MarketPage() {
     if (value === source) return;
     setParams(current => { const next = new URLSearchParams(current); next.set("source", value); return next; });
   }
-  const listingSignature = useBook("signature", deployments[0], source, "listing", indexedSort, direction, remoteFilters.query, useCache),
-    listingAdvanced = useBook("advanced", deployments[1], source, "listing", indexedSort, direction, remoteFilters.query, useCache),
-    bidSignature = useBook("signature", deployments[0], source, "bid", indexedSort, direction, remoteFilters.query, useCache),
-    bidAdvanced = useBook("advanced", deployments[1], source, "bid", indexedSort, direction, remoteFilters.query, useCache);
+  const listingSignature = useBook("signature", deployments[0], source, "listing", indexedSort, direction, remoteFilters.query),
+    listingAdvanced = useBook("advanced", deployments[1], source, "listing", indexedSort, direction, remoteFilters.query),
+    bidSignature = useBook("signature", deployments[0], source, "bid", indexedSort, direction, remoteFilters.query),
+    bidAdvanced = useBook("advanced", deployments[1], source, "bid", indexedSort, direction, remoteFilters.query);
   const listingQueries = [listingSignature, listingAdvanced];
   const bidQueries = [bidSignature, bidAdvanced];
   const [signature, advanced] = book === "bids" ? bidQueries : listingQueries;
@@ -118,6 +129,7 @@ export function MarketPage() {
     filterEntries(entries, filters),
     sort,
     direction,
+    prices,
   );
   const loading =
     remoteFilters.pending || markets.some((query) => query.isPending) ||
@@ -191,7 +203,6 @@ export function MarketPage() {
   const marketError = [signature, advanced, ...markets].find(query => query.error)?.error?.message ?? "Could not refresh the market. Please try again.";
   useErrorToast("market-data", unavailable && !fetching && marketError, refresh);
   useErrorToast("market-availability", availability.some(query => query.isError && !query.isFetching) && "Could not verify order availability. Please try again.", refresh);
-  useErrorToast("market-positions", positions.some(query => query.isError && !query.isFetching) && "Could not refresh stake details. Please try again.", refresh);
   function onSort(value: MarketSort) {
     if (sort === value) setDirection(direction === "asc" ? "desc" : "asc");
     else {
@@ -212,7 +223,7 @@ export function MarketPage() {
       <div className="stakes-page-heading market-page-heading">
         <GarudaPageKicker
           label="THE STAKE MARKET"
-          description="List a position, make a purchase bid, or buy a stake using WISE."
+          description="List a position, make a purchase bid, or buy an existing WISE stake."
         />
         <div className="stakes-title-row">
           <h1>A new owner. The same stake.</h1>
@@ -228,6 +239,7 @@ export function MarketPage() {
           </div>
         </div>
       </div>
+      {deployments.some(d => d && paymentSchema(d) === 2) && <p className="market-migration-note">Earlier WISE offers use the previous market. Cancel them in the <Link to={screenHref("privacy")}>backup tool</Link> and create a new offer here.</p>}
       <section className="market-panel" aria-label="WiseOne NFT stake market">
         <header className="market-heading">
           <div>
@@ -262,7 +274,7 @@ export function MarketPage() {
             {loading
                 ? <span className="market-loading"><LoaderCircle size={16} aria-hidden="true" /><span>{source === "arkiv" ? "Loading orders from Arkiv…" : "Loading orders from Graph…"}</span></span>
                 : unavailable
-                  ? <div><p>{marketError}</p><button className="market-secondary" disabled={fetching} onClick={refresh}>{fetching ? "Refreshing…" : "Refresh market"}</button>{source === "arkiv" && <button className="market-secondary" onClick={() => setSource("catalog")}>Load order catalog</button>}</div>
+                  ? <button className="market-secondary" disabled={fetching} onClick={refresh}>{fetching ? "Retrying…" : "Retry"}</button>
                   : "No matching orders right now."}
           </div>
         ) : view === "table" ? (
@@ -282,7 +294,7 @@ export function MarketPage() {
           </div>
         )}
         <div ref={pageEnd} className="market-page-end" aria-hidden="true" />
-        <ArkivSource source={source} onChange={setSource} onReload={reloadSource} useCache={useCache} onCacheChange={setUseCache} />
+        <ArkivSource source={source} onChange={setSource} onReload={reloadSource} useCache={useCache} onCacheChange={onCacheChange} />
       </section>
       {activityOpen && <MarketActivityDialog
         books={pages}

@@ -162,30 +162,33 @@ test('indexed preview renders snapshots without Ethereum checks and cannot grant
  assert.equal(result.blockNumber,'');assert.equal(result.blockHash,undefined);
 });
 
-test('only the stake owner can extend the Arkiv entity',async()=>{
- const {s,v2,hash}=fixture();
- const stranger=privateKeyToAccount(generatePrivateKey());
- const signature=await stranger.signMessage({message:extendOfferMessage(hash,v2.$key, Math.floor(Date.now()/1000)+30*86400)});
+test('only the offer maker can extend the Arkiv entity',async()=>{
+ const {s,v2,hash,stored}=fixture(1);
+ const bidder=privateKeyToAccount(generatePrivateKey());
+ const stakeOwner=privateKeyToAccount(generatePrivateKey());
+ s.get=async()=>({...stored,status:'available',order:{...stored.order,maker:bidder.address,owner:stakeOwner.address}});
+ const target=Math.floor(Date.now()/1000)+30*86400;
+ const signature=await stakeOwner.signMessage({message:extendOfferMessage(hash,v2.$key,target)});
  let called=false;
  const r=runtime([v2]);
  r.writer.extendEntity=async()=>{called=true};
  r.reader.getEntity=async()=>v2;
- await assert.rejects(extendArkiv(s,hash,v2.$key,signature,Math.floor(Date.now()/1000)+30*86400,r),/stake owner/);
+ await assert.rejects(extendArkiv(s,hash,v2.$key,signature,target,r),error=>error.code==='not-maker' && /signed this offer/.test(error.message));
  assert.equal(called,false);
- await assert.rejects(extendArkiv(s,hash,'not-a-key',signature,Math.floor(Date.now()/1000)+30*86400,r),/Invalid extension/);
+ await assert.rejects(extendArkiv(s,hash,'not-a-key',signature,target,r),/Invalid extension/);
 });
 
-test('owner signature extends Arkiv storage and leaves the signed order untouched',async()=>{
- const {s,v2,hash,stored}=fixture();
- const owner=privateKeyToAccount(generatePrivateKey());
- s.get=async()=>({...stored,status:'available',order:{...stored.order,owner:owner.address}});
+test('maker signature extends Arkiv storage and leaves the signed order untouched',async()=>{
+ const {s,v2,hash,stored}=fixture(1);
+ const maker=privateKeyToAccount(generatePrivateKey());
+ s.get=async()=>({...stored,status:'available',order:{...stored.order,maker:maker.address,owner:addr('2')}});
  const target=Math.floor(Date.now()/1000)+30*86400;
- const signature=await owner.signMessage({message:extendOfferMessage(hash,v2.$key,target)});
+ const signature=await maker.signMessage({message:extendOfferMessage(hash,v2.$key,target)});
  let extended;
  const r=runtime([v2]);
  r.writer.extendEntity=async params=>{extended=params;return {entityKey:v2.$key,txHash:'0xtx',expiresAt:99n}};
  r.reader.getEntity=async()=>v2;
- await assert.rejects(extendArkiv(s,hash,v2.$key,signature,target+86400,r),/stake owner/);
+ await assert.rejects(extendArkiv(s,hash,v2.$key,signature,target+86400,r),error=>error.code==='not-maker');
  await assert.rejects(extendArkiv(s,hash,v2.$key,signature,0,r),/90 days/);
  await assert.rejects(extendArkiv(s,hash,v2.$key,signature,target+100*86400,r),/90 days/);
  const receipt=await extendArkiv(s,hash,v2.$key,signature,target,r);
@@ -206,7 +209,7 @@ test('storage expiry returns the Arkiv block, never the signed trading timestamp
 test('Arkiv RPC throttling is reported as rate limiting, not an empty market',async()=>{
  const {s}=fixture();const r=runtime();
  r.reader.getChainId=async()=>{throw {cause:{status:429}};};
- await assert.rejects(discoverArkiv(s,{},r,true),error=>error.code==='rate-limit' && /order catalog/.test(error.message));
+ await assert.rejects(discoverArkiv(s,{},r,true),error=>error.code==='rate-limit' && /retry/.test(error.message));
 });
 
  test('simultaneous Arkiv discovery shares reads but later refreshes remain fresh', async () => {
@@ -219,3 +222,19 @@ test('Arkiv RPC throttling is reported as rate limiting, not an empty market',as
    await discoverArkiv(s,{kind:'listing'},r,true);
    assert.equal(reads,2);
  });
+
+test('V2 settlement currencies publish exact token decimals and reject mismatched Arkiv metadata',()=>{
+ const {stored,metadata}=fixture();
+ const deployment={...d,paymentSchemaVersion:2};
+ const currency='0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+ const signed={...stored,order:{...stored.order,currency,amount:'20000000'}};
+ signed.hash=parseSignedSale(signed,deployment).hash;
+ const attributes=orderAttributes(signed,deployment,metadata);
+ assert.equal(attributes.currencySymbol,'USDC');
+ const entity={$key:`0x${'aa'.repeat(32)}`,...Object.fromEntries(Object.entries(attributes).map(([k,v])=>[k,typeof v==='string'?{value:v}:v instanceof Uint8Array?{value:bytesToHex(v)}:v]))};
+ const parsed=parseOrderEntity(entity,deployment,2);
+ assert.equal(parsed.order.currency.toLowerCase(),currency.toLowerCase());
+ assert.equal(parsed.order.amount,20000000n);
+ assert.throws(()=>parseOrderEntity({...entity,currencySymbol:{value:'WISE'}},deployment,2));
+ assert.throws(()=>parseOrderEntity({...entity,currencyDecimals:{value:18n}},deployment,2));
+});

@@ -1,3 +1,4 @@
+import { paymentSchema } from "./payment-tokens";
 import { getAddress, isAddress, parseAbi, type Address, type Hex } from "viem";
 import {
   SEAPORT,
@@ -26,6 +27,7 @@ export const tokenSalesAbi = parseAbi([
 export const adapterAbi = zoneAbi;
 export type SalesDeployment = SeaportDeployment & {
   protocol: "seaport-1.6";
+  purchaseRouter?: { address: Address; codeHash: Hex };
   guardian: Address;
   adapter: Address;
   marketCodeHash: Hex;
@@ -89,6 +91,9 @@ export function parseSalesDeployment(raw: unknown): SalesDeployment {
   if (!raw || typeof raw !== "object")
     throw new Error("Invalid market deployment.");
   const d = raw as SalesDeployment;
+  const version = paymentSchema(d);
+  if (d.purchaseRouter && (version !== 2 || !isAddress(d.purchaseRouter.address, {strict:false}) || /^0x0{40}$/i.test(d.purchaseRouter.address) || !/^0x[0-9a-f]{64}$/i.test(d.purchaseRouter.codeHash))) throw new Error("Invalid purchase router configuration.");
+  if (version === 2 && stakeCollection(d.collection).id !== "signature") throw new Error("V2 supports Signature stakes only.");
   if (d.protocol !== "seaport-1.6" || !sameAddress(d.market ?? "", SEAPORT))
     throw new Error("Canonical Seaport 1.6 configuration is required.");
   if (

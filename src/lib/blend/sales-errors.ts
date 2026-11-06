@@ -1,6 +1,6 @@
 import { SalesError } from "./sales";
 import type { SalesStep } from "./sales-wallet";
-const labels:Record<SalesStep,string>={checking:"Checking the stake", "approving-nft":"Approving the NFT", "approving-wise":"Approving WISE", signing:"Signing the order", publishing:"Publishing the signed order",confirming:"Confirming the transaction",settling:"Settling the sale",cancelling:"Cancelling the order"};
+const labels:Record<SalesStep,string>={checking:"Checking the stake", "approving-funding":"Approving the swap token", "swapping-funding":"Swapping into WISE", "approving-nft":"Approving the NFT", "approving-wise":"Approving WISE", signing:"Signing the order", publishing:"Publishing the signed order",confirming:"Confirming the transaction",settling:"Settling the sale",cancelling:"Cancelling the order"};
 function safe(message:string){return message.replace(/https?:\/\/\S+/gi,"[RPC endpoint]").replace(/0x[0-9a-f]{80,}/gi,"[transaction data]").replace(/[\r\n]+/g," ").slice(0,280);}
 export function salesFailure(error:unknown,phase:SalesStep):string {
  const causes:Record<string,unknown>[]=[];let current=error;

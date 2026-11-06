@@ -1,3 +1,5 @@
+import { formatPaymentAmount, paymentToken, paymentUsd } from "../../lib/blend/payment-tokens";
+import { usePaymentPrices } from "../../lib/market/payment-prices";
 import { ArtworkBackupDialog } from "./ArtworkBackupDialog";
 import { ArkivPublication } from "./ArkivSource";
 import { RowMenu } from "./RowMenu";
@@ -13,8 +15,6 @@ import { useOrderPosition } from "../../lib/market/queries";
 import { type SaleRow, sameAddress } from "../../lib/blend/sales";
 import type { SignaturePosition } from "../../lib/blend/live-portfolio";
 import { stakeCollection } from "../../lib/blend/stake-collections";
-import { useWiseUsd, usdAmount } from "../../lib/portfolio";
-import { formatAmount } from "../../lib/blend/domain";
 
 export function RowActions({
   row,
@@ -63,7 +63,7 @@ export function RowActions({
     {artworkOpen && <ArtworkBackupDialog row={row} onClose={() => setArtworkOpen(false)} />}
     {primary}
     <RowMenu label={`More actions for ${stakeCollection(row.order.collection).name} Stake #${row.order.tokenId}`}>
-      {owner && entity && <button type="button" role="menuitem" disabled={busy || !available}
+      {maker && entity && <button type="button" role="menuitem" disabled={busy || !available}
         onClick={() => setExtendOpen(true)}><CalendarPlus aria-hidden="true" />Extend offer</button>}
       {canBid && <button type="button" role="menuitem" disabled={busy || !position?.canList}
         onClick={() => position && open({ kind: "bid", position })}><HandCoins aria-hidden="true" />Place Bid</button>}
@@ -74,8 +74,7 @@ export function RowActions({
 }
 
 export function OrderCard({ row }: { row: SaleRow }) {
-  const position = useOrderPosition(row),
-    { data: usd } = useWiseUsd();
+  const position = useOrderPosition(row), prices = usePaymentPrices();
   if (!position.data)
     return (
       <article className="state-panel">
@@ -101,8 +100,8 @@ export function OrderCard({ row }: { row: SaleRow }) {
           <div className="market-card-summary">
             <div className="market-card-price">
               <span>{row.order.kind === 0 ? "Asking price" : "Bid price"}</span>
-              <strong>{formatAmount(BigInt(row.order.amount), 6)} WISE</strong>
-              <small>{usdAmount(BigInt(row.order.amount), usd)}</small>
+              <strong>{formatPaymentAmount(BigInt(row.order.amount),row.order.currency,6)} {paymentToken(row.order.currency).symbol}</strong>
+              <small>{paymentUsd(BigInt(row.order.amount),row.order.currency,prices)}</small>
             </div>
             <div className="market-card-parties">
               <div className="market-card-owner">

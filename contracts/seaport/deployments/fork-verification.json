@@ -1,0 +1,17 @@
+{
+  "forkBlock": 26355909,
+  "deploymentGas": "1807041",
+  "checks": [
+    "WISE #20: listing, bid acceptance, exact balances/fees, preserved stake, replay rejection",
+    "WISE #53: listing, bid acceptance, exact balances/fees, preserved stake, replay rejection",
+    "WETH #20: listing, bid acceptance, exact balances/fees, preserved stake, replay rejection",
+    "WETH #53: listing, bid acceptance, exact balances/fees, preserved stake, replay rejection",
+    "USDC #20: listing, bid acceptance, exact balances/fees, preserved stake, replay rejection",
+    "USDC #53: listing, bid acceptance, exact balances/fees, preserved stake, replay rejection"
+  ],
+  "additional": [
+    "cancelled order rejected",
+    "V1 proof rejected"
+  ],
+  "scope": "Isolated local fork. No live orders, assets or deployment changed."
+}

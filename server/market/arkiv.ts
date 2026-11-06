@@ -1,4 +1,4 @@
-import { arkivReadOptions, inFlightOnly, arkivDiscoveryFailure } from "./arkiv-reads";
+import { arkivReadTransport, inFlightOnly, arkivDiscoveryFailure } from "./arkiv-reads";
 import { extendOfferMessage } from "../../src/lib/market/arkiv-extension";
 import { createPublicClient, createWalletClient, ExpirationTime } from "@arkiv-network/sdk";
 import { rabdi } from "@arkiv-network/sdk/chains";
@@ -20,7 +20,7 @@ function createArkivRuntime(env: NodeJS.ProcessEnv) {
   if (!publisher || !/^0x[0-9a-f]{40}$/i.test(publisher)) return null;
   const chain = rabdi({ accessKey: env.ARKIV_ACCESS_KEY ?? "" });
   const transport = http(undefined, { timeout: 12_000, retryCount: 0 });
-  return { publisher: publisher as Hex, chain, reader: createPublicClient({chain,transport: http(undefined, arkivReadOptions)}),
+  return { publisher: publisher as Hex, chain, reader: createPublicClient({chain,transport: arkivReadTransport()}),
     writer: account ? createWalletClient({chain,transport,account}) : undefined };
 }
 
@@ -50,7 +50,7 @@ async function readArkivOrders(service: SalesService, input: ArkivFilters, runti
     let cause: unknown = error;
     for (let depth = 0; cause && typeof cause === "object" && depth < 5; depth++) {
       const details = cause as { status?: number; cause?: unknown };
-      if (details.status === 429) throw new SalesError("rate-limit", "Arkiv's RPC is rate limiting discovery. Try the order catalog or retry later.");
+      if (details.status === 429) throw new SalesError("rate-limit", "Arkiv is busy. Please wait a moment and retry.");
       cause = details.cause;
     }
     throw error;
@@ -179,12 +179,12 @@ export async function extendArkiv(service: SalesService, hash: string, entityKey
   if (!(await service.store.limit("arkiv-extend", 6))) throw new SalesError("rate-limit", "Please wait before extending another Arkiv offer.");
   const row = await service.get(hash);
   if (row.status !== "available") throw new SalesError("order-unavailable", `Order is ${row.status}.`);
-  const ownerSigned = await verifyMessage({
-    address: row.order.owner as Hex,
+  const makerSigned = await verifyMessage({
+    address: row.order.maker as Hex,
     message: extendOfferMessage(hash, entityKey, expiresAt),
     signature: signature as Hex,
   }).catch(() => false);
-  if (!ownerSigned) throw new SalesError("not-owner", "Only the stake owner can extend this Arkiv offer.");
+  if (!makerSigned) throw new SalesError("not-maker", "Only the wallet that signed this offer can extend its Arkiv storage.");
   const entity = await runtime.reader.getEntity(entityKey as Hex, ArkivListings);
   if (parseOrderEntity(entity, service.store.deployment, 2).hash !== hash)
     throw new Error("Arkiv entity does not match the signed order.");

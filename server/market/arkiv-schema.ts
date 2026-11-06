@@ -1,3 +1,4 @@
+import { paymentToken } from "../../src/lib/blend/payment-tokens";
 import { defineSchema, str, bytes, u64, u256, addr } from "@arkiv-network/sdk/schema";
 import { hexToString, stringToBytes, keccak256 } from "viem";
 import { deploymentScope, parseSignedSale, type SalesDeployment, type SaleRow } from "../../src/lib/blend/sales";
@@ -28,7 +29,7 @@ export function orderAttributes(row: SaleRow, deployment: SalesDeployment, metad
   return {
     scope: arkivScope(deployment), orderHash: row.hash, kind: o.kind === 0 ? "listing" : "bid",
     maker: addr(o.maker), stakeOwner: addr(o.owner), collection: addr(o.collection), tokenId: u256(BigInt(o.tokenId)),
-    format: "seaport-1.6", chainId: u64(1n), currency: addr(o.currency), currencySymbol: "WISE", currencyDecimals: u64(18n),
+    format: "seaport-1.6", chainId: u64(1n), currency: addr(o.currency), currencySymbol: paymentToken(o.currency).symbol, currencyDecimals: u64(BigInt(paymentToken(o.currency).decimals)),
     price: u256(BigInt(o.amount)), stakeType: stakeCollection(o.collection).id, stakeId: o.stakeId, stateHash: o.stateHash,
     principal: u256(BigInt(s.principal)), shares: u256(BigInt(s.shares)), stakeStartAt: u64(BigInt(s.startAt)),
     maturesAt: u64(BigInt(s.maturesAt)), durationDays: u64(BigInt(s.displayStake.lockDays)),

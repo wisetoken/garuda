@@ -1,9 +1,13 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
+import type { Address } from 'viem';
+import { paymentToken, formatPaymentAmount, paymentUsd, type PaymentToken, type PaymentPrices } from '../../lib/blend/payment-tokens';
+import { FundingTokenIcon } from '../funding/funding-token-display';
 
-type CurrencyPickerProps = { disabled?: boolean; balanceLabel: string; balanceUsd?: string };
+type CurrencyPickerProps = { disabled?: boolean; value: Address; tokens: readonly PaymentToken[]; onChange: (value: Address) => void; balances?: Record<string, bigint | undefined>; prices: PaymentPrices };
 
-export function CurrencyPicker({ disabled = false, balanceLabel, balanceUsd }: CurrencyPickerProps) {
+export function CurrencyPicker({ disabled = false, value, tokens, onChange, balances, prices }: CurrencyPickerProps) {
+  const selected = paymentToken(value);
   const [open, setOpen] = useState(false);
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
@@ -25,23 +29,34 @@ export function CurrencyPicker({ disabled = false, balanceLabel, balanceUsd }: C
     onKeyDown={event => {
       if (open && event.key === 'Escape') { event.stopPropagation(); event.preventDefault(); close(); }
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault(); if (!disabled) { setOpen(true); option.current?.focus(); }
+        event.preventDefault();
+        if (disabled) return;
+        if (!open) { setOpen(true); return; }
+        const items = Array.from(root.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? []);
+        const index = items.indexOf(document.activeElement as HTMLButtonElement);
+        items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
       }
     }}>
     <button className="sale-currency-trigger" ref={trigger} type="button" disabled={disabled}
-      aria-label="Currency: WISE" aria-haspopup="menu" aria-expanded={open} aria-controls={open ? id : undefined}
+      aria-label={`Currency: ${selected.symbol}`} aria-haspopup="menu" aria-expanded={open} aria-controls={open ? id : undefined}
       onClick={() => setOpen(value => !value)}>
-      <img src="/wise-token.svg" width="24" height="24" alt="" />
-      <span>WISE</span><ChevronDown size={16} aria-hidden="true" />
+      <FundingTokenIcon symbol={selected.symbol} />
+      <span>{selected.symbol}</span><ChevronDown size={16} aria-hidden="true" />
     </button>
     {open && <div className="sale-currency-menu" id={id} role="menu" aria-label="Currency">
       <p className="sale-currency-menu-heading"><span>Select currency</span><span>Wallet balance</span></p>
-      <button ref={option} type="button" role="menuitemradio" aria-checked="true" onClick={close}>
-        <img src="/wise-token.svg" width="32" height="32" alt="" />
-        <span className="sale-currency-identity"><strong>WISE <Check size={14} aria-hidden="true" /></strong><small>Ethereum</small></span>
-        <span className="sale-currency-balance"><strong>{balanceLabel}</strong>{balanceUsd && <small>{balanceUsd}</small>}</span>
-      </button>
-      <small className="sale-currency-hint">Trades settle in WISE.</small>
+      {tokens.map(token => {
+        const balance = balances?.[token.address.toLowerCase()];
+        const active = selected.address === token.address;
+        return <button key={token.symbol} ref={active ? option : undefined} type="button" role="menuitemradio" aria-checked={active}
+          onClick={() => { onChange(token.address); close(); }}>
+          <FundingTokenIcon symbol={token.symbol}/>
+          <span className="sale-currency-identity"><strong>{token.symbol} {active && <Check size={14} aria-hidden="true" />}</strong><small>Ethereum</small></span>
+          <span className="sale-currency-balance"><strong>{balance === undefined ? "—" : `${formatPaymentAmount(balance,token.address,6)} ${token.symbol}`}</strong>
+            {balance !== undefined && <small>{paymentUsd(balance,token.address,prices)}</small>}</span>
+        </button>;
+      })}
+      <small className="sale-currency-hint">Payment and fees settle in {selected.symbol}.</small>
     </div>}
   </div>;
 }

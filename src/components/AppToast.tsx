@@ -103,4 +103,5 @@ export function useErrorToast(id: string, message: string | undefined | false, r
     if (!message) { dismissToast(id); return; }
     showToast(message, { id, tone: "error", action: canRetry ? { label: "Retry", run: () => retryRef.current?.() } : undefined });
   }, [id, message, canRetry, showToast, dismissToast]);
+  useEffect(() => () => dismissToast(id), [id, dismissToast]);
 }

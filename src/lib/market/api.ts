@@ -26,7 +26,13 @@ export async function marketApi<T>(
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(30_000),
     },
-  );
+  ).catch((error: unknown) => {
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError"))
+      throw new Error(body === undefined
+        ? "The market request took too long. Please retry."
+        : "The request timed out. Check the order status before trying again.");
+    throw error;
+  });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data)
     throw new Error(

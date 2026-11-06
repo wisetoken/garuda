@@ -1,3 +1,4 @@
+import { paymentTokens, paymentUsdValue, type PaymentPrices } from "../blend/payment-tokens";
 import { formatEther } from "viem";
 import { exactStakeSearch, priceUnits, dateSeconds, type MarketRangeFilters } from "./filter-query";
 import type { SaleRow } from "../blend/sales";
@@ -40,7 +41,7 @@ export type MarketEntry = { row: SaleRow; position?: SignaturePosition };
 
 export function filterEntries(entries: MarketEntry[], filters: MarketFilters) {
   const search = filters.search.trim().toLowerCase();
-  const exact = exactStakeSearch(search), min = priceUnits(filters.minPrice), max = priceUnits(filters.maxPrice);
+  const exact = exactStakeSearch(search), min = priceUnits(filters.minPrice, filters.currency), max = priceUnits(filters.maxPrice, filters.currency);
   const from = dateSeconds(filters.maturesFrom), to = dateSeconds(filters.maturesTo, true);
   return entries.filter(({ row, position }) => {
     const collection = stakeCollection(row.order.collection);
@@ -52,6 +53,7 @@ export function filterEntries(entries: MarketEntry[], filters: MarketFilters) {
           filters.statuses.some(
             (status) => status === stakeTimeline(position).status,
           ))) &&
+      (!(filters.currency || min !== undefined || max !== undefined) || (row.order.currency ?? paymentTokens[0].address).toLowerCase() === (filters.currency ?? paymentTokens[0].address).toLowerCase()) &&
       (min === undefined || BigInt(row.order.amount) >= min) &&
       (max === undefined || BigInt(row.order.amount) <= max) &&
       (from === undefined || !!position && position.maturesAt >= from) &&
@@ -91,11 +93,19 @@ export function sortEntries(
   entries: MarketEntry[],
   field: MarketSort,
   direction: "asc" | "desc",
+  prices: PaymentPrices = {},
 ) {
+  const mixed = field === "price" && new Set(entries.map(e => (e.row.order.currency ?? paymentTokens[0].address).toLowerCase())).size > 1;
   return [...entries].sort((a, b) => {
-    const av = sortValue(a, field),
-      bv = sortValue(b, field);
-    // Unavailable stake data stays last in either direction.
+    const currency = (e: MarketEntry) => e.row.order.currency ?? paymentTokens[0].address;
+    const av = mixed ? paymentUsdValue(BigInt(a.row.order.amount), currency(a), prices) : sortValue(a, field),
+      bv = mixed ? paymentUsdValue(BigInt(b.row.order.amount), currency(b), prices) : sortValue(b, field);
+    // Unknown USD prices stay last. Do not compare raw units of different tokens.
+    if (av === undefined && bv === undefined && mixed) {
+      const group = currency(a).toLowerCase().localeCompare(currency(b).toLowerCase());
+      if (group) return group;
+      return (BigInt(a.row.order.amount) < BigInt(b.row.order.amount) ? -1 : BigInt(a.row.order.amount) > BigInt(b.row.order.amount) ? 1 : 0) * (direction === "asc" ? 1 : -1);
+    }
     if (av === undefined) return bv === undefined ? 0 : 1;
     if (bv === undefined) return -1;
     return (av < bv ? -1 : av > bv ? 1 : 0) * (direction === "asc" ? 1 : -1);

@@ -1,3 +1,4 @@
+import { paymentToken, paymentTokens, formatPaymentAmount } from "../lib/blend/payment-tokens";
 import { Bell } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -6,8 +7,10 @@ import { orderAvailable, useMarkets } from "../lib/market/api";
 import { useBook, useOrderAvailability } from "../lib/market/queries";
 import { sameAddress, type SaleRow } from "../lib/blend/sales";
 import { stakeCollection } from "../lib/blend/stake-collections";
-import { wiseAmount } from "../lib/portfolio";
 import { screenHref } from "../navigation";
+import { mergeSaleNotices, saleNoticeEvent, saleNoticeFromActivity, storedSaleNotices, type SaleNotice } from "../lib/market/sale-notices";
+
+type AlertItem = { type: "bid"; row: SaleRow } | { type: "sale"; notice: SaleNotice };
 
 const seenKey = (address: string) => `garuda:seen-bids:${address.toLowerCase()}`;
 
@@ -54,18 +57,40 @@ export function BidAlerts() {
         const status = row.status === "checking" && check && !check.isError ? check.data ?? row.status : row.status;
         return orderAvailable({ ...row, status });
     });
+    const activity = [...(signature.data?.pages ?? []), ...(advanced.data?.pages ?? [])].flatMap((page) => page.activity ?? []);
+    const [noticeRevision, setNoticeRevision] = useState(0);
     const [tracked, setTracked] = useState(address);
     const [seen, setSeen] = useState<Set<string>>(() => address ? readSeen(address) : new Set());
     const [open, setOpen] = useState(false);
-    const [shown, setShown] = useState<SaleRow[]>([]);
+    const [shown, setShown] = useState<AlertItem[]>([]);
     const root = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const refresh = () => setNoticeRevision((current) => current + 1);
+        window.addEventListener(saleNoticeEvent, refresh);
+        window.addEventListener("storage", refresh);
+        return () => {
+            window.removeEventListener(saleNoticeEvent, refresh);
+            window.removeEventListener("storage", refresh);
+        };
+    }, []);
     if (tracked !== address) {
         setTracked(address);
         setSeen(address ? readSeen(address) : new Set());
         setOpen(false);
         setShown([]);
     }
-    const unseen = incoming.filter((row) => !seen.has(row.hash));
+    const sales = (address && noticeRevision >= 0) ? mergeSaleNotices(
+        storedSaleNotices(address),
+        activity.flatMap((event) => {
+            const notice = saleNoticeFromActivity(event);
+            return notice && sameAddress(notice.seller, address) ? [notice] : [];
+        }),
+    ).filter((notice) => !seen.has(notice.id)) : [];
+    const unseenBids = incoming.filter((row) => !seen.has(row.hash));
+    const unseen: AlertItem[] = [
+        ...sales.map((notice) => ({ type: "sale" as const, notice })),
+        ...unseenBids.map((row) => ({ type: "bid" as const, row })),
+    ];
     useEffect(() => {
         if (!open) return;
         function onPointer(event: PointerEvent) {
@@ -82,31 +107,41 @@ export function BidAlerts() {
         };
     }, [open]);
     if (!address || (!unseen.length && !open)) return null;
-    const count = unseen.length;
-    const label = count === 1 ? "1 new purchase bid on your stakes" : count ? `${count} new purchase bids on your stakes` : "Purchase bids on your stakes";
+    const saleCount = sales.length;
+    const bidCount = unseenBids.length;
+    const parts = [
+        saleCount === 1 ? "1 stake sold" : saleCount ? `${saleCount} stakes sold` : "",
+        bidCount === 1 ? "1 new purchase bid" : bidCount ? `${bidCount} new purchase bids` : "",
+    ].filter(Boolean);
+    const label = parts.join(", ") || "Updates on your stakes";
     function toggle() {
         if (open) {
             setOpen(false);
             return;
         }
         setShown(unseen);
-        if (address && unseen.length) setSeen(rememberSeen(address, unseen.map((row) => row.hash)));
+        if (address && unseen.length) setSeen(rememberSeen(address, unseen.map((item) => item.type === "sale" ? item.notice.id : item.row.hash)));
         setOpen(true);
     }
     return (
         <div className="bid-alert" ref={root}>
-            <span className="bid-alert-live" role="status">{count ? label : ""}</span>
+            <span className="bid-alert-live" role="status">{saleCount || bidCount ? label : ""}</span>
             <button className="theme-toggle" type="button" aria-label={label} aria-expanded={open} aria-haspopup="dialog" onClick={toggle}>
                 <Bell size={20} aria-hidden="true" />
-                {count > 0 && <span className="bid-alert-badge">{count > 9 ? "9+" : count}</span>}
+                {(saleCount + bidCount) > 0 && <span className="bid-alert-badge">{saleCount + bidCount > 9 ? "9+" : saleCount + bidCount}</span>}
             </button>
-            {open && <div className="bid-alert-panel" role="dialog" aria-label="New purchase bids">
-                <strong>New bids on your stakes</strong>
+            {open && <div className="bid-alert-panel" role="dialog" aria-label="Stake updates">
+                <strong>{shown.some((item) => item.type === "sale") ? "Your stakes" : "New bids on your stakes"}</strong>
                 <ul>
-                    {shown.map((row) => <li key={row.hash}>
+                    {shown.map((item) => item.type === "sale" ? <li key={item.notice.id}>
+                        <a href={`https://etherscan.io/tx/${item.notice.transactionHash}`} target="_blank" rel="noopener noreferrer">
+                            {stakeLabel(item.notice.collection, item.notice.tokenId)} sold
+                            <span>{formatPaymentAmount(BigInt(item.notice.net),item.notice.currency ?? paymentTokens[0].address,6)} {paymentToken(item.notice.currency ?? paymentTokens[0].address).symbol}</span>
+                        </a>
+                    </li> : <li key={item.row.hash}>
                         <Link to={`${screenHref("trade")}&book=bids`} onClick={() => setOpen(false)}>
-                            {stakeLabel(row.order.collection, row.order.tokenId)}
-                            <span>{wiseAmount(BigInt(row.order.amount))} WISE</span>
+                            {stakeLabel(item.row.order.collection, item.row.order.tokenId)}
+                            <span>{formatPaymentAmount(BigInt(item.row.order.amount),item.row.order.currency,6)} {paymentToken(item.row.order.currency).symbol}</span>
                         </Link>
                     </li>)}
                 </ul>

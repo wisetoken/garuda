@@ -1,3 +1,4 @@
+import { paymentToken, paymentTokens, parsePaymentAmount } from "../blend/payment-tokens";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -8,11 +9,11 @@ import {
 } from "thirdweb/react";
 import { ethereum } from "thirdweb/chains";
 import { viemAdapter } from "thirdweb/adapters/viem";
-import { getAddress } from "viem";
+import { getAddress, type Address } from "viem";
 import { thirdwebClient, useWalletAccess } from "../wallet";
 import { ethereumClient } from "../portfolio";
 import { stakeCollection, STAKE_COLLECTIONS } from "../blend/stake-collections";
-import { parseAmount } from "../blend/domain";
+import { buyWithPayment, type PurchasePaymentQuote } from "./purchase-payment";
 import {
   parseSignedSale,
   sameAddress,
@@ -36,13 +37,14 @@ import {
   rememberOrder,
   forgetCancelledOrder,
 } from "./recovery";
+import { recordSoldStake } from "./sale-notices";
 import { orderSuccess, settlementSuccess, type MarketSuccess } from "./success";
 import type { MarketIntent, PendingTx } from "./types";
 import { refreshTradeData, tradeDestination } from "./workflow";
 import { useAppToast } from "../../components/AppToast";
 
 export function useMarketController() {
-  const { showToast } = useAppToast();
+  const { showToast, dismissToast } = useAppToast();
   const account = useActiveAccount(),
     wallet = useActiveWallet(),
     chain = useActiveWalletChain();
@@ -131,7 +133,7 @@ export function useMarketController() {
     void refreshTradeData(cache);
     setRevision((v) => v + 1);
   }
-  async function execute(price: string, days: number, approvalOnly = false) {
+  async function execute(price: string, days: number, approvalOnly = false, fundingQuote?: PurchasePaymentQuote, currency: Address = paymentTokens[0].address) {
     if (!intent || lock.current) return;
     lock.current = true;
     setBusy(true);
@@ -246,18 +248,19 @@ export function useMarketController() {
       };
       if (activeIntent.kind === "list" || activeIntent.kind === "bid") {
         if (activeIntent.kind === "bid" && approvalOnly) {
-          await approveBid(session, parseAmount(price));
-          showToast("WISE approved. You can now sign and publish your bid.");
+          await approveBid(session, parsePaymentAmount(price, currency), currency);
+          showToast(`${paymentToken(currency).symbol} approved. You can now sign and publish your bid.`);
           return;
         }
         prepareRecovery(localStorage, d, address); // Verify storage before asking for a signature.
-        const amount = parseAmount(price);
+        const amount = parsePaymentAmount(price, currency);
         const signed = await publishSale(
           session,
           {
             kind: activeIntent.kind === "list" ? 0 : 1,
             tokenId: BigInt(activeIntent.position.tokenId),
             amount,
+            currency,
             days,
             nonce: randomSaleNonce(),
           },
@@ -265,8 +268,18 @@ export function useMarketController() {
         );
         setSuccess(orderSuccess(signed, d, tradeDestination(activeIntent, id)));
       } else if (activeIntent.kind === "fill") {
-        const result = await fillSale(session, activeIntent.row);
-        setSuccess(settlementSuccess(result));
+        const result = fundingQuote ? await buyWithPayment(session, activeIntent.row, fundingQuote) : await fillSale(session, activeIntent.row);
+        const success = settlementSuccess(result);
+        dismissToast("sale-review");
+        setSuccess(success);
+        recordSoldStake({
+          seller: result.order.owner,
+          collection: success.collection,
+          tokenId: success.tokenId,
+          net: success.net,
+          currency: success.currency,
+          transactionHash: success.transactionHash,
+        });
       } else {
         await cancelSale(session, activeIntent.row);
         try {
@@ -319,7 +332,7 @@ export function useMarketController() {
       );
       showToast(
         receipt.status === "success"
-          ? (pending.kind === "WISE approval" ? "WISE approval confirmed. Continue to sign your bid." : pending.kind === "WISE allowance reset" ? "Allowance reset confirmed. Approve WISE to continue." : "Transaction confirmed. Review the current order state before continuing.")
+          ? (pending.kind === "Uniswap swap" ? "Swap confirmed. Review your payment balance and purchase." : /^(WISE|WETH|USDC) approval$/.test(pending.kind) ? `${pending.kind} confirmed. Continue to sign your bid.` : pending.kind === "WISE allowance reset" ? "Allowance reset confirmed. Approve WISE to continue." : "Transaction confirmed. Review the current order state before continuing.")
           : "Transaction reverted. Refresh and review before trying again.",
         { tone: receipt.status === "success" ? "info" : "error", link },
       );

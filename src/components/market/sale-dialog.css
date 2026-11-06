@@ -135,10 +135,13 @@
 }
 .sale-facts > .sale-yield {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 16px;
+  row-gap: 6px;
+  align-items: start;
 }
 .sale-term {
+  grid-column: 1 / -1;
   display: flex;
   justify-content: space-between;
   gap: 16px;
@@ -474,3 +477,8 @@
 .sale-currency-identity strong { display: flex; align-items: center; gap: 6px; }
 .sale-currency-identity svg { color: var(--accent); }
 .sale-currency-menu > button > .sale-currency-balance { min-width: 0; margin-left: auto; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.sale-currency-trigger > img { width: 24px; height: 24px; }
+.sale-currency-menu > button > img { width: 32px; height: 32px; }
+.sale-currency-menu > button { background: transparent; }
+.sale-currency-menu > button[aria-checked="true"], .sale-currency-menu > button:hover { background: var(--accent-soft); }

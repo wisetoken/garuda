@@ -1,0 +1,8 @@
+{
+  "name": "@wiseone/garuda-seaport",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "scripts": { "test": "forge test", "build": "forge build" },
+  "devDependencies": { "@openzeppelin/contracts": "5.4.0" }
+}

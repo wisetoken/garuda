@@ -1,3 +1,5 @@
+import { formatPaymentAmount, paymentToken, paymentUsd } from "../../lib/blend/payment-tokens";
+import { usePaymentPrices } from "../../lib/market/payment-prices";
 import { TableHeader } from "../table/TableHeader";
 import { StakeTypeCell, StakeStatusCell, StakeAmountCell, StakeYieldCell, StakeRewardCell } from "../table/StakeTableCells";
 import type { ReactNode } from "react";
@@ -7,8 +9,6 @@ import { stakeCollection } from "../../lib/blend/stake-collections";
 import { stakeTimeline } from "../../lib/blend/stake-art";
 import {
   marketColumns,
-  marketWise,
-  marketUsd,
   marketDate,
   type MarketColumn,
   type MarketSort,
@@ -29,6 +29,7 @@ function OrderRow({
   position?: SignaturePosition;
   columns: MarketColumn[];
 }) {
+  const prices = usePaymentPrices();
   const { data: usd } = useWiseUsd(),
     position = useOrderPosition(row);
   const timeline = p ? stakeTimeline(p) : undefined;
@@ -39,8 +40,8 @@ function OrderRow({
     bidder: <AddressIdentity address={row.order.maker} />,
     price: (
       <>
-        {marketWise(BigInt(row.order.amount))} WISE
-        <small>{marketUsd(BigInt(row.order.amount), usd)}</small>
+        {formatPaymentAmount(BigInt(row.order.amount),row.order.currency,6)} {paymentToken(row.order.currency).symbol}
+        <small>{paymentUsd(BigInt(row.order.amount),row.order.currency,prices)}</small>
       </>
     ),
     status: (

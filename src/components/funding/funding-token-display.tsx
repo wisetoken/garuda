@@ -15,5 +15,5 @@ export function displayUsd(value: bigint | undefined, decimals: number, price: n
 
 export function FundingTokenIcon({ symbol }: { symbol: string }) {
   const name = symbol === 'WETH' ? 'eth' : symbol.toLowerCase();
-  return <img className="funding-wallet-token-icon" src={`/images/icons/${name}.svg`} alt="" width="44" height="44" />;
+  return <img className="funding-wallet-token-icon" src={symbol === "WISE" ? "/wise-token.svg" : `/images/icons/${name}.svg`} alt="" width="44" height="44" />;
 }

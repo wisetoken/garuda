@@ -1,13 +1,15 @@
-import { isAddress, parseEther } from "viem";
+import { paymentToken, paymentTokens } from "../blend/payment-tokens";
+import { isAddress, parseUnits } from "viem";
 import type { MarketFilters } from "./presentation";
-export type MarketRangeFilters = { minPrice?: string; maxPrice?: string; maturesFrom?: string; maturesTo?: string };
-export type MarketQueryFilters = { tokenId?: string; participant?: string; stakeOwner?: string; stakeType?: string;
+export type MarketRangeFilters = { currency?: string; minPrice?: string; maxPrice?: string; maturesFrom?: string; maturesTo?: string };
+export type MarketQueryFilters = { currency?: string; tokenId?: string; participant?: string; stakeOwner?: string; stakeType?: string;
   minPrice?: string; maxPrice?: string; maturesAfter?: string; maturesBefore?: string };
 const maxUint256 = (1n << 256n) - 1n;
-export function priceUnits(value?: string): bigint | undefined {
+export function priceUnits(value?: string, currency: string = paymentTokens[0].address): bigint | undefined {
   if (!value?.trim()) return undefined;
-  if (!/^\d+(\.\d{1,18})?$/.test(value)) throw new Error("Use a valid WISE amount.");
-  const amount = parseEther(value);
+  const token = paymentToken(currency);
+  if (!new RegExp(`^\\d+(\\.\\d{1,${token.decimals}})?$`).test(value)) throw new Error(`Use a valid ${token.symbol} amount.`);
+  const amount = parseUnits(value, token.decimals);
   if (amount > maxUint256) throw new Error("Amount is too large.");
   return amount;
 }
@@ -20,7 +22,7 @@ export function dateSeconds(value?: string, endOfDay = false) {
 }
 export function rangeError(filters: MarketRangeFilters) {
   try {
-    const low = priceUnits(filters.minPrice), high = priceUnits(filters.maxPrice);
+    const low = priceUnits(filters.minPrice, filters.currency), high = priceUnits(filters.maxPrice, filters.currency);
     if (low !== undefined && high !== undefined && low > high) return "Minimum price must not exceed maximum price.";
     const from = dateSeconds(filters.maturesFrom), to = dateSeconds(filters.maturesTo, true);
     if (from !== undefined && to !== undefined && from > to) return "Choose an end date after the start date.";
@@ -38,8 +40,9 @@ export function arkivQueryFilters(filters: MarketFilters): MarketQueryFilters {
   const query: MarketQueryFilters = { ...exactStakeSearch(filters.search) };
   if (isAddress(filters.search.trim(), { strict: false })) query.participant = filters.search.trim().toLowerCase();
   if (filters.collections.length === 1) query.stakeType = filters.collections[0];
-  const min = priceUnits(filters.minPrice), max = priceUnits(filters.maxPrice);
+  const min = priceUnits(filters.minPrice, filters.currency), max = priceUnits(filters.maxPrice, filters.currency);
   const from = dateSeconds(filters.maturesFrom), to = dateSeconds(filters.maturesTo, true);
+  if (filters.currency || min !== undefined || max !== undefined) query.currency = paymentToken(filters.currency ?? paymentTokens[0].address).address;
   if (min !== undefined) query.minPrice = String(min);
   if (max !== undefined) query.maxPrice = String(max);
   if (from !== undefined) query.maturesAfter = String(from);

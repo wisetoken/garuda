@@ -24,8 +24,10 @@ const MarketContext = createContext<MarketContextValue>({
 export const useMarketActions = () => useContext(MarketContext);
 const labels: Record<SalesStep, string> = {
   checking: "Checking…",
+  "approving-funding": "Approve swap token in your wallet…",
+  "swapping-funding": "Confirm swap in your wallet…",
   "approving-nft": "Approve NFT in your wallet…",
-  "approving-wise": "Approve WISE in your wallet…",
+  "approving-wise": "Approve payment token in your wallet…",
   signing: "Sign order in your wallet…",
   publishing: "Publishing…",
   confirming: "Waiting for confirmation…",

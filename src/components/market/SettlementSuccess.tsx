@@ -1,5 +1,5 @@
+import { paymentToken, formatPaymentAmount } from "../../lib/blend/payment-tokens";
 import { CheckCircle2, ExternalLink } from "lucide-react";
-import { formatAmount } from "../../lib/blend/domain";
 import { stakeCollection } from "../../lib/blend/stake-collections";
 import type { SettlementSuccess as Receipt } from "../../lib/market/success";
 import { SuccessFrame } from "./SuccessFrame";
@@ -8,11 +8,11 @@ export function SettlementSuccess({ receipt, onClose, onView }: {
   receipt: Receipt; onClose: () => void; onView: () => void;
 }) {
   const purchased = receipt.action === "purchase", meta = stakeCollection(receipt.collection);
-  const wise = (amount: bigint) => `${formatAmount(amount, 18)} WISE`;
+  const wise = (amount: bigint) => `${formatPaymentAmount(amount, receipt.currency)} ${paymentToken(receipt.currency).symbol}`;
   return <SuccessFrame
     receiptKey={receipt.transactionHash}
     title={purchased ? "Stake purchased!" : "Bid accepted!"}
-    description={purchased ? "The stake has been transferred to your wallet." : "Your stake has been sold and the WISE payment received."}
+    description={purchased ? "The stake has been transferred to your wallet." : `Your stake has been sold and the ${paymentToken(receipt.currency).symbol} payment received.`}
     next={purchased ? "You now own the stake. Its original maturity date stays the same." : "The bidder now owns the stake. The amount received is after the marketplace fee."}
     viewLabel={purchased ? "View my stakes" : "View purchase bids"}
     onClose={onClose} onView={onView}

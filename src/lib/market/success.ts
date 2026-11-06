@@ -31,6 +31,7 @@ export type SettlementSuccess = {
   collection: string;
   tokenId: string;
   action: "purchase" | "accept-bid";
+  currency: string;
   gross: bigint;
   fee: bigint;
   net: bigint;
@@ -44,7 +45,7 @@ export function settlementSuccess(result: Awaited<ReturnType<typeof fillSale>>):
   const collection = stakeCollection(order.collection);
   return {
     kind: "settlement", hash, transactionHash: receipt.transactionHash,
-    collection: order.collection, tokenId: String(order.tokenId),
+    currency: order.currency, collection: order.collection, tokenId: String(order.tokenId),
     action: order.kind === 0 ? "purchase" : "accept-bid",
     ...saleAmounts(order),
     destination: order.kind === 0 ? "/garuda/?screen=stakes" :

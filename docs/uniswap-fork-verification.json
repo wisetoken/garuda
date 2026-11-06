@@ -1,0 +1,69 @@
+{
+  "forkBlock": 26355909,
+  "results": [
+    {
+      "token": "ETH",
+      "paid": "0.00109488796105328",
+      "paymentToken": "WISE",
+      "received": "20.100502512562824808",
+      "transactions": 1
+    },
+    {
+      "token": "WETH",
+      "paid": "0.00109488796105328",
+      "paymentToken": "WISE",
+      "received": "20.100502512562824808",
+      "transactions": 2
+    },
+    {
+      "token": "USDC",
+      "paid": "2.460768",
+      "paymentToken": "WISE",
+      "received": "20.100507637884969778",
+      "transactions": 2
+    },
+    {
+      "token": "ETH",
+      "paid": "0.001",
+      "paymentToken": "WETH",
+      "received": "0.001",
+      "transactions": 1
+    },
+    {
+      "token": "USDC",
+      "paid": "2.258801",
+      "paymentToken": "WETH",
+      "received": "0.001005025546380744",
+      "transactions": 2
+    },
+    {
+      "token": "WISE",
+      "paid": "18.56183110545002227",
+      "paymentToken": "WETH",
+      "received": "0.001005025125628141",
+      "transactions": 2
+    },
+    {
+      "token": "ETH",
+      "paid": "0.008996975489733238",
+      "paymentToken": "USDC",
+      "received": "20.100503",
+      "transactions": 1
+    },
+    {
+      "token": "WETH",
+      "paid": "0.008996975489733238",
+      "paymentToken": "USDC",
+      "received": "20.100503",
+      "transactions": 2
+    },
+    {
+      "token": "WISE",
+      "paid": "166.165384541437271533",
+      "paymentToken": "USDC",
+      "received": "20.100503",
+      "transactions": 2
+    }
+  ],
+  "scope": "Real Uniswap v2 swaps on an isolated local fork; listing revalidation callback is a test fixture; ETH to WETH uses direct wrapping. No mainnet transactions."
+}

@@ -1,16 +1,20 @@
+import { paymentToken, paymentTokens, supportedPaymentTokens, parsePaymentAmount, formatPaymentAmount, paymentUsd } from "../../lib/blend/payment-tokens";
+import { usePaymentPrices } from "../../lib/market/payment-prices";
+import { useFundingBalances } from "../../lib/blend/wallet-funding";
+import { PurchaseFunding } from "./PurchaseFunding";
+import { purchaseFundingTokens } from "../../lib/market/purchase-funding";
+import type { PurchasePaymentQuote, PaymentReviewState } from "../../lib/market/purchase-payment";
 import { CurrencyPicker } from "./CurrencyPicker";
 import { DurationPicker } from "./DurationPicker";
 import { TokenAmountInput } from "./TokenAmountInput";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useActiveAccount } from "thirdweb/react";
-import { getAddress } from "viem";
+import { getAddress, type Address } from "viem";
 import { ArrowUpRight, LoaderCircle } from "lucide-react";
 import {
   ethereumClient,
   useWiseUsd,
-  wiseAmount,
-  usdAmount,
 } from "../../lib/portfolio";
 import {
   loadSignaturePortfolio,
@@ -20,7 +24,7 @@ import {
   stakeCollection,
   STAKE_COLLECTIONS,
 } from "../../lib/blend/stake-collections";
-import { parseAmount, formatAmount, amountInput } from "../../lib/blend/domain";
+import { amountInput } from "../../lib/blend/domain";
 import { saleAmounts } from "../../lib/blend/seaport";
 import {
   sameAddress,
@@ -50,7 +54,7 @@ export function SaleForm({
   busy: boolean;
   busyLabel: string;
   blocked: boolean;
-  execute: (price: string, days: number, approvalOnly?: boolean) => Promise<void>;
+  execute: (price: string, days: number, approvalOnly?: boolean, fundingQuote?: PurchasePaymentQuote, currency?: Address) => Promise<boolean | void>;
   connect: () => Promise<void>;
   switchChain: () => Promise<void>;
   correctChain: boolean;
@@ -60,6 +64,8 @@ export function SaleForm({
   const account = useActiveAccount(),
     { data: usd } = useWiseUsd(),
     markets = useMarkets();
+  const prices = usePaymentPrices(), tokenBalances = useFundingBalances(account?.address);
+  const [selectedCurrency, setCurrency] = useState<Address>(paymentTokens[0].address);
   const [price, setPrice] = useState(() =>
       intent.kind === "list" ? amountInput(intent.position.principal) : "",
     ),
@@ -106,9 +112,15 @@ export function SaleForm({
     staleTime: 0,
     refetchInterval: 15_000,
   });
-  const currency = config.data?.enabled
-    ? config.data.deployment.currency
-    : "0x66a0f676479Cee1d7373f3DC2e2952778BfF5bd6";
+  const tokens = supportedPaymentTokens(config.data?.enabled ? config.data.deployment : {});
+  const currency = "row" in intent ? getAddress(intent.row.order.currency) : tokens.some(token => token.address === selectedCurrency) ? selectedCurrency : paymentTokens[0].address;
+  const [selectedPayWith, setPayWith] = useState<Address>();
+  const [paymentReview,setPaymentReview] = useState<PaymentReviewState>({});
+  const payWith = selectedPayWith ?? currency;
+  const converting = intent.kind === "fill" && intent.row.order.kind === 0 && payWith !== currency;
+  const token = paymentToken(currency);
+  const tokenAmount = (amount: bigint) => formatPaymentAmount(amount, currency);
+  const tokenUsd = (amount: bigint) => paymentUsd(amount, currency, prices);
   const balance = useQuery({
     queryKey: ["wise-balance", account?.address.toLowerCase(), 1, currency],
     queryFn: () =>
@@ -134,18 +146,16 @@ export function SaleForm({
     refetchInterval: 15_000,
   });
   const balanceLabel = balance.data !== undefined
-    ? `${wiseAmount(balance.data)} WISE`
+    ? `${tokenAmount(balance.data)} ${token.symbol}`
     : account && balance.isFetching ? "Loading…" : "—";
-  const balanceUsd = balance.data !== undefined && usd
-    ? usdAmount(balance.data, usd)
-    : !account ? "Connect wallet" : undefined;
   let amount: bigint | undefined,
     amountError = "";
   try {
     amount =
-      "row" in intent ? BigInt(intent.row.order.amount) : parseAmount(price);
-  } catch {
+      "row" in intent ? BigInt(intent.row.order.amount) : parsePaymentAmount(price, currency);
+  } catch (error) {
     amount = undefined;
+    amountError = error instanceof Error ? error.message : "Enter a valid amount.";
   }
   if (amount !== undefined && amount >= (1n << 128n)) {
     amount = undefined;
@@ -180,12 +190,12 @@ export function SaleForm({
             : "Accept this bid";
   const needsApproval = intent.kind === "bid" && amount !== undefined && allowance.data !== undefined && allowance.data < amount;
   const allowanceBlocked = intent.kind === "bid" && (allowance.data === undefined || allowance.isError);
-  useErrorToast("bid-allowance", intent.kind === "bid" && allowance.isError && !allowance.isFetching && "Could not check WISE approval. Please try again.", () => void allowance.refetch());
+  useErrorToast("bid-allowance", intent.kind === "bid" && allowance.isError && !allowance.isFetching && `Could not check ${token.symbol} approval. Please try again.`, () => void allowance.refetch());
   const action =
     intent.kind === "list"
       ? "Sign & publish listing"
       : intent.kind === "bid"
-        ? (needsApproval ? "Approve WISE" : "Sign & publish bid")
+        ? (needsApproval ? `Approve ${token.symbol}` : "Sign & publish bid")
         : intent.kind === "cancel"
           ? (intent.row.order.kind === 0 ? "Cancel Sale" : "Cancel")
           : buy
@@ -198,23 +208,24 @@ export function SaleForm({
     if (intent.kind === "fill") void availability.refetch();
     if (account && intent.kind !== "cancel") void balance.refetch();
   };
-  useErrorToast("sale-review", readiness.failure, retryReview);
-  useErrorToast("sale-wallet-read", !paying && intent.kind !== "cancel" && balance.isError && !balance.isFetching && "Could not read your WISE balance. Please try again.", () => void balance.refetch());
+  useErrorToast("sale-review", !busy && readiness.failure, retryReview);
+  useErrorToast("sale-wallet-read", !paying && intent.kind !== "cancel" && balance.isError && !balance.isFetching && `Could not read your ${token.symbol} balance. Please try again.`, () => void balance.refetch());
   useErrorToast("sale-owner", !!wrongOwner && "Connect the appropriate owner or buyer wallet for this action.");
-  const showInsufficientBalance = !!account && insufficient && !balance.isError &&
+  const showInsufficientBalance = !converting && !!account && insufficient && !balance.isError &&
     !busy && !readiness.checking;
-  const submitBlocked = !account || !correctChain || busy || blocked || !!wrongOwner ||
-    readiness.blocked || allowanceBlocked || insufficient || amount === undefined;
+  const paymentBlocked = converting && (!paymentReview.quote || paymentReview.loading || paymentReview.insufficient || paymentReview.unknownBalance || paymentReview.expired);
+  const submitBlocked = paymentBlocked || !account || !correctChain || busy || blocked || !!wrongOwner ||
+    readiness.blocked || allowanceBlocked || (!converting && insufficient) || amount === undefined;
   function validateAmount() {
     setTouched(true);
-    if (price.trim() && amount === undefined) showToast(amountError || "Enter a valid WISE amount.", { id: "sale-amount", tone: "error" });
+    if (price.trim() && amount === undefined) showToast(amountError || `Enter a valid ${token.symbol} amount.`, { id: "sale-amount", tone: "error" });
   }
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         setTouched(true);
-        if (!submitBlocked) void execute(price, days, needsApproval);
+        if (!submitBlocked) void execute(price, days, needsApproval, converting ? paymentReview.quote : undefined, currency);
       }}
     >
       <header className="sale-heading">
@@ -226,7 +237,7 @@ export function SaleForm({
               ? "Choose your price for full stake ownership."
               : intent.kind === "cancel"
                 ? "Cancel the signed order so it can no longer be filled."
-                : "Review the position and the exact WISE payment."}
+                : `Review the position and the exact ${token.symbol} payment.`}
         </p>
       </header>
       <div className={`sale-layout${"row" in intent ? " sale-layout--review" : ""}`}>
@@ -256,10 +267,11 @@ export function SaleForm({
                   aria-invalid={touched && amount === undefined}
                   aria-describedby="sale-price-usd"
                 />
-                <CurrencyPicker disabled={busy} balanceLabel={balanceLabel} balanceUsd={balanceUsd} />
+                <CurrencyPicker disabled={busy} value={currency} tokens={tokens} balances={tokenBalances.data} prices={prices}
+                  onChange={value => { if(value !== currency) { setCurrency(value); setPrice(""); setTouched(false); } }} />
               </div>
               <p className="sale-amount-usd" id="sale-price-usd">
-                <span>{amount === undefined ? "USD estimate" : usdAmount(amount, usd)}</span>
+                <span>{amount === undefined ? "USD estimate" : tokenUsd(amount)}</span>
                 <span className="sale-amount-balance">Balance: <strong>{balanceLabel}</strong></span>
               </p>
               <DurationPicker
@@ -270,6 +282,11 @@ export function SaleForm({
                 disabled={busy}
               />
             </>
+          ) : buy && amount !== undefined ? (
+            <PurchaseFunding key={`${account?.address ?? "disconnected"}:${intent.row.hash}`} buyer={account ? getAddress(account.address) : undefined}
+              currency={currency} payWith={payWith} onPayWithChange={token => {setPaymentReview({});setPayWith(token);}} orderHash={intent.row.hash} price={amount}
+              busy={busy} deployment={config.data?.enabled ? config.data.deployment : undefined} blocked={!correctChain || blocked || !!wrongOwner || readiness.blocked}
+              onReviewChange={setPaymentReview} />
           ) : (
             <div className="sale-price-summary">
               <div className="sale-price-heading">
@@ -281,8 +298,8 @@ export function SaleForm({
                 </span>
               </div>
               <p className="sale-total">
-                {amount === undefined ? "—" : formatAmount(amount, 18)}{" "}
-                <small>WISE</small>
+                {amount === undefined ? "—" : tokenAmount(amount)}{" "}
+                <small>{token.symbol}</small>
               </p>
             </div>
           )}
@@ -291,15 +308,15 @@ export function SaleForm({
               <dl className="sale-breakdown">
                 <div>
                   <dt>Buyer pays</dt>
-                  <dd>{formatAmount(amounts.gross, 18)} WISE</dd>
+                  <dd>{tokenAmount(amounts.gross)} {token.symbol}</dd>
                 </div>
                 <div>
                   <dt>Marketplace fee ({feeBps / 100}%)</dt>
-                  <dd>{formatAmount(amounts.fee, 18)} WISE</dd>
+                  <dd>{tokenAmount(amounts.fee)} {token.symbol}</dd>
                 </div>
                 <div>
                   <dt>Seller receives</dt>
-                  <dd>{formatAmount(amounts.net, 18)} WISE</dd>
+                  <dd>{tokenAmount(amounts.net)} {token.symbol}</dd>
                 </div>
               </dl>
             )}
@@ -319,7 +336,7 @@ export function SaleForm({
                 <strong>
                   {balance.data === undefined
                     ? (balance.isFetching ? "Checking…" : "—")
-                    : `${wiseAmount(balance.data)} WISE`}
+                    : `${tokenAmount(balance.data)} ${token.symbol}`}
                 </strong>
               </div>
             )}
@@ -358,7 +375,7 @@ export function SaleForm({
             {(busy || readiness.checking) && <LoaderCircle className="sale-loading" size={18} aria-hidden="true" />}
             <span aria-live="polite">{
               busy ? busyLabel : readiness.checking || (allowanceBlocked && allowance.isFetching) ? "Checking…" :
-                showInsufficientBalance ? "Insufficient WISE balance" : action
+                converting ? paymentReview.loading ? "Getting payment quote…" : paymentReview.insufficient ? "Insufficient payment balance" : !config.data?.enabled || !config.data.deployment.purchaseRouter ? "Payment option unavailable" : !paymentReview.quote ? "Refresh payment quote" : `Buy with ${purchaseFundingTokens.find(t => t.address === payWith)?.symbol ?? "tokens"}` : showInsufficientBalance ? `Insufficient ${token.symbol} balance` : action
             }</span>
           </button>
         )}

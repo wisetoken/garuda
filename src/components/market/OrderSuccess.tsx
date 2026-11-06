@@ -1,7 +1,7 @@
+import { paymentToken, formatPaymentAmount } from "../../lib/blend/payment-tokens";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Copy, ExternalLink, LoaderCircle } from "lucide-react";
-import { formatAmount } from "../../lib/blend/domain";
 import { stakeCollection } from "../../lib/blend/stake-collections";
 import { marketApi } from "../../lib/market/api";
 import { readPublication, type OrderSuccess as Receipt } from "../../lib/market/success";
@@ -26,13 +26,13 @@ export function OrderSuccess({ receipt, onClose, onView }: {
     receiptKey={receipt.hash}
     title={bid ? "Bid placed!" : "Stake listed!"}
     description={bid ? "Your signed bid has been saved." : "Your signed listing has been saved."}
-    next={bid ? "The owner can accept your bid before it expires. Keep enough WISE in your wallet." : "Your stake stays in your wallet until a buyer completes the purchase."}
+    next={bid ? `The owner can accept your bid before it expires. Keep enough ${paymentToken(receipt.order.currency).symbol} in your wallet.` : "Your stake stays in your wallet until a buyer completes the purchase."}
     viewLabel={bid ? "View purchase bids" : "View listings"}
     onClose={onClose} onView={onView}
   >
       <div className="order-success-summary">
         <p>{meta.name} Stake #{receipt.order.tokenId}</p>
-        <strong>{formatAmount(BigInt(receipt.order.amount), 18)} WISE</strong>
+        <strong>{formatPaymentAmount(BigInt(receipt.order.amount), receipt.order.currency)} {paymentToken(receipt.order.currency).symbol}</strong>
         <span>{bid ? "Your bid" : "Asking price"}</span>
         <dl><div><dt>Expires / UTC</dt><dd>{new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",timeZone:"UTC"}).format(Number(receipt.order.deadline)*1000)}</dd></div></dl>
       </div>

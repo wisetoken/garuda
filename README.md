@@ -61,7 +61,7 @@ The marketplace is under active development. Local integration evidence and fork
 
 1. The owner chooses a stake, sets an asking price and expiration, approves the NFT if needed, and signs a Seaport listing. The asking-price input starts from the stake's principal and remains editable.
 2. The API validates and stores the signed order, then queues its publication to Arkiv. Signing a listing does not transfer the NFT.
-3. A buyer reviews the stake, asking price, and fee breakdown. They approve the exact WISE amount if needed, then confirm the purchase in their wallet.
+3. A buyer reviews the stake, asking price, and fee breakdown. If their WISE balance is short, **Get WISE** in the purchase review lets them swap ETH, WETH or USDC through Uniswap. They then approve the exact WISE payment if needed and confirm the purchase in their wallet.
 4. Seaport and the stake validator settle the exchange on Ethereum: the buyer receives the NFT, the seller receives WISE less the configured fee, and the stake continues with its existing terms.
 
 ### Place and accept a bid
@@ -281,6 +281,38 @@ The fork test buys and accepts bids on active and matured Signature Stakes. It v
 The API test publishes listings and bids through the route handlers, reconnects PostgreSQL to check durable orders and publication requests, settles both order kinds on the fork, and checks their indexed status. It uses a temporary database schema and never publishes its test orders to Arkiv.
 
 These tests accept a loopback Anvil endpoint on chain **31337**, use generated test accounts, and revert fork changes afterward. They do not use the browser wallet or execute mainnet transfers. `GARUDA_FORK_RPC` can select another loopback port; `GARUDA_TEST_DATABASE` can select an existing local PostgreSQL database. Stop the disposable fork when finished. If the upstream RPC cannot serve the fork's historical state, restart at the latest block or use an archive-capable provider.
+
+## Uniswap integration
+
+The [multi-currency V2 validator and app integration](contracts/seaport/README.md) are implemented and fork-tested. **Mainnet still uses V1 and settles in WISE until V2 is deployed and activated.** With the V2 manifest, makers can price Signature listings and bids in WISE, WETH or USDC.
+
+A buyer should not have to leave a stake purchase because they hold a different token. **Review purchase → Get [payment token]** quotes the missing amount and lets the buyer fund it with ETH, WETH, USDC or WISE. The swap confirms first; the buyer then reviews and confirms the stake purchase. Bids require the selected token balance and Seaport allowance so the owner can accept without the bidder being online.
+
+The integration calls Uniswap v2 Router02 directly on Ethereum; no hosted API key is needed. Routes use WETH as the bridge when needed, including WISE → WETH → USDC. ETH → WETH uses direct wrapping. The standalone **Get WISE** page also supports DAI.
+
+| Integration | Contract or source |
+| --- | --- |
+| Router02 | [`0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D`](https://etherscan.io/address/0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D) |
+| WISE/WETH v2 pool | [`0x21b8065d10f73ee2e260e5b47d3344d3ced7596e`](https://etherscan.io/address/0x21b8065d10f73ee2e260e5b47d3344d3ced7596e) |
+| Routes, router verification and quotes | [`fundingPath` / `quoteWiseFunding`](src/lib/blend/wise-funding.ts#L19) |
+| Exact-input approvals and swaps | [`executeWiseFunding`](src/lib/blend/wise-funding.ts#L43) |
+| Shortfall quote and purchase checks | [`quotePurchaseFunding` / `executePurchaseFunding`](src/lib/market/purchase-funding.ts#L19) |
+| Inline token selection and review | [`PurchaseFunding`](src/components/market/PurchaseFunding.tsx#L17) |
+| Regression checks / real-router fork verification | [Unit tests](scripts/test-purchase-funding.mjs), [fork runner](scripts/verify-purchase-funding-fork.mjs) |
+
+The quote includes a slippage buffer so its minimum output covers the selected payment-token shortfall; any extra tokens remains in the buyer's wallet. Quotes expire after two minutes. ERC-20 input approvals are limited to the quoted input. Wallet, balance and listing availability are checked again before the swap. Funding and purchase are separate transactions: a swap does not reserve the listing, and a purchase still needs a fresh review and wallet confirmation. Submitted hashes remain available if receipt confirmation times out.
+
+At Ethereum fork block **26,355,909**, all **nine funding routes** passed: eight Uniswap swaps plus ETH → WETH wrapping, covering WISE, WETH and USDC as outputs. The same fork passed **12 marketplace settlements** through the production signing, approval and receipt-verification code. See [funding results](docs/uniswap-fork-verification.json) and [settlement results](contracts/seaport/deployments/fork-verification.json). These are isolated fork tests, not mainnet transactions.
+
+To reproduce, start a separate disposable fork (this funding test retains chain ID 1 to exercise the production network checks):
+
+```sh
+anvil --fork-url https://ethereum-rpc.publicnode.com --chain-id 1 --host 127.0.0.1 --port 18750
+```
+
+Then run `node --import tsx scripts/verify-purchase-funding-fork.mjs`. It only writes to the fixed loopback endpoint, checks that it is an Anvil fork, generates a temporary account and reverts each scenario. No browser wallet or mainnet transactions are used. Results vary with the fork block.
+
+See [FEEDBACK.md](FEEDBACK.md) for integration feedback. The [Uniswap Developer Feedback Form](https://developers.uniswap.org/hackathon-feedback) still needs to be completed by the project owner with the public feedback-file link.
 
 ## What comes next
 

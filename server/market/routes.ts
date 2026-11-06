@@ -1,3 +1,4 @@
+import { legacyTradingRetired } from "../../src/lib/blend/sales-migration";
 import type { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { isAddress } from "viem";
@@ -85,7 +86,7 @@ export function registerMarketRoutes(
       return c.json(await extendArkiv(service, hash, String(body.entityKey ?? ""), String(body.signature ?? ""), Number(body.expiresAt)));
     } catch (e) {
       const code = e instanceof SalesError ? e.code : "";
-      const status = code === "not-owner" ? 403 : code === "invalid-request" ? 400 : code === "rate-limit" ? 429 : code === "order-unavailable" ? 409 : 503;
+      const status = code === "not-owner" || code === "not-maker" ? 403 : code === "invalid-request" ? 400 : code === "rate-limit" ? 429 : code === "order-unavailable" ? 409 : 503;
       return c.json({error:e instanceof SalesError ? e.message : "Arkiv offer could not be extended. The signed order is unchanged."}, status);
     }
   });
@@ -127,7 +128,7 @@ export function registerMarketRoutes(
       return c.json({
         enabled: true,
         deployment: service.store.deployment,
-        newActivityPaused,
+        newActivityPaused: newActivityPaused || !await legacyTradingRetired(service.client, service.store.deployment, block.number),
       });
     } catch {
       return c.json({ error: "The configured market is unavailable." }, 503);

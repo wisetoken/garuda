@@ -1,3 +1,4 @@
+import { acceptsPayment, paymentSchema } from "./payment-tokens";
 import {
     encodeAbiParameters,
     getAddress,
@@ -20,6 +21,7 @@ export const SALES_TREASURY = getAddress(
     "0xb8d92f2e8d1a98c18cde85e49a0f11e3c64d0a68",
 );
 export type SeaportDeployment = {
+    paymentSchemaVersion?: 1 | 2;
     chainId: number;
     market: Address;
     adapter: Address;
@@ -36,7 +38,7 @@ export type SaleOrder = LegacySaleOrder & {
 };
 
 // Seaport 1.6 ABI subset; canonical interface: ProjectOpenSea/seaport-types.
-const structs = [
+export const seaportStructs = [
     "struct OfferItem { uint8 itemType; address token; uint256 identifierOrCriteria; uint256 startAmount; uint256 endAmount; }",
     "struct ConsiderationItem { uint8 itemType; address token; uint256 identifierOrCriteria; uint256 startAmount; uint256 endAmount; address recipient; }",
     "struct OrderComponents { address offerer; address zone; OfferItem[] offer; ConsiderationItem[] consideration; uint8 orderType; uint256 startTime; uint256 endTime; bytes32 zoneHash; uint256 salt; bytes32 conduitKey; uint256 counter; }",
@@ -49,7 +51,7 @@ const structs = [
     "struct ReceivedItem { uint8 itemType; address token; uint256 identifier; uint256 amount; address recipient; }",
 ] as const;
 export const seaportAbi = parseAbi([
-    ...structs,
+    ...seaportStructs,
     "function information() view returns(string version,bytes32 domainSeparator,address conduitController)",
     "function getCounter(address) view returns(uint256)",
     "function getOrderHash(OrderComponents) view returns(bytes32)",
@@ -73,8 +75,10 @@ export const zoneAbi = parseAbi([
     "function setNewActivityPaused(bool)",
     "function assetEpoch(uint256) view returns(uint256)",
     "function invalidateAsset(uint256)",
+    "function PAYMENT_SCHEMA_VERSION() view returns(uint256)",
     "function snapshot(uint256) view returns((bytes16 stakeId,bytes32 stateHash,uint256 maturesAt,bool loanEligible))",
     "event SaleValidated(bytes32 indexed orderHash,uint256 indexed tokenId,address indexed seller,address buyer,uint256 amount,uint256 fee,uint8 kind)",
+    "event SaleValidated(bytes32 indexed orderHash,uint256 indexed tokenId,address indexed seller,address buyer,address currency,uint256 amount,uint256 fee,uint8 kind)",
     "event AssetEpochUpdated(uint256 indexed tokenId,uint256 epoch)",
 ]);
 const itemFields = [
@@ -112,8 +116,8 @@ const proofTypes = [
     { type: "uint256" },
     { type: "address" },
 ] as const;
-export function zoneProof(o: SaleOrder) {
-    return encodeAbiParameters(proofTypes, [
+export function zoneProof(o: SaleOrder, version: 1 | 2 = 1) {
+    const values = [
         o.kind,
         o.owner,
         o.tokenId,
@@ -123,7 +127,8 @@ export function zoneProof(o: SaleOrder) {
         o.amount,
         BigInt(o.feeBps),
         o.feeRecipient,
-    ]);
+    ] as const;
+    return version === 2 ? encodeAbiParameters([...proofTypes, {type: "address"}], [...values, o.currency]) : encodeAbiParameters(proofTypes, values);
 }
 export function saleAmounts(o: Pick<SaleOrder, "amount" | "feeBps">) {
     const fee = (o.amount * BigInt(o.feeBps)) / 10_000n;
@@ -150,7 +155,7 @@ export function seaportComponents(d: SeaportDeployment, o: SaleOrder) {
         maker = address(o.maker);
     if (
         address(o.collection) !== address(d.collection) ||
-        address(o.currency) !== address(d.currency) ||
+        !acceptsPayment(d, address(o.currency)) ||
         address(o.feeRecipient) !== address(d.feeRecipient) ||
         o.feeBps !== d.feeBps ||
         !Number.isInteger(o.feeBps) ||
@@ -203,7 +208,7 @@ export function seaportComponents(d: SeaportDeployment, o: SaleOrder) {
         orderType: 2,
         startTime: o.startTime,
         endTime: o.deadline,
-        zoneHash: keccak256(zoneProof(o)),
+        zoneHash: keccak256(zoneProof(o, paymentSchema(d))),
         salt: o.nonce,
         conduitKey: zeroHash,
         counter: o.counter,
@@ -248,7 +253,7 @@ export function advancedSale(
         numerator: 1n,
         denominator: 1n,
         signature,
-        extraData: zoneProof(o),
+        extraData: zoneProof(o, paymentSchema(d)),
     };
 }
 export function saleSettlement(

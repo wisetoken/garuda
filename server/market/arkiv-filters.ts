@@ -39,6 +39,7 @@ export function parseArkivFilters(input: Record<string, string | undefined>): Ar
   return f as ArkivFilters;
 }
 export function orderFilters(deployment: SalesDeployment, f: ArkivFilters) {
+  if ((f.minPrice !== undefined || f.maxPrice !== undefined) && !f.currency) f = {...f, currency:deployment.currency};
   return and(eq("scope", arkivScope(deployment)), eq("chainId", u64(1n)), eq("collection", addr(deployment.collection)),
     gt("expires", u64(BigInt(Math.floor(Date.now()/1000)))),
     ...(f.maker ? [eq("maker", addr(f.maker))] : []), ...(f.stakeOwner ? [eq("stakeOwner", addr(f.stakeOwner))] : []),

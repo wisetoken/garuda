@@ -1,3 +1,5 @@
+import { legacyTradingRetired } from "./sales-migration";
+import { paymentSchema } from "./payment-tokens";
 import {
     BaseError,
     ContractFunctionRevertedError,
@@ -105,6 +107,8 @@ export async function verifySalesDeployment(
             "binding-changed",
             "Unexpected market contract bindings.",
         );
+    if (paymentSchema(d) === 2 && await client.readContract({address:d.adapter,abi:zoneAbi,functionName:"PAYMENT_SCHEMA_VERSION",blockNumber:block.number}) !== 2n)
+        throw new SalesError("binding-changed", "The configured validator does not support V2 payments.");
     const [version] = await client.readContract({
         address: d.market,
         abi: marketAbi,
@@ -201,7 +205,8 @@ export async function readOrderStatus(
         args: [components],
         blockNumber: block.number,
     });
-    const [state, counter, paused] = await Promise.all([
+    const [legacyRetired, state, counter, paused] = await Promise.all([
+        legacyTradingRetired(client, d, block.number),
         client.readContract({
             address: d.market,
             abi: marketAbi,
@@ -225,7 +230,7 @@ export async function readOrderStatus(
     ]);
     if (state[1] || state[2] > 0n || counter !== order.counter)
         return "cancelled-or-filled";
-    if (paused) return "paused";
+    if (paused || !legacyRetired) return "paused";
     // Failed RPC/contract reads propagate. They never masquerade as a verified empty book.
     let asset;
     try {
@@ -260,14 +265,14 @@ export async function readOrderStatus(
             : "unapproved";
     const [balance, allowance] = await Promise.all([
         client.readContract({
-            address: d.currency,
+            address: order.currency,
             abi: tokenSalesAbi,
             functionName: "balanceOf",
             args: [order.maker],
             blockNumber: block.number,
         }),
         client.readContract({
-            address: d.currency,
+            address: order.currency,
             abi: tokenSalesAbi,
             functionName: "allowance",
             args: [order.maker, d.market],

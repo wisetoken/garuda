@@ -32,7 +32,7 @@ Code: [queue](../server/market/publication.ts), [order writes and reads](../serv
 
 The dedicated Rabdi publisher wallet owns order entities. The API validates a maker-signed order before queuing it, and the publisher submits the Arkiv transaction. The maker signs the listing or bid; the stake owner is the seller and may differ from the maker on an incoming bid. Indexed `maker` and `stakeOwner` attributes identify those parties but do not grant Arkiv write permission. Reads are scoped to the expected publisher and deployment.
 
-The current extension endpoint requires an Ethereum message signature from the stake owner. It binds the order hash, entity key and exact target timestamp, verifies the existing entity and checks that the order is available before the publisher submits the extension. Users do not receive the publisher key. The operator still controls that key and could edit or remove its entities outside this endpoint; consumers must verify the signed payload and current Ethereum state.
+The current extension endpoint requires an Ethereum message signature from the offer maker: the seller for a listing, and the bidder for a bid. The stake owner cannot extend someone else's bid. It binds the order hash, entity key and exact target timestamp, verifies the existing entity and checks that the order is available before the publisher submits the extension. Users do not receive the publisher key. The operator still controls that key and could edit or remove its entities outside this endpoint; consumers must verify the signed payload and current Ethereum state.
 
 ## Two expiries, two user-visible meanings
 
