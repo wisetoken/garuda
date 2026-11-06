@@ -117,7 +117,7 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
             correctChain={chain?.id === 1}
             onBid={(position) => open({ kind: "bid", position })}
           />
-          {pending && (
+          {pending && !(pending.confirmed && ["WISE approval", "NFT approval"].includes(pending.kind)) && (
             <p className="sale-tx">
               <a
                 href={`https://etherscan.io/tx/${pending.hash}`}

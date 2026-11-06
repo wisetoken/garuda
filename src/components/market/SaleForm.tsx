@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useActiveAccount } from "thirdweb/react";
 import { getAddress } from "viem";
-import { ArrowUpRight, LoaderCircle } from "lucide-react";
+import { ArrowUpRight, CircleAlert, LoaderCircle } from "lucide-react";
 import {
   ethereumClient,
   useWiseUsd,
@@ -159,11 +159,11 @@ export function SaleForm({
       (buy && sameAddress(account.address, owner)) ||
       (intent.kind === "cancel" &&
         !sameAddress(account.address, intent.row.order.maker)));
-  const insufficient =
-    paying &&
-    amount !== undefined &&
-    balance.data !== undefined &&
-    balance.data < amount;
+  const shortfall = paying && amount !== undefined && balance.data !== undefined
+    ? amount - balance.data
+    : 0n;
+  const insufficient = shortfall > 0n;
+  const showBalanceWarning = !!account && insufficient && !balance.isError;
   const title =
     intent.kind === "list"
       ? "List your stake"
@@ -196,7 +196,6 @@ export function SaleForm({
   useErrorToast("sale-review", readiness.failure, retryReview);
   useErrorToast("sale-wallet-read", !paying && intent.kind !== "cancel" && balance.isError && !balance.isFetching && "Could not read your WISE balance. Please try again.", () => void balance.refetch());
   useErrorToast("sale-owner", !!wrongOwner && "Connect the appropriate owner or buyer wallet for this action.");
-  useErrorToast("sale-balance", !!insufficient && (buy || touched) && "Your WISE balance does not cover this amount.");
   const submitBlocked = !account || !correctChain || busy || blocked || !!wrongOwner ||
     readiness.blocked || insufficient || amount === undefined;
   function validateAmount() {
@@ -359,6 +358,18 @@ export function SaleForm({
               </strong>
             </div>
           )}
+          {showBalanceWarning && (
+            <div className="sale-balance-warning" id="sale-balance-warning" role="status">
+              <CircleAlert size={20} aria-hidden="true" />
+              <div>
+                <strong>Insufficient WISE balance</strong>
+                <p>
+                  Add <strong>{formatAmount(shortfall, 18)} WISE</strong> to your wallet
+                  to cover this {buy ? "purchase" : "bid"}.
+                </p>
+              </div>
+            </div>
+          )}
           {intent.kind === "fill" && <TradeCounterparty row={intent.row} />}
           {intent.kind !== "list" && intent.kind !== "bid" && (
             <p className="sale-fineprint">{tradeInstructions(intent)}</p>
@@ -389,6 +400,7 @@ export function SaleForm({
             className="stake-primary"
             type="submit"
             disabled={submitBlocked}
+            aria-describedby={showBalanceWarning ? "sale-balance-warning" : undefined}
             aria-busy={busy || readiness.checking}
           >
             {(busy || readiness.checking) && <LoaderCircle className="sale-loading" size={18} aria-hidden="true" />}

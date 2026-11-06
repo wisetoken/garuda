@@ -268,6 +268,22 @@
 .sale-wallet-balance > span:last-child:not(:first-child) {
   grid-column: 1/-1;
 }
+.sale-balance-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--warning) 32%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--warning) 8%, var(--panel));
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.sale-balance-warning > svg { flex-shrink: 0; margin-top: 1px; color: var(--warning); }
+.sale-balance-warning strong { font-weight: 500; color: var(--text-primary); }
+.sale-balance-warning p { margin: 4px 0 0; color: var(--muted); }
 .sale-footer {
   margin-top: 24px;
   padding-top: 20px;

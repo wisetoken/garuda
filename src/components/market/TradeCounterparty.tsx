@@ -6,10 +6,12 @@ export function TradeCounterparty({ row }: { row: SaleRow }) {
   const expiry = new Date(Number(row.order.deadline) * 1000);
   return (
     <div className="sale-counterparty">
-      <div>
-        <span>{bid ? "Bidder receives your stake" : "Current owner"}</span>
-        <AddressIdentity address={bid ? row.order.maker : row.order.owner} />
-      </div>
+      {bid && (
+        <div>
+          <span>Bidder receives your stake</span>
+          <AddressIdentity address={row.order.maker} />
+        </div>
+      )}
       <div>
         <span>Expires / UTC</span>
         <time dateTime={expiry.toISOString()}>

@@ -4,8 +4,7 @@ import type { MarketIntent } from "./types";
 export function tradeInstructions(intent: MarketIntent) {
   if (intent.kind === "list")
     return "Approve this NFT if needed, then sign the listing. Signing does not transfer ownership. Ethereum gas is separate.";
-  if (intent.kind === "bid")
-    return "Approve the exact WISE amount, then sign your bid. Funds are not escrowed. The owner may accept until expiry or onchain cancellation.";
+  if (intent.kind === "bid") return "";
   if (intent.kind === "cancel")
     return "Cancellation requires an Ethereum transaction. Closing this dialog does not cancel an order.";
   return intent.row.order.kind === 0
