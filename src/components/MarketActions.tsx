@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
-import { X, ArrowUpRight } from "lucide-react";
+import { X } from "lucide-react";
 import { ethereum } from "thirdweb/chains";
 import type { SalesStep } from "../lib/blend/sales-wallet";
 import type { MarketIntent } from "../lib/market/types";
@@ -120,21 +120,11 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
             correctChain={chain?.id === 1}
             onBid={(position) => open({ kind: "bid", position })}
           />
-          {pending && !(pending.confirmed && ["WISE approval", "NFT approval"].includes(pending.kind)) && (
+          {pending && !pending.confirmed && !busy && (
             <p className="sale-tx">
-              <a
-                href={`https://etherscan.io/tx/${pending.hash}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {pending.kind} {pending.confirmed ? "confirmed" : "submitted"}{" "}
-                <ArrowUpRight size={14} />
-              </a>
-              {!pending.confirmed && !busy && (
-                <button onClick={() => void checkPending()}>
-                  Check confirmation
-                </button>
-              )}
+              <button onClick={() => void checkPending()}>
+                Check confirmation
+              </button>
             </p>
           )}
           {unsaved && !busy && intent.kind !== "cancel" && (

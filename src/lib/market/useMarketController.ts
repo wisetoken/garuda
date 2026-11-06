@@ -220,6 +220,10 @@ export function useMarketController() {
         onTransaction: (hash, kind) => {
           lastTx = { hash, kind, confirmed: false };
           setPending(lastTx);
+          showToast(`${kind} submitted`, {
+            id: `trade-tx:${hash}`,
+            link: { label: "View on Etherscan", href: `https://etherscan.io/tx/${hash}` },
+          });
           try {
             localStorage.setItem(txKey, JSON.stringify(lastTx));
           } catch {
@@ -291,13 +295,14 @@ export function useMarketController() {
   async function checkPending() {
     if (!pending || !account) return;
     const pendingAddress = account.address;
+    const link = { label: "View on Etherscan", href: `https://etherscan.io/tx/${pending.hash}` };
     try {
       const receipt = await ethereumClient.getTransactionReceipt({
         hash: pending.hash,
       });
       const block = await ethereumClient.getBlockNumber();
       if (block - receipt.blockNumber + 1n < 12n) {
-        showToast("Transaction included; waiting for 12 confirmations.");
+        showToast("Transaction included; waiting for 12 confirmations.", { link });
         return;
       }
       if (!sameAddress(context.current.account?.address ?? "", pendingAddress))
@@ -312,12 +317,13 @@ export function useMarketController() {
         receipt.status === "success"
           ? "Transaction confirmed. Review the current order state before continuing."
           : "Transaction reverted. Refresh and review before trying again.",
-        { tone: receipt.status === "success" ? "info" : "error" },
+        { tone: receipt.status === "success" ? "info" : "error", link },
       );
       refresh();
     } catch {
       showToast(
         "The transaction is not confirmed yet. Check its status on Etherscan.",
+        { link },
       );
     }
   }

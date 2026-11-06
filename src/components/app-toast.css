@@ -28,10 +28,13 @@
 .app-toast > svg { color: var(--accent); flex-shrink: 0; margin-top: 2px; }
 .app-toast[data-tone="error"] > svg { color: #eaa781; }
 .app-toast-content { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.app-toast-link { display: block; color: inherit; text-decoration: none; border-radius: 2px; }
+.app-toast-link svg { display: inline; vertical-align: -2px; margin-left: 4px; color: var(--accent); }
+.app-toast-link:hover { text-decoration: underline; text-underline-offset: 4px; }
 .app-toast button { font: inherit; cursor: pointer; }
 .app-toast-action { display: block; margin-top: 8px; padding: 4px 0; color: var(--accent); background: none; border: 0; text-decoration: underline; text-underline-offset: 4px; }
 .app-toast-close { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; color: var(--muted); background: none; }
 .app-toast-close:hover { background: var(--accent-soft, #2b3b3b); color: inherit; }
-.app-toast button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.app-toast :is(button, a):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @keyframes app-toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .app-toast { animation: none; } }

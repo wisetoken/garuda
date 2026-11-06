@@ -1,12 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { CircleAlert, Info, X } from "lucide-react";
+import { ArrowUpRight, CircleAlert, Info, X } from "lucide-react";
 import "./app-toast.css";
 
 type ToastOptions = {
   id?: string;
   tone?: "info" | "error";
   action?: { label: string; run: () => void };
+  link?: { label: string; href: string };
 };
 type Toast = ToastOptions & { id: string; message: string; sequence: number };
 type ToastContextValue = {
@@ -34,7 +35,11 @@ function ToastItem({ toast, dismiss }: { toast: Toast; dismiss: () => void }) {
     onFocusCapture={() => setPaused(true)}
     onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false); }}>
     {toast.tone === "error" ? <CircleAlert size={20} aria-hidden="true" /> : <Info size={20} aria-hidden="true" />}
-    <div className="app-toast-content"><span>{toast.message}</span>
+    <div className="app-toast-content">
+      {toast.link ? <a className="app-toast-link" href={toast.link.href} target="_blank" rel="noopener noreferrer"
+        aria-label={`${toast.message}. ${toast.link.label} (opens in a new tab)`}>
+        {toast.message} <ArrowUpRight size={16} aria-hidden="true" />
+      </a> : <span>{toast.message}</span>}
       {toast.action && <button type="button" className="app-toast-action" onClick={() => { dismiss(); toast.action?.run(); }}>{toast.action.label}</button>}
     </div>
     <button type="button" className="app-toast-close" aria-label="Dismiss notification" onClick={dismiss}><X size={16} aria-hidden="true" /></button>
