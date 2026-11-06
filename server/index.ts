@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server';
 import { registerMarketRoutes } from './market/routes';
 import { serviceResolver } from './market/runtime';
 import { processPublication } from './market/publication';
+import { processStakeSnapshot } from './market/stake-cache';
 
 const app=new Hono();
 const resolvers=[serviceResolver('signature'),serviceResolver('advanced')];
@@ -16,7 +17,7 @@ let timer: ReturnType<typeof setTimeout>;
 async function tick() {
   for (const resolve of resolvers) {
     if(stopped) break;
-    try { const service=await resolve(); if(service) await processPublication(service); }
+    try { const service=await resolve(); if(service) { await processPublication(service); await processStakeSnapshot(service); } }
     catch { console.error('Garuda publication worker will retry.'); }
   }
   if(!stopped) timer=setTimeout(tick,15000);

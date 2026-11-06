@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { createPublicClient, http } from 'viem';
+import { mainnet } from 'viem/chains';
 import { readSalesRuntime } from './config';
 import { SaleStore } from './store';
 import { SalesService } from './service';
@@ -14,7 +15,7 @@ export function serviceResolver(collection: 'signature' | 'advanced') {
       GARUDA_DEPLOYMENT_FILE:process.env.GARUDA_ADVANCED_DEPLOYMENT_FILE});
     if (!runtime) return null;
     if (stakeCollection(runtime.deployment.collection).id !== collection) throw new Error('Collection configuration mismatch.');
-    const client=createPublicClient({transport:http(runtime.rpcUrl,{timeout:15000,retryCount:0})});
+    const client=createPublicClient({chain: runtime.deployment.environment === 'ethereum-mainnet' ? mainnet : undefined, batch:{multicall:true}, transport:http(runtime.rpcUrl,{timeout:15000,retryCount:0})});
     if (runtime.deployment.environment === 'local-fork' && !/anvil/i.test(await client.request({method:'web3_clientVersion'})))
       throw new Error('Anvil required.');
     const pool=new Pool(runtime.database);

@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS blend_stake_snapshots (
  scope text NOT NULL, collection text NOT NULL, owner text NOT NULL, token_id text NOT NULL,
  observed_at bigint NOT NULL, snapshot jsonb NOT NULL, PRIMARY KEY(scope,collection,owner,token_id)
 );
+ALTER TABLE blend_stake_snapshots ADD COLUMN IF NOT EXISTS arkiv_observed_at bigint NOT NULL DEFAULT 0;
 CREATE TABLE IF NOT EXISTS blend_sale_limits (
  scope text NOT NULL, bucket text NOT NULL, window_at bigint NOT NULL, count integer NOT NULL,
  PRIMARY KEY(scope,bucket,window_at)
@@ -76,6 +77,12 @@ export class SaleStore {
             WHERE blend_stake_snapshots.observed_at <= EXCLUDED.observed_at`,
             [this.scope,snapshot.collection.toLowerCase(),snapshot.owner.toLowerCase(),snapshot.tokenId,snapshot.observedAt,snapshot]);
         await this.pool.query('DELETE FROM blend_stake_snapshots WHERE observed_at < $1',[Math.floor(Date.now()/1000)-86400]);
+    }
+    async stakeSnapshot(target: {collection: string; owner: string; tokenId: string}) {
+        const result = await this.pool.query(`SELECT snapshot FROM blend_stake_snapshots
+            WHERE scope=$1 AND collection=$2 AND owner=$3 AND token_id=$4`,
+            [this.scope,target.collection.toLowerCase(),target.owner.toLowerCase(),target.tokenId]);
+        return result.rows[0]?.snapshot as StakeSnapshot | undefined;
     }
     async stakeSnapshots() {
         const result = await this.pool.query('SELECT snapshot FROM blend_stake_snapshots WHERE scope=$1 AND observed_at >= $2',[this.scope,Math.floor(Date.now()/1000)-86400]);

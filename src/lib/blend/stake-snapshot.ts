@@ -10,7 +10,7 @@ export type StakeSnapshot = {
   status: SignaturePosition['status']; canList: boolean; unclaimedInterest?: string;
   rewardDays?: number; displayStake: NonNullable<SignaturePosition['displayStake']>;
 };
-export type StakeDetails = { snapshot: StakeSnapshot; source: 'arkiv' | 'ethereum' };
+export type StakeDetails = { snapshot: StakeSnapshot; source: 'arkiv' | 'ethereum' | 'cache' };
 export function snapshotFromPortfolio(portfolio: SignaturePortfolio): StakeSnapshot {
   const p = portfolio.positions[0];
   if (!p?.collection || !p.displayStake || (p.status !== 'Closed' && p.unclaimedInterest === undefined))
