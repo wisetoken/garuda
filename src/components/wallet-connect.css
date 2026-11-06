@@ -1,0 +1,20 @@
+/* WiseOne Connect (thirdweb) modal title icon: transparent SVG, enlarged to
+   40px. Scoped by the query marker. */
+.tw-header:has(img[src*="icon=wiseone-connect"]) {
+    align-items: center !important;
+    margin-bottom: 15px !important;
+}
+
+/* thirdweb wraps the icon <img> in a fixed-size <div>; enlarge BOTH the wrapper
+   and the img to 40px, drop the default dark tile so the SVG sits on the modal. */
+.tw-header > div:has(> img[src*="icon=wiseone-connect"]),
+img[src*="icon=wiseone-connect"] {
+    width: 40px !important;
+    height: 40px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+img[src*="icon=wiseone-connect"] {
+    object-fit: contain;
+}

@@ -1,8 +1,11 @@
+import { CurrencyPicker } from "./CurrencyPicker";
+import { DurationPicker } from "./DurationPicker";
+import { TokenAmountInput } from "./TokenAmountInput";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useActiveAccount } from "thirdweb/react";
 import { getAddress } from "viem";
-import { ArrowUpRight, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, LoaderCircle } from "lucide-react";
 import {
   ethereumClient,
   useWiseUsd,
@@ -29,16 +32,17 @@ import {
   tokenSalesAbi,
   type SaleRow,
 } from "../../lib/blend/sales";
-import { marketApi, useMarkets, orderAvailable } from "../../lib/market/api";
+import { marketApi, useMarkets } from "../../lib/market/api";
 import type { MarketIntent } from "../../lib/market/types";
 import { tradeInstructions } from "../../lib/market/workflow";
 import { TradeCounterparty } from "./TradeCounterparty";
+import { useAppToast, useErrorToast } from "../AppToast";
+import { reviewReadiness } from "../../lib/market/review-readiness";
 
 export function SaleForm({
   intent,
   busy,
   status,
-  error,
   blocked,
   execute,
   connect,
@@ -49,7 +53,6 @@ export function SaleForm({
   intent: MarketIntent;
   busy: boolean;
   status: string;
-  error: string;
   blocked: boolean;
   execute: (price: string, days: number) => Promise<void>;
   connect: () => Promise<void>;
@@ -57,6 +60,7 @@ export function SaleForm({
   correctChain: boolean;
   onBid: (position: SignaturePosition) => void;
 }) {
+  const { showToast } = useAppToast();
   const account = useActiveAccount(),
     { data: usd } = useWiseUsd(),
     markets = useMarkets();
@@ -106,21 +110,28 @@ export function SaleForm({
     staleTime: 0,
     refetchInterval: 15_000,
   });
+  const currency = config.data?.enabled
+    ? config.data.deployment.currency
+    : "0x66a0f676479Cee1d7373f3DC2e2952778BfF5bd6";
   const balance = useQuery({
-    queryKey: ["wise-balance", account?.address],
+    queryKey: ["wise-balance", account?.address.toLowerCase(), 1, currency],
     queryFn: () =>
       ethereumClient.readContract({
-        address: config.data?.enabled
-          ? config.data.deployment.currency
-          : "0x66a0f676479Cee1d7373f3DC2e2952778BfF5bd6",
+        address: currency,
         abi: tokenSalesAbi,
         functionName: "balanceOf",
         args: [getAddress(account!.address)],
       }),
-    enabled: !!account && (intent.kind === "bid" ||
-      (intent.kind === "fill" && intent.row.order.kind === 0)),
+    enabled: !!account && intent.kind !== "cancel",
     staleTime: 10_000,
+    refetchInterval: 30_000,
   });
+  const balanceLabel = balance.data !== undefined
+    ? `${wiseAmount(balance.data)} WISE`
+    : account && balance.isFetching ? "Loading…" : "—";
+  const balanceUsd = balance.data !== undefined && usd
+    ? usdAmount(balance.data, usd)
+    : !account ? "Connect wallet" : undefined;
   let amount: bigint | undefined,
     amountError = "";
   try {
@@ -148,17 +159,6 @@ export function SaleForm({
       (buy && sameAddress(account.address, owner)) ||
       (intent.kind === "cancel" &&
         !sameAddress(account.address, intent.row.order.maker)));
-  const tradingBlocked =
-    intent.kind !== "cancel" &&
-    (config.isError ||
-      !config.data?.enabled ||
-      config.data.recoveryOnly ||
-      config.data.newActivityPaused);
-  const unavailable =
-    intent.kind === "fill" &&
-    (!availability.data ||
-      availability.isError ||
-      !orderAvailable(availability.data));
   const insufficient =
     paying &&
     amount !== undefined &&
@@ -186,12 +186,23 @@ export function SaleForm({
             : "Accept Bid";
   const timeline = position ? stakeTimeline(position) : undefined,
     yieldValue = position ? stakeYield(position) : null;
-  const submitBlocked =
-    !account || !correctChain || busy || blocked || !!wrongOwner ||
-    tradingBlocked || unavailable || insufficient || amount === undefined ||
-    (intent.kind !== "cancel" &&
-      (live.isPending || live.isError || !position?.canList)) ||
-    (paying && (balance.isPending || balance.isError));
+  const readiness = reviewReadiness({ kind: intent.kind, paying: paying && !!account, config, live, availability, balance });
+  const retryReview = () => {
+    void config.refetch();
+    if (intent.kind !== "cancel") void live.refetch();
+    if (intent.kind === "fill") void availability.refetch();
+    if (account && intent.kind !== "cancel") void balance.refetch();
+  };
+  useErrorToast("sale-review", readiness.failure, retryReview);
+  useErrorToast("sale-wallet-read", !paying && intent.kind !== "cancel" && balance.isError && !balance.isFetching && "Could not read your WISE balance. Please try again.", () => void balance.refetch());
+  useErrorToast("sale-owner", !!wrongOwner && "Connect the appropriate owner or buyer wallet for this action.");
+  useErrorToast("sale-balance", !!insufficient && (buy || touched) && "Your WISE balance does not cover this amount.");
+  const submitBlocked = !account || !correctChain || busy || blocked || !!wrongOwner ||
+    readiness.blocked || insufficient || amount === undefined;
+  function validateAmount() {
+    setTouched(true);
+    if (price.trim() && amount === undefined) showToast(amountError || "Enter a valid WISE amount.", { id: "sale-amount", tone: "error" });
+  }
   return (
     <form
       onSubmit={(e) => {
@@ -245,7 +256,7 @@ export function SaleForm({
                   </dd>
                 </div>
                 <div>
-                  <dt>Annualized yield*</dt>
+                  <dt>Annualized yield</dt>
                   <dd>
                     {yieldValue === null ? "—" : `${yieldValue.toFixed(2)}%`}
                   </dd>
@@ -261,31 +272,8 @@ export function SaleForm({
                   <strong>{stakeDate(position.maturesAt)}</strong>
                 </div>
               </div>
-              <p className="sale-fineprint">
-                *Simple historical yield, not a promised return. Interest
-                excludes previously scraped rewards.
-              </p>
             </>
           )}
-          {intent.kind !== "cancel" && live.isPending && (
-            <p role="status">Checking stake details…</p>
-          )}
-          {live.isError && (
-            <p role="alert">
-              Could not verify stake details.{" "}
-              <button type="button" onClick={() => void live.refetch()}>
-                Retry
-              </button>
-            </p>
-          )}
-          <p className="sale-note">
-            <ShieldCheck size={18} />
-            <span>
-              {intent.kind === "list"
-                ? "The stake stays in your wallet until a buyer completes the purchase."
-                : "Ownership changes without restarting the stake’s maturity date."}
-            </span>
-          </p>
         </section>
         <section className="sale-terms">
           {intent.kind === "list" || intent.kind === "bid" ? (
@@ -294,42 +282,31 @@ export function SaleForm({
                 {intent.kind === "list" ? "Asking price" : "Your bid"}
               </label>
               <div className="sale-amount">
-                <input
+                <TokenAmountInput
                   id="sale-price"
                   autoFocus
                   inputMode="decimal"
                   placeholder="0.00"
                   value={price}
                   disabled={busy}
-                  onBlur={() => setTouched(true)}
-                  onChange={(e) => setPrice(e.target.value)}
+                  onBlur={validateAmount}
+                  onValueChange={setPrice}
                   aria-invalid={touched && amount === undefined}
-                  aria-describedby={
-                    touched && amountError ? "sale-price-error" : undefined
-                  }
+                  aria-describedby="sale-price-usd"
                 />
-                <span>WISE</span>
+                <CurrencyPicker disabled={busy} balanceLabel={balanceLabel} balanceUsd={balanceUsd} />
               </div>
-              {touched && amountError && (
-                <p className="sale-error" id="sale-price-error">
-                  {amountError}
-                </p>
-              )}
-              <label htmlFor="sale-days">
-                {intent.kind === "list" ? "Listing duration" : "Bid duration"}
-              </label>
-              <select
+              <p className="sale-amount-usd" id="sale-price-usd">
+                <span>{amount === undefined ? "USD estimate" : usdAmount(amount, usd)}</span>
+                <span className="sale-amount-balance">Balance: <strong>{balanceLabel}</strong></span>
+              </p>
+              <DurationPicker
                 id="sale-days"
+                label={intent.kind === "list" ? "Listing duration" : "Bid duration"}
                 value={days}
+                onChange={setDays}
                 disabled={busy}
-                onChange={(e) => setDays(Number(e.target.value))}
-              >
-                {[1, 3, 7, 30].map((n) => (
-                  <option value={n} key={n}>
-                    {n} {n === 1 ? "day" : "days"}
-                  </option>
-                ))}
-              </select>
+              />
             </>
           ) : (
             <>
@@ -358,7 +335,7 @@ export function SaleForm({
               </div>
               <div>
                 <dt>Seller receives</dt>
-                <dd>{formatAmount(amounts.net, 18)} WISE</dd>
+                <dd>{formatAmount(amounts.net, 18)} WISE<small>{usdAmount(amounts.net, usd)}</small></dd>
               </div>
             </dl>
           )}
@@ -372,53 +349,22 @@ export function SaleForm({
               Place a bid instead <ArrowUpRight size={16} />
             </button>
           )}
-          {paying && account && (
+          {buy && account && (
             <div className="sale-wallet-balance">
               <span>Wallet balance</span>
               <strong>
                 {balance.data === undefined
-                  ? "Checking…"
+                  ? (balance.isFetching ? "Checking…" : "—")
                   : `${wiseAmount(balance.data)} WISE`}
               </strong>
-              {balance.isError && <span>Balance could not be verified.</span>}
-              {insufficient && (
-                <span className="sale-error">
-                  Insufficient WISE for this {buy ? "purchase" : "bid"}.
-                </span>
-              )}
             </div>
           )}
           {intent.kind === "fill" && <TradeCounterparty row={intent.row} />}
-          <p className="sale-fineprint">{tradeInstructions(intent)}</p>
+          {intent.kind !== "list" && (
+            <p className="sale-fineprint">{tradeInstructions(intent)}</p>
+          )}
         </section>
       </div>
-      {tradingBlocked && (
-        <p className="sale-error" role="status">
-          {config.isPending
-            ? "Checking market availability…"
-            : !config.data?.enabled && config.data
-              ? config.data.reason
-              : "Trading is temporarily unavailable. Refresh to try again."}
-        </p>
-      )}
-      {wrongOwner && (
-        <p className="sale-error" role="alert">
-          This action requires a different wallet. Connect the appropriate owner
-          or buyer account.
-        </p>
-      )}
-      {unavailable && (
-        <p className="sale-error" role="status">
-          {availability.isPending
-            ? "Checking this order…"
-            : "This order is not currently available."}
-        </p>
-      )}
-      {error && (
-        <p className="sale-error" role="alert">
-          {error}
-        </p>
-      )}
       <footer className="sale-footer">
         {status && <p role="status">{status}</p>}
         {!account ? (
@@ -443,8 +389,10 @@ export function SaleForm({
             className="stake-primary"
             type="submit"
             disabled={submitBlocked}
+            aria-busy={busy || readiness.checking}
           >
-            {busy ? "Check your wallet…" : action}
+            {(busy || readiness.checking) && <LoaderCircle className="sale-loading" size={18} aria-hidden="true" />}
+            {busy ? "Check your wallet…" : readiness.checking ? "Checking…" : action}
           </button>
         )}
       </footer>

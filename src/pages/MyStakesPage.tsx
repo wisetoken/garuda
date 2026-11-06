@@ -1,9 +1,11 @@
+import { useErrorToast } from "../components/AppToast";
 import { useMarketActions } from "../components/MarketActions";
 import { useState } from "react";
-import { ArrowDownUp, LayoutGrid, List, Wallet } from "lucide-react";
+import { ArrowDownUp, LayoutGrid, List } from "lucide-react";
 import { useActiveAccount } from "thirdweb/react";
 import { GarudaPageKicker } from "../components/GarudaPageKicker";
 import { StakeCard } from "../components/StakeCard";
+import { WalletWelcome } from "../components/WalletWelcome";
 import {
   usePortfolio,
   useWiseUsd,
@@ -15,19 +17,19 @@ import {
   stakeCollection,
   STAKE_COLLECTIONS,
 } from "../lib/blend/stake-collections";
-import { useWalletAccess } from "../lib/wallet";
 import "./my-stakes.css";
 
 export function MyStakesPage({ embedded = false }: { embedded?: boolean }) {
   const { open, busy } = useMarketActions();
   const [view, setView] = useState<"cards" | "table">("cards");
-  const account = useActiveAccount(),
-    { connect, connecting } = useWalletAccess();
+  const account = useActiveAccount();
   const portfolio = usePortfolio(),
     { data: price } = useWiseUsd();
   const positions = [...(portfolio.data?.positions ?? [])].sort(
     (a, b) => b.startAt - a.startAt,
   );
+  useErrorToast("portfolio", portfolio.isError && !portfolio.isFetching && "Could not refresh your stakes. Please try again.", () => void portfolio.refetch());
+  const actionsBlocked = busy || portfolio.isFetching || portfolio.isError;
   return (
     <>
       {!embedded && <title>My stakes | WiseOne | Garuda Extension</title>}
@@ -44,11 +46,11 @@ export function MyStakesPage({ embedded = false }: { embedded?: boolean }) {
         )}
         <div className="stakes-title-row">
           {embedded ? (
-            <strong>Your NFT stakes ({positions.length})</strong>
+            <strong>Your NFT stakes{account ? ` (${positions.length})` : ""}</strong>
           ) : (
             <h1>Start with your stake.</h1>
           )}
-          <div
+          {account && <div
             className="stake-view-switch"
             role="group"
             aria-label="Stake view"
@@ -67,37 +69,20 @@ export function MyStakesPage({ embedded = false }: { embedded?: boolean }) {
               <List size={15} aria-hidden="true" />
               Table
             </button>
-          </div>
+          </div>}
         </div>
       </div>
       {!account ? (
-        <div className="state-panel">
-          <Wallet size={28} />
-          <h2>Your stakes, in one place.</h2>
-          <p>Connect your wallet to see your Signature and Advanced stakes.</p>
-          <button
-            className="stake-primary"
-            onClick={() => void connect()}
-            disabled={connecting}
-          >
-            Connect wallet
-          </button>
-        </div>
+        <WalletWelcome />
       ) : (
         <>
-          {portfolio.isError && (
-            <div className="state-message" role="alert">
-              Could not refresh your stakes.{" "}
-              <button onClick={() => void portfolio.refetch()}>
-                Try again
-              </button>
-            </div>
-          )}
           {portfolio.isPending ? (
             <div className="state-panel" role="status">
               Reading your stakes from Ethereum…
             </div>
-          ) : !portfolio.isError && !positions.length ? (
+          ) : portfolio.isError && !positions.length ? (
+            <div className="state-panel"><button className="market-secondary" disabled={portfolio.isFetching} onClick={() => void portfolio.refetch()}>{portfolio.isFetching ? "Refreshing…" : "Refresh stakes"}</button></div>
+          ) : !positions.length ? (
             <div className="state-panel">
               <h2>No NFT stakes in this wallet.</h2>
               <p>Your Signature and Advanced positions will appear here.</p>
@@ -108,7 +93,7 @@ export function MyStakesPage({ embedded = false }: { embedded?: boolean }) {
                 <StakeCard
                   key={`${position.collection}:${position.tokenId}`}
                   position={position}
-                  onList={() => open({ kind: "list", position })}
+                  onList={actionsBlocked ? undefined : () => open({ kind: "list", position })}
                 />
               ))}
             </div>
@@ -186,7 +171,7 @@ export function MyStakesPage({ embedded = false }: { embedded?: boolean }) {
                         <td>
                           <button
                             className="market-primary"
-                            disabled={busy || !position.canList}
+                            disabled={actionsBlocked || !position.canList}
                             onClick={() => open({ kind: "list", position })}
                           >
                             List for sale

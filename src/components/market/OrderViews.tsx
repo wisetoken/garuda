@@ -75,13 +75,9 @@ export function OrderCard({ row }: { row: SaleRow }) {
         <h2>
           {stakeCollection(row.order.collection).name} Stake #{row.order.tokenId}
         </h2>
-        <p>
-          {position.isError
-            ? "Stake details unavailable."
-            : "Reading stake details…"}
-        </p>
+        {position.isFetching && <p role="status">Reading stake details…</p>}
         {position.isError && (
-          <button onClick={() => void position.refetch()}>Try again</button>
+          <button disabled={position.isFetching} onClick={() => void position.refetch()}>Refresh details</button>
         )}
       </article>
     );

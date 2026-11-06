@@ -7,6 +7,8 @@ import { useMarketController } from "../lib/market/useMarketController";
 import { SaleForm } from "./market/SaleForm";
 import "./market.css";
 import "./market/sale-dialog.css";
+import "./market/sale-loading.css";
+import { useAppToast } from "./AppToast";
 type MarketContextValue = {
   open: (intent: MarketIntent) => void;
   busy: boolean;
@@ -30,15 +32,12 @@ const labels: Record<SalesStep, string> = {
   cancelling: "Confirm cancellation in your wallet…",
 };
 export function MarketActionsProvider({ children }: { children: ReactNode }) {
+  const { showToast } = useAppToast();
   const {
     intent,
     setIntent,
     busy,
     step,
-    error,
-    setError,
-    notice,
-    setNotice,
     revision,
     pending,
     unsaved,
@@ -58,17 +57,6 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
           <span>A signed order needs review.</span>
           <button onClick={() => open({ kind: "cancel", row: unsaved })}>
             Review cancellation
-          </button>
-        </div>
-      )}
-      {notice && (
-        <div className="market-notice" role="status">
-          {notice}
-          <button
-            aria-label="Dismiss notification"
-            onClick={() => setNotice("")}
-          >
-            <X size={16} />
           </button>
         </div>
       )}
@@ -113,7 +101,6 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
             intent={intent}
             busy={busy}
             status={busy ? labels[step] : ""}
-            error={error}
             blocked={
               (!!pending && !pending.confirmed) ||
               (!!unsaved && intent.kind !== "cancel")
@@ -124,7 +111,7 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
               try {
                 await wallet?.switchChain(ethereum);
               } catch {
-                setError("Network switch was not completed.");
+                showToast("Network switch was not completed. Please try again.", { tone: "error" });
               }
             }}
             correctChain={chain?.id === 1}

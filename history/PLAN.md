@@ -1,49 +1,53 @@
 # WiseOne | Garuda Extension implementation plan
 
-This document describes the implementation sequence and design decisions. Issue status is tracked with beads; it is not duplicated here. Work stays on `master`, with small local commits, Codex co-authorship, no package-lock changes, and no push until requested. Source files stay below 500 lines.
+This document describes Garuda's scope, implementation sequence, and design decisions. Issue status is tracked with beads; it is not duplicated here. Continue development in `Development/garuda-full`. Work stays on `master`, with small local commits, Codex co-authorship, no package-lock changes, and no push until requested. Source files stay below 500 lines.
 
-## Starting point
+## Current foundation
 
-The app has wallet connection, live Signature and Advanced stake portfolios, and signed Seaport orders. Signature sales and purchase bids can transfer full NFT ownership in exchange for WISE. Fork verification covers active and matured stakes, exact payment and fees, unchanged underlying stake terms, and rejected stale or invalid orders. Advanced trading requires a configured validator.
+Garuda has wallet connection, live Signature and Advanced stake portfolios, and a Signature marketplace with listings, purchase bids, buying, bid acceptance, and onchain cancellation in WISE. Settlement verification on disposable Ethereum forks covers active and matured stakes, exact payments and fees, unchanged underlying stake terms, and rejection of stale or invalid orders. This evidence does not establish a public launch or completed security audit. Advanced trading remains disabled until a verified validator deployment is configured.
 
-An existing Arkiv integration publishes signed orders manually and caches stake snapshots under `wiseone.yoda`. A read of Rabdi on 6 November 2026 found two listing entities, for Signature Stakes #53 and #20, owned by publisher `0x8d5b491D2c843F6B996De1EC66269809138cA60A`. This is existing work, not a new event contribution.
+The Garuda API validates signed orders, persists them in PostgreSQL, and queues automatic Arkiv publication with retries and deduplication. Arkiv is the default discovery source, with an explicit All orders catalog and publication links. Garuda order and stake schemas are implemented, and Rabdi publication evidence is recorded in `arkiv/evidence.md`.
 
-## Consistent stake identity
+The interface includes the disconnected welcome screen, WiseOne wallet connection styling, consistent typography, header and footer branding, grouped token amounts, USD estimates, custom currency controls, and larger trade actions. Continue reviewing these as complete flows across desktop, mobile, and both themes. WISE is the supported settlement currency; a currency menu must not imply that other currencies are executable.
 
-Use “Signature Stake #…” and “Advanced Stake #…” in cards, trade reviews, order details and accessible labels. Keep the WiseOne teal logo for stakes and the WISE token logo for currency. Collection names in contract data remain unchanged.
+## Next: finish and verify the marketplace experience
 
-## Garuda market service
+Start with an end-to-end browser review of My stakes and Market: disconnected and connected states, stake cards and tables, listing and bid forms, duration and currency menus, review dialogs, wallet prompts, pending transactions, success, rejection, and recovery. Check spacing, focus, keyboard interaction, dropdown placement, and narrow screens together with data loading and error states.
 
-Keep signed-order verification and the immutable Ethereum publication block in the market database. Add a small Garuda API service rather than coupling market publication to the homepage. Configure its deployment, database and RPC on the server. Private publisher keys must never enter browser configuration or git.
+Make transaction feedback clear throughout approval, signing, publication, and confirmation. Keep saved signed orders recoverable when publication fails. Refresh portfolio, order availability, and balances after completion, and prevent duplicate submissions while an action is pending. Preserve both direct purchases and accepted bids.
 
-Use `/api/garuda` for the market. Preserve existing signed orders and publication anchors. The original publication block remains necessary to reject a signature after its NFT has been transferred away and back; an Arkiv re-publication must not reset that protection.
+Use “Signature Stake #…” and “Advanced Stake #…” consistently in cards, reviews, order details, and accessible labels. Use the WiseOne teal logo for stake identity and the WISE token logo for currency. Contract collection names remain unchanged.
 
-## Arkiv order discovery
+Complete this phase with unit tests, type checking, a production build, and browser verification. Repeat fork and API integration checks when settlement, validation, persistence, or transaction orchestration changes. User wallet actions remain necessary for real signatures and transactions.
 
-Publish listings and purchase bids to `wiseone.garuda.orders.v1` on the current Arkiv Rabdi testnet, chain 7794095. Store the signed envelope and queryable deployment scope, order hash, kind, maker, stake owner, collection, token ID and expiry. Use a dedicated server publisher; the entity owner is that publisher, while the order maker is authenticated by the Ethereum signature. Do not describe these entities as user-owned.
+## Market reliability and deployment readiness
 
-Match each entity's expiration to the signed order deadline. Expiration removes discovery data; it does not cancel the Ethereum signature before its deadline. Cancellation and settlement are always checked on Ethereum, so an unexpired entity cannot make an unavailable order executable.
+Keep signed-order verification and the immutable original Ethereum publication block in the market database. Preserve existing orders and anchors: transfer-away-and-back protection must survive retries and Arkiv re-publication.
 
-Persist a publication request when an order is accepted. Retry temporary Arkiv failures with bounded backoff and deduplicate by deployment and order hash under a publisher lock. Read the entity back before reporting publication success. Never lose an already signed order because Arkiv is unavailable.
+Exercise API restarts, unavailable RPCs, Arkiv outages, publication retries, expired orders, cancellation, ownership changes, and recovery. Show source failures explicitly; a database fallback must not be presented as an Arkiv result. Recheck current Ethereum availability before enabling a trade.
 
-The Market will expose Arkiv discovery as a visible data source, with entity links and publication state. Query by listing or bid, collection and expiration, and support maker/token filtering. Verify discovered payloads, publisher, original publication anchor and current Ethereum availability before enabling trading. Show source failures explicitly; a database fallback must not be presented as an Arkiv result.
+Review dependency advisories and supported updates before public deployment. Define the production app/API routing, PostgreSQL configuration, Ethereum RPC, dedicated publisher, and worker operation. The pricing and stake-indexing service is a separate dependency; document its availability and show unavailable estimates honestly. Keep publisher keys and private credentials server-side and out of git. Deployment is a separate action from local readiness work.
 
-## Stake snapshots
+## Arkiv discovery and snapshot guarantees
 
-Use `wiseone.garuda.stakes.v1` for short-lived, publicly readable display snapshots. Include collection, token ID, observed owner and block provenance. Recheck canonical block hashes and use fresh Ethereum reads before approvals or settlement. Cached balances, yield and ownership are never authority to transfer a stake.
+Use `wiseone.garuda.orders.v1` for listings and purchase bids on Arkiv Rabdi, chain 7794095. Retain the signed envelope, deployment scope, order hash, kind, maker, stake owner, collection, token ID, expiry, and original publication anchor. A dedicated server publisher owns the entities; the Ethereum signature authenticates the maker.
 
-## Verification and evidence
+Match entity expiration to the signed order deadline. Discovery expiration does not cancel a still-valid Ethereum signature. Persist publication requests with accepted orders, retry temporary failures with bounded backoff, deduplicate under a publisher lock, and read an entity back before reporting publication success.
 
-Test listing and bid publication, exact expiry, idempotent retries, malformed or mismatched entities, wrong publishers, reorgs, cancellation, transfer-away-and-back protection and Arkiv outages. Exercise both source views in the browser. Publish only already public, valid market orders during integration checks; new mainnet orders and transfers still require the user's wallet action.
+Use `wiseone.garuda.stakes.v1` for short-lived display snapshots with owner and block provenance. Verify canonical block hashes and use fresh Ethereum reads before approvals or settlement. Cached balances, yield, and ownership are never authority to transfer a stake.
 
-Record actual Rabdi entity keys, publisher address and runnable queries. Do not claim a live integration from mocks alone. Keep testnet checks separate from the isolated Ethereum fork tests.
+Maintain coverage for malformed entities, wrong publishers or deployment scopes, expiry, idempotent retries, reorgs, cancellation, and transfer-away-and-back protection. Keep actual entity keys, publisher details, and runnable queries in the Arkiv documentation. Separate live testnet evidence from isolated Ethereum fork tests and report only observed usage.
 
-## Continuity submission
+## Then: Get WISE
 
-Maintain `arkiv/schema.md`, `arkiv/friction.md`, `arkiv/reach.md`, `arkiv/why-arkiv.md` and `arkiv/how-you-use-arkiv.md`. README must distinguish what existed before the event from new work, disclose AI assistance, and include the writer address and a query. Report only measured usage and observed friction. Use the MIT License. Confirm event timing and Continuity eligibility before claiming qualification.
+Build the funding and swap experience around acquiring WISE for marketplace use. Establish supported routes, quote freshness, slippage, fees, allowances, network checks, and transaction outcomes before enabling execution. Reuse the app's amount formatting, token presentation, and USD estimates. Keep broader marketplace settlement currencies as a separate contract and API decision.
 
-References: https://ethglobal.com/events/mumbai/prizes/arkiv and https://docs.arkiv.network/.
+## Then: stake-backed lending
 
-## Later application work
+Define borrower requests and stake-specific lender offers, including principal, duration, interest, fees, expiry, collateral custody, repayment, and default behavior. Establish how ownership and stake rights behave while collateral is committed. Implement and verify the contracts and settlement paths before enabling loan signatures or funding. Build the interface around those verified terms.
 
-Complete funding and stake-backed lending as separate features. Lending needs explicit borrower requests, lender offers, collateral custody rules, repayment/default behavior and verified contracts before signing or funding is enabled. Finish the homepage after the application flows are established.
+## Subsequent Garuda work
+
+Add CROPS recovery tools and optional private Ethereum reads, with explicit provider behavior and failure states. Enable Advanced stake trading only after its validator configuration and collection-specific settlement checks are verified. Complete the homepage after the application flows are established.
+
+Keep the README and integration documentation aligned with demonstrated behavior. Optional storage or ecosystem integrations should support a concrete Garuda user flow; they are not prerequisites for finishing the marketplace.

@@ -37,8 +37,10 @@ import {
 } from "./recovery";
 import type { MarketIntent, PendingTx } from "./types";
 import { refreshTradeData, tradeDestination } from "./workflow";
+import { useAppToast } from "../../components/AppToast";
 
 export function useMarketController() {
+  const { showToast } = useAppToast();
   const account = useActiveAccount(),
     wallet = useActiveWallet(),
     chain = useActiveWalletChain();
@@ -48,9 +50,7 @@ export function useMarketController() {
   const [intent, setIntent] = useState<MarketIntent | null>(null),
     [busy, setBusy] = useState(false),
     [step, setStep] = useState<SalesStep>("checking");
-  const [error, setError] = useState(""),
-    [notice, setNotice] = useState(""),
-    [revision, setRevision] = useState(0),
+  const [revision, setRevision] = useState(0),
     [pending, setPending] = useState<PendingTx | null>(null);
   const [unsaved, setUnsaved] = useState<SignedSale | null>(null);
   const dialog = useRef<HTMLDialogElement>(null),
@@ -70,7 +70,6 @@ export function useMarketController() {
   useEffect(() => {
     if (previousAccount.current && previousAccount.current !== account?.address && !lock.current) {
       setIntent(null);
-      setError("");
     }
     previousAccount.current = account?.address;
   }, [account?.address]);
@@ -108,8 +107,6 @@ export function useMarketController() {
   }, [busy]);
   function open(next: MarketIntent) {
     if (lock.current) return;
-    setError("");
-    setNotice("");
     setIntent(next);
   }
   async function connectForTrade() {
@@ -134,7 +131,6 @@ export function useMarketController() {
     if (!intent || lock.current) return;
     lock.current = true;
     setBusy(true);
-    setError("");
     phase.current = "checking";
     setStep("checking");
     const activeIntent = intent;
@@ -253,14 +249,14 @@ export function useMarketController() {
           },
           (signed) => marketApi(id, "sales", signed),
         );
-        setNotice(
+        showToast(
           activeIntent.kind === "list"
             ? "Your stake is listed for sale."
             : "Your purchase bid is published.",
         );
       } else if (activeIntent.kind === "fill") {
         const result = await fillSale(session, activeIntent.row);
-        setNotice(
+        showToast(
           result.order.kind === 0
             ? "Purchase confirmed. The stake is now in your wallet."
             : "Sale confirmed. The payment is now in your wallet.",
@@ -272,7 +268,7 @@ export function useMarketController() {
         } catch {
           /* A cancelled signature is safe to retain. */
         }
-        setNotice("Order cancelled on Ethereum.");
+        showToast("Order cancelled on Ethereum.");
       }
       if (
         activeIntent.kind !== "cancel" ||
@@ -284,7 +280,7 @@ export function useMarketController() {
       refresh();
       navigate(tradeDestination(activeIntent, id));
     } catch (e) {
-      setError(salesFailure(e, phase.current));
+      showToast(salesFailure(e, phase.current), { tone: "error" });
       refresh();
     } finally {
       lock.current = false;
@@ -300,7 +296,7 @@ export function useMarketController() {
       });
       const block = await ethereumClient.getBlockNumber();
       if (block - receipt.blockNumber + 1n < 12n) {
-        setNotice("Transaction included; waiting for 12 confirmations.");
+        showToast("Transaction included; waiting for 12 confirmations.");
         return;
       }
       if (!sameAddress(context.current.account?.address ?? "", pendingAddress))
@@ -311,14 +307,15 @@ export function useMarketController() {
         `garuda:pending:${account?.address.toLowerCase()}`,
         JSON.stringify(next),
       );
-      setNotice(
+      showToast(
         receipt.status === "success"
           ? "Transaction confirmed. Review the current order state before continuing."
           : "Transaction reverted. Refresh and review before trying again.",
+        { tone: receipt.status === "success" ? "info" : "error" },
       );
       refresh();
     } catch {
-      setNotice(
+      showToast(
         "The transaction is not confirmed yet. Check its status on Etherscan.",
       );
     }
@@ -329,10 +326,6 @@ export function useMarketController() {
     setIntent,
     busy,
     step,
-    error,
-    setError,
-    notice,
-    setNotice,
     revision,
     pending,
     unsaved,

@@ -1,3 +1,4 @@
+import { useErrorToast } from "../AppToast";
 import { useActiveAccount } from "thirdweb/react";
 import { useMarketActions } from "../MarketActions";
 import type { SalesDeployment } from "../../lib/blend/sales";
@@ -13,19 +14,19 @@ export function SavedOrders({
   const account = useActiveAccount(),
     { open, revision, busy } = useMarketActions();
   void revision;
-  if (!account) return null;
-  const groups = deployments.map((d) => {
+  const groups = (account ? deployments : []).map((d) => {
     try {
       return {
         d,
-        orders: readRecovery(localStorage, d, account.address),
+        orders: readRecovery(localStorage, d, account!.address),
         error: false,
       };
     } catch {
       return { d, orders: [], error: true };
     }
   });
-  if (!groups.some((g) => g.orders.length || g.error)) return null;
+  useErrorToast("saved-orders", groups.some(group => group.error) && "Saved orders could not be read. New signatures stay blocked to protect this data.");
+  if (!groups.some((g) => g.orders.length)) return null;
   return (
     <details className="market-recovery">
       <summary>Saved signed orders</summary>
@@ -36,12 +37,7 @@ export function SavedOrders({
       </p>
       {groups.map(({ d, orders, error }) => (
         <div key={d.collection}>
-          {error ? (
-            <p role="alert">
-              Saved orders could not be read. New signatures are blocked to
-              protect this data.
-            </p>
-          ) : (
+          {!error && (
             orders.map((row) => (
               <div className="recovery-row" key={row.order.nonce}>
                 <span>

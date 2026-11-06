@@ -1,0 +1,25 @@
+/* Welcome presentation shared with the original Garuda app. */
+.wallet-welcome { container-type: inline-size; }
+.garuda-wallet-start { display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; padding: 44px; border: 1px solid var(--border); border-radius: 22px; background: var(--panel); }
+.garuda-feature-icon { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 24px; border-radius: 15px; color: var(--accent); background: var(--accent-soft); }
+.garuda-wallet-intro h2 { margin: 0 0 18px; font-size: 38px; font-weight: 450; line-height: 1.15; letter-spacing: -1.2px; }
+.garuda-wallet-intro > p { max-width: 440px; margin: 0; color: var(--muted); line-height: 1.7; }
+.garuda-start-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 24px; margin: 28px 0 18px; }
+.garuda-start-actions > a { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--accent); }
+.garuda-wallet-intro small { display: block; max-width: 380px; font-size: 12px; color: var(--muted); line-height: 1.65; }
+.garuda-wallet-features { display: grid; align-content: center; gap: 26px; padding-left: 38px; border-left: 1px solid var(--border); }
+.garuda-wallet-features > div { display: flex; align-items: flex-start; gap: 18px; }
+.garuda-wallet-features svg { color: var(--accent); flex-shrink: 0; margin-top: 3px; }
+.garuda-wallet-features h3 { margin: 0 0 8px; font-size: 17px; font-weight: 500; }
+.garuda-wallet-features p { margin: 0; max-width: 310px; color: var(--muted); line-height: 1.7; font-size: 14px; }
+
+.garuda-start-actions > a { text-decoration: none; }
+.wallet-welcome-connect { display: inline-flex; align-items: center; justify-content: center; gap: 20px; min-height: 48px; padding: 14px 22px; border: 0; border-radius: 8px; background: var(--accent); color: white; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.wallet-welcome-connect:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 85%, white); }
+.wallet-welcome-connect:disabled { opacity: .45; cursor: not-allowed; }
+@container (max-width: 760px) {
+  .garuda-wallet-start { grid-template-columns: minmax(0, 1fr); gap: 28px; padding: 28px; }
+  .garuda-wallet-features { padding: 28px 0 0; border-left: 0; border-top: 1px solid var(--border); gap: 22px; }
+  .garuda-wallet-intro h2 { font-size: 32px; }
+  .garuda-start-actions { gap: 18px; }
+}

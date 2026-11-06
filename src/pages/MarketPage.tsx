@@ -1,3 +1,4 @@
+import { useErrorToast } from "../components/AppToast";
 import { ArkivSource } from "../components/market/ArkivSource";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -101,7 +102,6 @@ export function MarketPage() {
     markets.some((query) => query.isError) ||
     signature.isError ||
     advanced.isError;
-  const checking = pages.some((page) => !page.verified);
   const showOrders = section === "market" || mine;
   function refresh() {
     markets.forEach((query) => void query.refetch());
@@ -109,6 +109,9 @@ export function MarketPage() {
     if (deployments[1]) void advanced.refetch();
     positions.forEach((query) => void query.refetch());
   }
+  const fetching = markets.some(query => query.isFetching) || signature.isFetching || advanced.isFetching;
+  useErrorToast("market-data", unavailable && !fetching && "Could not refresh the market. Please try again.", refresh);
+  useErrorToast("market-positions", positions.some(query => query.isError && !query.isFetching) && "Could not refresh stake details. Please try again.", refresh);
   function onSort(value: MarketSort) {
     if (sort === value) setDirection(direction === "asc" ? "desc" : "asc");
     else {
@@ -213,7 +216,7 @@ export function MarketPage() {
             )}
           </div>
         )}
-        {section === "market" && <ArkivSource source={source} onChange={setSource} failed={signature.isError || advanced.isError} onRetry={refresh} />}
+        {section === "market" && <ArkivSource source={source} onChange={setSource} />}
         {showOrders && (
           <MarketToolbar
             count={filtered.length}
@@ -240,18 +243,6 @@ export function MarketPage() {
             </button>
           </div>
         )}
-        {unavailable && (
-          <p className="state-message" role="alert">
-            Some market data could not be refreshed.{" "}
-            <button onClick={refresh}>Retry</button>
-          </p>
-        )}
-        {checking && showOrders && (
-          <p className="state-message" role="status">
-            Showing the order catalog. Trading waits for current availability
-            checks.
-          </p>
-        )}
         {section === "positions" && ownedView === "stakes" ? (
           <div className="market-portfolio">
             <MyStakesPage embedded />
@@ -265,7 +256,7 @@ export function MarketPage() {
               : loading
                 ? "Loading the market…"
                 : unavailable
-                  ? "Market data is temporarily unavailable."
+                  ? <button className="market-secondary" disabled={fetching} onClick={refresh}>{fetching ? "Refreshing…" : "Refresh market"}</button>
                   : "No matching orders right now."}
           </div>
         ) : view === "table" ? (

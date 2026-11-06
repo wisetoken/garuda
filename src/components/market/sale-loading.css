@@ -1,0 +1,4 @@
+.sale-footer .stake-primary { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.sale-loading { animation: sale-loading-spin 900ms linear infinite; flex-shrink: 0; }
+@keyframes sale-loading-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sale-loading { animation: none; } }

@@ -2,8 +2,8 @@ import { ExternalLink } from 'lucide-react';
 import type { SaleRow } from '../../lib/blend/sales';
 import './arkiv-source.css';
 
-export function ArkivSource({source,onChange,failed,onRetry}: {
-  source:'arkiv'|'catalog';onChange:(source:'arkiv'|'catalog')=>void;failed:boolean;onRetry:()=>void;
+export function ArkivSource({source,onChange}: {
+  source:'arkiv'|'catalog';onChange:(source:'arkiv'|'catalog')=>void;
 }) {
   return <div className="arkiv-source">
     <div role="group" aria-label="Order discovery source">
@@ -11,9 +11,7 @@ export function ArkivSource({source,onChange,failed,onRetry}: {
       <button aria-pressed={source==='arkiv'} onClick={()=>onChange('arkiv')}>Arkiv</button>
       <button aria-pressed={source==='catalog'} onClick={()=>onChange('catalog')}>All orders</button>
     </div>
-    {source==='arkiv' ? <p role={failed?'alert':undefined}>{failed ? <>
-      Arkiv discovery is unavailable. <button onClick={onRetry}>Retry</button> or choose All orders.
-    </> : 'Listings and bids published on Arkiv. Availability verified on Ethereum.'}</p>
+    {source==='arkiv' ? <p>Listings and bids published on Arkiv. Availability verified on Ethereum.</p>
     : <p>The complete order catalog, including orders awaiting Arkiv publication.</p>}
   </div>;
 }

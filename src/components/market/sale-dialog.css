@@ -189,7 +189,7 @@
   margin-bottom: 24px;
   background: color-mix(in srgb, var(--panel) 85%, black);
 }
-.sale-amount:focus-within {
+.sale-amount:has(input:focus) {
   border-color: var(--accent);
 }
 .sale-amount input {
@@ -204,16 +204,7 @@
 .sale-amount span {
   color: var(--muted);
 }
-.sale-terms select {
-  width: 100%;
-  background: var(--panel);
-  color: inherit;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 13px;
-  font: inherit;
-  font-size: 15px;
-}
+
 .sale-total {
   font-size: 36px;
   letter-spacing: -0.04em;
@@ -369,3 +360,42 @@
 .sale-counterparty > div > span {
   color: var(--muted);
 }
+
+/* Amount entry follows the token / fiat hierarchy used across WiseOne. */
+.sale-amount { margin-bottom: 8px; }
+.sale-amount-usd { display: flex; justify-content: space-between; gap: 12px; margin: 0 2px 24px; color: var(--muted); font-size: 13px; }
+.sale-currency { display: flex; align-items: center; flex-shrink: 0; gap: 8px; padding-left: 12px; border-left: 1px solid var(--border); }
+.sale-currency img { object-fit: contain; }
+.sale-breakdown dd small { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; font-weight: 400; }
+.sale-footer .stake-primary { min-height: 56px; padding: 16px 24px; font-size: 16px; }
+@media (max-width: 480px) {
+  .sale-amount { padding: 12px; gap: 8px; font-size: 24px; }
+  .sale-currency { gap: 6px; padding-left: 8px; }
+  .sale-currency img { width: 20px; height: 20px; }
+}
+
+.sale-currency { position: relative; }
+.sale-currency-trigger { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 6px 0; border: 0; border-radius: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: 16px; font-weight: 600; box-shadow: none; }
+.sale-amount .sale-currency-trigger span { color: inherit; }
+.sale-currency-trigger > svg { margin-left: 4px; color: var(--muted); }
+.sale-currency-trigger:hover { color: var(--accent); }
+.sale-currency-trigger:focus-visible { outline: none; box-shadow: 0 2px var(--accent); }
+.sale-currency-menu { position: absolute; z-index: 60; top: calc(100% + 14px); right: 0; width: 320px; max-width: calc(100vw - 80px); padding: 8px; border: 1px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text-primary); box-shadow: 0 12px 32px #0004; font-size: 14px; }
+.sale-currency-menu > p { margin: 6px 10px 12px; color: var(--muted); font-size: 12px; }
+.sale-currency-menu > button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 10px; border: 0; border-radius: 9px; background: var(--accent-soft); color: inherit; text-align: left; font: inherit; }
+.sale-currency-menu > button > span { flex: 1; color: inherit; }
+.sale-currency-menu strong { display: block; font-size: 14px; font-weight: 500; }
+.sale-currency-menu small { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); }
+.sale-currency-menu > button > svg { color: var(--accent); }
+.sale-currency-menu > button:focus-visible { outline: none; background: color-mix(in srgb, var(--accent) 18%, var(--panel)); }
+.sale-currency-menu .sale-currency-hint { margin: 12px 10px 6px; }
+
+.sale-amount-usd { flex-wrap: wrap; align-items: baseline; row-gap: 6px; }
+.sale-amount-balance { margin-left: auto; text-align: right; }
+.sale-amount-balance strong { color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.sale-currency-menu-heading { display: flex; justify-content: space-between; gap: 12px; }
+.sale-currency-menu > button > img { flex-shrink: 0; }
+.sale-currency-menu > button > .sale-currency-identity { flex: 0 0 auto; }
+.sale-currency-identity strong { display: flex; align-items: center; gap: 6px; }
+.sale-currency-identity svg { color: var(--accent); }
+.sale-currency-menu > button > .sale-currency-balance { min-width: 0; margin-left: auto; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }

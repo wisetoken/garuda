@@ -5,14 +5,15 @@ import { App } from './App';
 import './styles.css';
 import './cursors.css';
 import { AppProviders } from './lib/wallet';
+import { AppToastProvider } from './components/AppToast';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Garuda root element is missing.');
 
 createRoot(root).render(
   <StrictMode>
-    <AppProviders><BrowserRouter>
+    <AppToastProvider><AppProviders><BrowserRouter>
       <App />
-    </BrowserRouter></AppProviders>
+    </BrowserRouter></AppProviders></AppToastProvider>
   </StrictMode>,
 );

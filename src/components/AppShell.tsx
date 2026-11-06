@@ -1,19 +1,12 @@
 import { Sun, Moon } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
+import { useTheme } from '../lib/theme';
 import { WalletButton } from '../lib/wallet';
 import { Link } from 'react-router-dom';
 import { navigation, screenHref, type Screen } from '../navigation';
 
 export function AppShell({ activeScreen, children }: { activeScreen: Screen; children: ReactNode }) {
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    try { return localStorage.getItem('garuda:theme:v1') === 'light' ? 'light' : 'dark'; }
-    catch { return 'dark'; }
-  });
-  function toggleTheme() {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    try { localStorage.setItem('garuda:theme:v1', next); } catch { /* Theme still works without storage. */ }
-  }
+  const { theme, toggleTheme } = useTheme();
   return (
     <div className="app-shell" data-theme={theme}>
       <a className="skip-link" href="#main">Skip to content</a>
@@ -39,7 +32,10 @@ export function AppShell({ activeScreen, children }: { activeScreen: Screen; chi
       <main className="container app-content" id="main" tabIndex={-1}>{children}</main>
       <footer className="app-footer">
         <div className="container footer-content">
-          <p className="footer-brand">WiseOne <span>Garuda extension</span></p>
+          <p className="footer-brand">
+            <img src="/wiseone-logo.png" alt="" width="36" height="36" />
+            <strong>WiseOne</strong><span>Garuda extension</span>
+          </p>
           <div className="footer-links"><span className="network"><i aria-hidden="true" />Ethereum</span><a href="https://github.com/wisetoken/signature-stakes" target="_blank" rel="noreferrer">Contracts <span aria-hidden="true">↗</span></a></div>
         </div>
       </footer>

@@ -1,0 +1,37 @@
+/* Keep notifications visible above native dialogs as well as ordinary pages. */
+.app-toast-stack {
+  position: fixed;
+  z-index: 200;
+  bottom: max(19px, env(safe-area-inset-bottom));
+  right: max(19px, env(safe-area-inset-right));
+  width: min(420px, calc(100vw - 38px));
+  display: grid;
+  gap: 10px;
+  pointer-events: none;
+}
+.app-toast {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: 14px;
+  background: var(--panel, #141719);
+  color: var(--text-primary, #f4f0e9);
+  box-shadow: 0 18px 50px #0007;
+  font: 500 15px/1.5 Inter, system-ui, sans-serif;
+  text-align: left;
+  pointer-events: auto;
+  animation: app-toast-in 200ms ease-out;
+}
+.app-toast[data-tone="error"] { border-color: color-mix(in srgb, #eaa781 45%, var(--border)); }
+.app-toast > svg { color: var(--accent); flex-shrink: 0; margin-top: 2px; }
+.app-toast[data-tone="error"] > svg { color: #eaa781; }
+.app-toast-content { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.app-toast button { font: inherit; cursor: pointer; }
+.app-toast-action { display: block; margin-top: 8px; padding: 4px 0; color: var(--accent); background: none; border: 0; text-decoration: underline; text-underline-offset: 4px; }
+.app-toast-close { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; color: var(--muted); background: none; }
+.app-toast-close:hover { background: var(--accent-soft, #2b3b3b); color: inherit; }
+.app-toast button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@keyframes app-toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .app-toast { animation: none; } }
