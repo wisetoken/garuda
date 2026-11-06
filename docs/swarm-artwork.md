@@ -84,6 +84,8 @@ JS
 
 `node --import tsx --test scripts/test-swarm-media.mjs` covers opt-in configuration, credential boundaries, deterministic self-contained artwork, identity/freshness checks, size limits, checksum rejection, retries without repeat uploads, terminal order/reorg handling and publication failures. It makes no real uploads or blockchain writes.
 
+On 6 November 2026, all 140 repository tests and the production build passed. The disabled state was checked against the local market API. The completed-backup viewer was browser-checked with labelled sample data and a temporary local read server, including artwork display, gateway failure/recovery and portable-reference display. These are implementation checks, not evidence of live Swarm storage.
+
 After infrastructure is configured, demonstrate a real eligible order's path from pending to verified. Save its receipt and both references, then block the original NFT metadata host and load the artwork through another gateway. Use the independent command with Garuda's API stopped to show that the stored copy remains retrievable. Record the actual gateway, references, block observation and verification time as evidence. Until that demonstration succeeds, describe this feature as prepared rather than a live CROPS or Swarm bonus result.
 
 ## Privacy and remaining dependencies

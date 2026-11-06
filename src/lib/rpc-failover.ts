@@ -1,4 +1,5 @@
 import { http } from "viem";
+import { privateReadsEnabled, privateReadTransport } from './private-rpc';
 
 // Independent of Thirdweb's quota. Never fall back to a different chain.
 const PUBLIC_RPCS: Record<number, readonly string[]> = {
@@ -133,6 +134,8 @@ export function createRpcFailoverFetch(
 }
 
 export function readRpcTransport(chainId: number, primaryUrl?: string) {
+    // Privacy failures never enter the ordinary direct-provider fallback loop.
+    if (chainId === 1 && privateReadsEnabled()) return privateReadTransport();
     const [primary] = getReadRpcUrls(chainId, primaryUrl);
     return http(primary, {
         fetchFn: createRpcFailoverFetch(chainId, primary),

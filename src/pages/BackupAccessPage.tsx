@@ -3,6 +3,7 @@ import { useActiveAccount } from 'thirdweb/react';
 import { Download, ExternalLink, ShieldCheck, Unplug, FileSearch, KeyRound, ArrowUpRight } from 'lucide-react';
 import { downloadOrderBackup } from '../lib/backup/export';
 import './backup-access.css';
+import { PrivateReadControls } from '../components/PrivateReadControls';
 
 export function BackupAccessPage() {
   const account = useActiveAccount();
@@ -76,12 +77,14 @@ export function BackupAccessPage() {
       <details><summary>Where does Graph fit?</summary><p>The market currently labels its service-catalog option “Graph,” but that option reads Garuda’s database through our API. The actual subgraph supplies stake creation details; it is not currently a separate backup of signed offers. Both normal market source options use our API. The saved tool’s direct Arkiv reads and local-file import provide the independent recovery paths.</p></details>
     </section>
 
+    <PrivateReadControls />
+
     <section className="ba-trust" aria-labelledby="ba-trust-title">
-      <ShieldCheck size={24} aria-hidden="true" /><div><h2 id="ba-trust-title">What CROPS means here</h2><p>Censorship resistant, open source, private, secure. Our upgrade focuses on access that does not depend on Garuda staying online. It does not make your transactions or reads anonymous.</p></div>
+      <ShieldCheck size={24} aria-hidden="true" /><div><h2 id="ba-trust-title">What CROPS means here</h2><p>Censorship resistant, open source, private, secure. Our upgrade focuses on independent access, with optional Nym routing for supported app reads. Transactions and published orders remain public.</p></div>
       <dl className="ba-crops-grid">
         <div><dt>C · Access without our server</dt><dd>The saved tool works without our domain or API. Ethereum, a reachable provider, your external wallet, and transaction fees remain necessary.</dd></div>
         <div><dt>O · Open code</dt><dd>The tool is MIT licensed and buildable from the repository. Its code and styles are included in the saved file.</dd></div>
-        <div><dt>P · Clear data boundaries</dt><dd>No trackers or analytics in the standalone tool. Selected Ethereum and Arkiv providers can see your IP and queried addresses. Orders and transactions are public.</dd></div>
+        <div><dt>P · Clear data boundaries</dt><dd>Optional Anon-RPC hides your IP from the destination RPC for covered app reads. Wallet traffic, APIs and direct backup-tool reads remain outside that route. No trackers or analytics in the standalone tool.</dd></div>
         <div><dt>S · Your wallet approves</dt><dd>The tool checks contracts and current state, simulates actions, and checks confirmed results. You still trust your wallet, the provider’s answers, the downloaded file, and the deployed contracts.</dd></div>
       </dl>
       <details><summary>Arkiv availability and file verification</summary><p>Arkiv only returns records that are still published and available. Records may expire, be deleted, or be omitted; no search result does not mean no orders exist. File import and current-counter cancellation work without Arkiv. Incoming bids belong to their signers and cannot be cancelled by you.</p><p>A valid signature and uncancelled status do not prove that an order can trade. This tool does not buy or accept bids. Longer storage retention never extends a signed order’s trading deadline.</p><p>Check a downloaded tool against a release checksum obtained from a source you trust. A checksum from the same compromised source does not establish authenticity.</p><a href="/garuda-backup.sha256" download>Download release checksum</a></details>

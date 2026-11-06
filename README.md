@@ -50,7 +50,7 @@ Status as of **6 November 2026**:
 | Product guides | The Problem and The Solution, including stake ownership and share comparisons | Expand alongside the product |
 | Get WISE | ETH, WETH, USDC and DAI swaps into WISE through Uniswap v2; balances, quotes, slippage limits and wallet confirmations | Mainnet transaction execution requires the connected owner’s approval; Flash/TWAP is not enabled |
 | Lending | Navigation and page structure | Borrower requests, lender offers, collateral, repayment, and default handling are planned |
-| CROPS | Independent backup HTML; direct Arkiv order recovery and export; cancellation, permission revocation, and matured Signature redemption | External wallet and reachable Ethereum RPC required; private reads are not enabled |
+| CROPS | Independent backup HTML; direct Arkiv order recovery and export; cancellation, permission revocation, and matured Signature redemption; optional Anon-RPC app reads | External wallet and reachable Ethereum RPC required. Nym covers selected app reads, not transactions or all application traffic. [Privacy scope](docs/anon-rpc.md) |
 | Homepage | Initial concept page at `/` | Full homepage comes after the app flows |
 
 The marketplace is under active development. Local integration evidence and fork tests are documented below; they do not establish a public launch or a completed security audit.
@@ -140,7 +140,7 @@ The implemented Arkiv integration targets the [ETHGlobal Mumbai Build on Arkiv t
 | --- | --- | --- |
 | [Arkiv](https://docs.arkiv.network/) | Expiring order discovery and reusable stake snapshots | Implemented; Rabdi writes and user-facing reads verified |
 | [EF CROPS](https://ethglobal.com/events/mumbai/prizes) | Independent Signature recovery, cancellation, permission revocation and matured redemption | Implemented; live read and fork execution evidence recorded; submission video and eligibility not yet established |
-| Nym / Anon-RPC | Optional private Ethereum reads | Present in the earlier prototype; not enabled in this repository yet |
+| [Nym / Anon-RPC](https://ethereum.github.io/anon-rpc/) | Optional Nym routing for app Ethereum reads | Experimental and off by default; automated checks pass, but live Nym requests timed out in Garuda and the official demo. [Scope and validation](docs/anon-rpc.md) |
 | [Swarm](https://docs.ethswarm.org/) | Artwork snapshots on Swarm, discoverable through separate Arkiv references | Integration prepared and tested with fixtures; disabled pending Bee, funded postage and a live retrieval demonstration. [Setup and limits](docs/swarm-artwork.md) |
 
 Thirdweb, viem, and Seaport are implementation dependencies. Their use here does not imply sponsorship or endorsement.
@@ -288,7 +288,7 @@ The application comes first. The next phase strengthens market reliability, publ
 
 Get WISE now supports direct Uniswap v2 funding. Lending next adds borrower requests and stake-specific lender offers, with explicit collateral custody, repayment, expiration, and default behavior. Signing and funding those loans will require verified contracts and settlement tests before being enabled.
 
-CROPS now provides independent backup access for Signature stakes. Private Ethereum reads and wider stake support remain future work. Advanced trading follows its validator configuration. The full homepage and broader product presentation come after these application foundations. The optional Swarm artwork integration is prepared; real uploads and retrieval still need infrastructure and live verification.
+CROPS now provides independent backup access for Signature stakes and optional Nym routing for covered app reads. Wider stake recovery support remains future work. Advanced trading follows its validator configuration. The full homepage and broader product presentation come after these application foundations. The optional Swarm artwork integration is prepared; real uploads and retrieval still need infrastructure and live verification.
 
 ## CROPS
 
@@ -300,7 +300,7 @@ CROPS now provides independent backup access for Signature stakes. Private Ether
 
 **O:** [MIT licensed](LICENSE); `npm ci && npm run build:backup` builds the tool from this repo without application API keys or a backend, using the committed lockfile. Dependencies must be obtainable; running the full market additionally needs the documented services.
 
-**P:** The standalone tool has no trackers or analytics; chosen Ethereum/Arkiv RPCs see IP and queried addresses, and the external wallet sees accounts and requests. The normal market also exposes order/query and authentication metadata to its API, indexing/pricing and wallet providers; public orders are intentionally public, and reads are not anonymous.
+**P:** The standalone tool has no trackers or analytics; its direct Ethereum/Arkiv RPCs see IP and queried addresses. Optional Anon-RPC routes covered app reads through Nym, while startup, wallets, APIs, indexers and images retain the [documented visibility](docs/anon-rpc.md); orders and transactions remain public.
 
 **S:** Keys remain in the external wallet, imported files stay on-device, and the tool checks contracts, account, ownership/maturity, simulation and receipt results. Users still trust the wallet, RPC answers, downloaded build and deployed contracts; embedded/social wallets in the full app have separate provider-managed authentication and recovery dependencies.
 
@@ -319,7 +319,13 @@ Garuda’s marketplace, Arkiv integration and independent access tool were devel
 
 The user's ability to exit no longer depends on keeping Garuda's application running. Arkiv adds a useful recovery source: an already-published signature can be retrieved without our database or API and checked before cancellation. Arkiv is optional for the exit path, so its outage, record expiry, or publisher censorship does not disable saved-file or counter cancellation.
 
-This submission claims independent access for supported Signature positions. It does not claim a fully autonomous marketplace, permanent Arkiv storage, anonymous reads, lost-key recovery, or removal of wallet/Ethereum dependencies. The rest of WiseOne is outside this release's verification scope. EF-specific tooling is not required for this property; Anon-RPC and the alt mempool are not presented as implemented integrations.
+This submission claims independent access for supported Signature positions, with optional Nym routing for covered application reads. It does not claim a fully autonomous marketplace, permanent Arkiv storage, anonymous transactions or whole-app anonymity, lost-key recovery, or removal of wallet/Ethereum dependencies. The rest of WiseOne is outside this release's verification scope. EF-specific tooling is not required for the lead property; Anon-RPC is integrated as described below, while the alt mempool is not implemented.
+
+### Optional private app reads with Anon-RPC
+
+Open **CROPS → Private Ethereum reads** to test Nym without a wallet, then enable it for Garuda's shared Ethereum read client. It covers portfolio reads, funding balances/quotes, onchain ENS lookups and client-side market checks. The setting reloads the page so existing clients and in-memory caches cannot cross modes. Failures stop covered reads; they never silently use the direct-provider fallback. Wallet transactions, marketplace APIs, Arkiv, indexers, pricing services and images remain outside this route. The saved backup HTML keeps its independent direct-RPC settings.
+
+The earlier WiseOne/yoda prototype already experimented with Nym. New work here integrates it into garuda-full with restricted bootstrap calls, response checks, explicit retry/reset, a visible connection state and privacy disclosures. No original invention of Anon-RPC or Nym is claimed. See [implementation, trust assumptions and demonstration](docs/anon-rpc.md). A functioning, honestly scoped demo supports the privacy property; use of EF tooling alone does not guarantee prize points.
 
 ### Optional artwork resilience: prepared, not live yet
 
@@ -374,7 +380,8 @@ The chosen read RPC is separate from the wallet's submission RPC. A failed read 
 | Recipient | Normal Garuda application | Standalone backup tool |
 | --- | --- | --- |
 | Garuda host/API | Connection metadata; requested wallet/stake data; signed listings and bids | No requests |
-| Ethereum RPC | Calls, addresses, transaction metadata and source connection | Same for the selected RPC; reads are direct, not anonymized |
+| Ethereum RPC | Direct mode: calls, addresses and source IP. Optional Nym mode: covered reads arrive from an exit router; the RPC still sees their contents. Wallet RPC traffic is separate | Selected RPC sees source IP and reads; Anon-RPC is not included in this artifact |
+| Anon-RPC / Nym (opt-in) | Bootstrap RPC and worker download hosts see source IP and public specifier requests; the sandboxed worker sees routed reads, and the network transports them. Hash verification and sandboxing do not eliminate network/RPC trust | No Nym worker or requests |
 | Arkiv/publisher | Public signed orders, maker/stake fields and publication metadata | Optional direct Rabdi reads expose IP and queried wallet to the chosen RPC; no publisher API or signing key |
 | Swarm / Bee / selected gateway (optional) | Public generated artwork and metadata, NFT/order identifiers and block provenance; gateway sees reader IP and file reference. Bee upload credentials remain server-only | No Swarm requests; downloaded artwork references can be used separately |
 | WiseOne pricing/indexer | Requested pricing or stake-index information and connection metadata | No requests |

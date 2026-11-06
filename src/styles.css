@@ -54,6 +54,7 @@ h1 { max-width: 900px; margin: 0; font-size: clamp(36px, 4vw, 54px); font-weight
 }
 
 /* Shared WiseOne Garuda app shell, adapted from the existing application. */
+.private-read-indicator{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-strong);border-radius:7px;padding:8px 10px;color:var(--accent);font-size:12px;text-decoration:none;max-width:170px;line-height:1.3}.private-read-indicator svg{flex-shrink:0}.private-read-indicator[data-failed="true"]{color:var(--warning)}
 .app-shell { --muted: #a4a09b; --accent: #00b0aa; --border: rgba(255,255,255,.06); --panel: #111214; background: #080809; color: #f5efe8; color-scheme: dark; }
 .app-shell[data-theme="light"] { --muted: #51605c; --accent: #087b76; --border: rgba(18,40,38,.1); --panel: #fff; background: #eef3f2; color: #18211f; color-scheme: light; }
 .container { width: min(1216px, calc(100% - 64px)); }

@@ -1,4 +1,5 @@
 import { readRpcTransport } from "@/lib/rpc-failover";
+import { privateReadsEnabled } from './private-rpc';
 import { createPublicClient, parseAbiItem, type PublicClient } from "viem";
 import { mainnet } from "viem/chains";
 
@@ -144,6 +145,9 @@ export function getMainnetPublicClient(options?: { batchReads?: boolean }) {
     return createPublicClient({
         chain: mainnet,
         transport: readRpcTransport(mainnet.id),
+        // CCIP gateways use ordinary HTTP outside the RPC transport. Do not let
+        // an ENS lookup silently send wallet-linked calldata around Nym.
+        ccipRead: privateReadsEnabled() ? false : undefined,
         batch: options?.batchReads ? { multicall: true } : undefined,
     });
 }
