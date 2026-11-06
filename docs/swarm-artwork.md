@@ -1,6 +1,6 @@
 # Swarm artwork backups
 
-Status: live uploads, checksum-verified retrieval and Arkiv publication verified on 7 November 2026 from the local Garuda deployment. Signature listings #53 and #61 and a bid for #61 have completed backups. The #61 artwork viewer was checked in the browser. See [live receipts and verification evidence](swarm-live-evidence.json). Uploads remain opt-in for each deployment; local configuration does not enable the production worker.
+Status: enabled on [production Garuda](https://garuda.wise.one/garuda/) as of 7 November 2026. Real uploads and Arkiv publication were first verified locally; the production cron subsequently recovered the existing manifests and verified their files using its own database. Signature listings #53 and #61 and a bid for #61 have recorded backups. The #61 production artwork viewer and reference export were browser-checked. See [live receipts and verification evidence](swarm-live-evidence.json). Other deployments must opt in separately.
 
 Garuda can generate an artwork snapshot when a listing or bid is accepted, upload the SVG and JSON metadata to Swarm, and publish a separate reference entity on Arkiv. Users open **Artwork backup** from an order's menu to view it, change the read gateway or download its references. The same artwork renderer already exists in WiseOne/yoda; the new work is the storage, verification and reference path.
 
@@ -114,6 +114,12 @@ On 7 November 2026, the local worker completed real uploads through `https://api
 The [evidence JSON](swarm-live-evidence.json) records full file references, checksums, order hashes, block provenance and the verification time. These are observations at that time, not ongoing availability promises. The same public service accepted uploads and served the verified files; independent gateway failover and a demo with Garuda stopped have not yet been demonstrated. For that stronger CROPS demo, export a receipt, stop the Garuda API and original metadata service, and use the independent retrieval command through another compatible gateway.
 
 The completed integration includes tests for recovering existing manifests into a fresh deployment, rejecting mismatched identity/provenance, and retrying without repeat uploads. The viewer's reference export was checked to contain both file checksums and its Arkiv entity link.
+
+### Production release
+
+Release `dee20ac` enabled public-gateway uploads on `garuda.wise.one`, with the protected Vercel cron running every minute. The cron recovered already-published backups into the production database without replacing their original snapshots. Production verification is recorded separately in the evidence JSON: it demonstrates scheduled processing, manifest recovery, verified retrieval and the viewer, rather than claiming these existing files were uploaded a second time from Vercel. All 212 tests, TypeScript checks and the production build passed; the existing large-bundle warning remains.
+
+![Stake #61 artwork retrieved from Swarm in production](images/swarm-production-stake-61.png)
 
 ## Privacy and remaining dependencies
 

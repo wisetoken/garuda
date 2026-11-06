@@ -83,5 +83,19 @@
       "filesVerified": true,
       "arkivManifestVerified": true
     }
-  ]
+  ],
+  "production": {
+    "checkedAt": "2026-11-06T22:18:52.056Z",
+    "url": "https://garuda.wise.one",
+    "deploymentId": "dpl_DXqDsuPKgAccyjvmktMKRX4nP4wu",
+    "commit": "dee20ac2c660575dab3b4679fcf109e198631055",
+    "worker": "Scheduled Vercel cron recovered and reverified existing Arkiv manifests into the production database.",
+    "readyOrderHashes": [
+      "0x54ad68637e3781e0fd8ff1a177911a4348ca32c6f1285eb42fda7b74cd9d5294",
+      "0xfe8b9704717ee883ad824b771b081ec43607e34d696e1eff7fef185b10ceed60",
+      "0x25297ca44765785f6a3ff23427d127aeeeeac109a7f3b5e5444aa3f4ed059681"
+    ],
+    "receiptsMatchVerifiedArkivRecords": true,
+    "filesReverified": true
+  }
 }

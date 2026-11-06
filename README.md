@@ -171,7 +171,7 @@ The implemented Arkiv integration targets the [ETHGlobal Mumbai Build on Arkiv t
 | [Uniswap v2](https://docs.uniswap.org/contracts/v2/overview) | Atomic multi-token stake purchases and standalone Get WISE swaps | Mainnet router deployed and source-verified; [live USDC purchase](#mainnet-example-buy-a-wise-stake-with-usdc), [integration code and fork evidence](#uniswap-integration) |
 | [EF CROPS](https://ethglobal.com/events/mumbai/prizes) | Independent Signature recovery, cancellation, permission revocation and matured redemption | Implemented; live read and fork execution evidence recorded; submission video and eligibility not yet established |
 | [Nym / Anon-RPC](https://ethereum.github.io/anon-rpc/) | Optional Nym routing for app Ethereum reads | Experimental and off by default; automated checks pass, but live Nym requests timed out in Garuda and the official demo. [Scope and validation](docs/anon-rpc.md) |
-| [Swarm](https://docs.ethswarm.org/) | Artwork snapshots on Swarm, discoverable through separate Arkiv references | Live public-gateway uploads, checksums, Arkiv references and viewer verified locally for real orders; opt-in per deployment. [Evidence, setup and limits](docs/swarm-artwork.md) |
+| [Swarm](https://docs.ethswarm.org/) | Artwork snapshots on Swarm, discoverable through separate Arkiv references | Enabled in production; real uploads verified locally, with production cron recovery, file checksums and viewer checked. [Evidence, setup and limits](docs/swarm-artwork.md) |
 
 Thirdweb, viem, and Seaport are implementation dependencies. Their use here does not imply sponsorship or endorsement.
 
@@ -398,7 +398,7 @@ The application comes first. The next phase strengthens market reliability, publ
 
 Get WISE now supports direct Uniswap v2 funding. Lending next adds borrower requests and stake-specific lender offers, with explicit collateral custody, repayment, expiration, and default behavior. Signing and funding those loans will require verified contracts and settlement tests before being enabled.
 
-CROPS now provides independent backup access for Signature stakes and optional Nym routing for covered app reads. Wider stake recovery support remains future work. Advanced trading follows its validator configuration. The full homepage and broader product presentation come after these application foundations. Swarm artwork uploads and retrieval are verified locally with real orders; production enablement and an independent-gateway outage demo remain separate steps.
+CROPS now provides independent backup access for Signature stakes and optional Nym routing for covered app reads. Wider stake recovery support remains future work. Advanced trading follows its validator configuration. Swarm artwork backups are enabled in production, with verified manifests and artwork retrieval. An independent-gateway outage demo remains a separate step.
 
 ## CROPS
 
@@ -454,6 +454,8 @@ The new [Swarm integration](docs/swarm-artwork.md) adds another storage path for
 This can preserve an artwork snapshot when the original metadata service is unavailable. The original NFT `tokenURI` stays unchanged, and the snapshot does not determine ownership or trade eligibility. Initial publication still depends on our worker and publisher; subsequent retrieval needs a working Swarm gateway and retained data, not our image server. Arkiv references expire after 90 days, Swarm retention depends on postage, and gateway reads reveal IP addresses and file references.
 
 On 7 November 2026, the local deployment uploaded real Signature listings #53 and #61 and a bid for #61 through the public Swarm gateway. Artwork and metadata checksums and Arkiv manifests were verified, and the browser displayed #61. [Recorded evidence](docs/swarm-live-evidence.json) includes public references and block provenance. Each deployment must explicitly enable uploads using the public gateway or its own Bee node and postage. The shared gateway's retention is not under our control; independent gateway failover and a complete outage demo remain to be demonstrated. This evidence does not establish prize eligibility by itself.
+
+Production is now enabled at `garuda.wise.one`. Its scheduled worker recovers existing published manifests into the production database and verifies their files, avoiding duplicate snapshots after a deployment or database migration. The #61 production viewer and portable reference export were verified in the browser; [setup and release evidence](docs/swarm-artwork.md#production-release) distinguish the original uploads from production recovery.
 
 ### Evidence for judging
 
