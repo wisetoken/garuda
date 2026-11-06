@@ -11,7 +11,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useActiveAccount } from "thirdweb/react";
 import { getAddress, type Address } from "viem";
-import { ArrowUpRight, LoaderCircle } from "lucide-react";
+import { ArrowUpRight, ExternalLink, LoaderCircle } from "lucide-react";
 import {
   ethereumClient,
   useWiseUsd,
@@ -44,6 +44,7 @@ export function SaleForm({
   busy,
   busyLabel,
   blocked,
+  transactionHash,
   execute,
   connect,
   switchChain,
@@ -54,6 +55,7 @@ export function SaleForm({
   busy: boolean;
   busyLabel: string;
   blocked: boolean;
+  transactionHash?: string;
   execute: (price: string, days: number, approvalOnly?: boolean, fundingQuote?: PurchasePaymentQuote, currency?: Address) => Promise<boolean | void>;
   connect: () => Promise<void>;
   switchChain: () => Promise<void>;
@@ -378,6 +380,11 @@ export function SaleForm({
                 converting ? paymentReview.loading ? "Getting payment quote…" : paymentReview.insufficient ? "Insufficient payment balance" : !config.data?.enabled || !config.data.deployment.purchaseRouter ? "Payment option unavailable" : !paymentReview.quote ? "Refresh payment quote" : `Buy with ${purchaseFundingTokens.find(t => t.address === payWith)?.symbol ?? "tokens"}` : showInsufficientBalance ? `Insufficient ${token.symbol} balance` : action
             }</span>
           </button>
+        )}
+        {transactionHash && (
+          <a className="market-secondary sale-view-tx" href={`https://etherscan.io/tx/${transactionHash}`} target="_blank" rel="noopener noreferrer">
+            View transaction <ExternalLink size={16} aria-hidden="true" />
+          </a>
         )}
       </footer>
     </form>

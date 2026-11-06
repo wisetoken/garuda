@@ -188,15 +188,6 @@ select:focus-visible {
 .market-grid .market-row-actions > button {
   flex: 1;
 }
-.market-retry {
-  display: block;
-  background: none;
-  border: 0;
-  color: var(--accent);
-  font-size: 12px;
-  cursor: pointer;
-  margin-top: 8px;
-}
 .market-notice {
   position: fixed;
   z-index: 100;

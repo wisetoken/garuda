@@ -14,7 +14,6 @@ import {
   type MarketSort,
   type MarketEntry,
 } from "../../lib/market/presentation";
-import { useOrderPosition } from "../../lib/market/queries";
 import { orderAvailable } from "../../lib/market/api";
 import { useWiseUsd } from "../../lib/portfolio";
 import { AddressIdentity } from "../AddressIdentity";
@@ -30,8 +29,7 @@ function OrderRow({
   columns: MarketColumn[];
 }) {
   const prices = usePaymentPrices();
-  const { data: usd } = useWiseUsd(),
-    position = useOrderPosition(row);
+  const { data: usd } = useWiseUsd();
   const timeline = p ? stakeTimeline(p) : undefined;
   const label = `${stakeCollection(row.order.collection).name} Stake #${row.order.tokenId}`;
   const cells: Record<MarketColumn, ReactNode> = {
@@ -64,19 +62,7 @@ function OrderRow({
         <small>UTC</small>
       </>
     ),
-    actions: (
-      <>
-        <RowActions row={row} position={p} />
-        {position.isError && (
-          <button
-            className="market-retry"
-            onClick={() => void position.refetch()}
-          >
-            Retry stake details
-          </button>
-        )}
-      </>
-    ),
+    actions: <RowActions row={row} position={p} />,
   };
   return (
     <tr>

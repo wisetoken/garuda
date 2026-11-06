@@ -109,6 +109,7 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
             intent={intent}
             busy={busy}
             busyLabel={labels[step]}
+            transactionHash={pending && !pending.confirmed ? pending.hash : undefined}
             blocked={
               (!!pending && !pending.confirmed) ||
               (!!unsaved && intent.kind !== "cancel")

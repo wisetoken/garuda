@@ -302,9 +302,19 @@
   grid-column: 1/-1;
 }
 .sale-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-top: 24px;
   padding-top: 20px;
   border-top: 1px solid var(--border);
+}
+.sale-view-tx {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
 }
 .sale-dialog .stake-primary {
   width: 100%;
@@ -438,18 +448,17 @@
 .sale-amount { margin-bottom: 8px; }
 .sale-amount-usd { display: flex; justify-content: space-between; gap: 12px; margin: 0 2px 24px; color: var(--muted); font-size: 13px; }
 .sale-currency { display: flex; align-items: center; flex-shrink: 0; gap: 8px; padding-left: 12px; border-left: 1px solid var(--border); }
-.sale-currency img { object-fit: contain; }
+.sale-currency img { object-fit: contain; flex: 0 0 auto; }
 .app-shell[data-theme="light"] .sale-currency img {
   box-sizing: border-box;
-  padding: 3px;
+  padding: 4px;
   background: #101c24;
-  border-radius: 7px;
+  border-radius: 8px;
 }
 .sale-dialog .stake-primary { min-height: 56px; padding: 16px 24px; font-size: 16px; }
 @media (max-width: 480px) {
   .sale-amount { padding: 12px; gap: 8px; font-size: 24px; }
   .sale-currency { gap: 6px; padding-left: 8px; }
-  .sale-currency img { width: 20px; height: 20px; }
 }
 
 .sale-currency { position: relative; }
@@ -478,7 +487,7 @@
 .sale-currency-identity svg { color: var(--accent); }
 .sale-currency-menu > button > .sale-currency-balance { min-width: 0; margin-left: auto; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
-.sale-currency-trigger > img { width: 24px; height: 24px; }
-.sale-currency-menu > button > img { width: 32px; height: 32px; }
+.sale-currency-trigger > img { width: 28px; height: 28px; }
+.sale-currency-menu > button > img { width: 32px; height: 32px; flex-basis: 32px; }
 .sale-currency-menu > button { background: transparent; }
 .sale-currency-menu > button[aria-checked="true"], .sale-currency-menu > button:hover { background: var(--accent-soft); }
