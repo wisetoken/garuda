@@ -50,7 +50,7 @@ ${timeline ? `<path d="M32 295 H${32 + 536 * timeline.progress}" stroke="${accen
 ${text(32, 328, 12, "START · UTC", "#c1d5ca")}${text(568, 328, 12, "MATURITY · UTC", "#c1d5ca", 'text-anchor="end"')}
 ${text(32, 354, 19, stake ? stakeDate(stake.startAt) : "Start your journey")}${text(568, 354, 19, stake ? stakeDate(stake.maturesAt) : "Reach maturity", "#eff7f1", 'text-anchor="end"')}
 <path d="M32 380 H568" stroke="#426253"/>
-${text(32, 412, 14, timeline?.caption ?? "Buy and sell WISE stakes", accent)}${text(568, 412, 12, timeline ? `${Math.round(timeline.progress * 100)}% of term elapsed` : "YODA BY WISEONE", "#c1d5ca", 'text-anchor="end"')}
+${text(32, 412, 14, timeline?.caption ?? "Buy and sell WISE stakes", accent)}${text(568, 412, 12, timeline ? `${Math.round(timeline.progress * 100)}% of term elapsed` : "GARUDA BY WISEONE", "#c1d5ca", 'text-anchor="end"')}
 ${stake ? `<path d="M32 432 H568" stroke="#426253"/>
 ${text(32, 458, 13, "UNCLAIMED INTEREST", "#c1d5ca")}${text(568, 458, 13, "APY*", "#c1d5ca", 'text-anchor="end"')}
 ${text(32, 487, 23, interest, accent)}${text(568, 487, 23, apy === null ? "—" : `${apy.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`, accent, 'text-anchor="end"')}

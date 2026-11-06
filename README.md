@@ -1,12 +1,14 @@
-# WiseOne | Garuda Extension
+# WiseOne: Garuda
 
-**A new owner. The same stake.**
+**Let the stake continue. Let its owner move on.**
 
-Garuda is a marketplace for WiseOne NFT stakes on Ethereum. Owners can list a stake for sale or accept a purchase bid. Buyers acquire the existing position, including its remaining rights and original maturity, without restarting its staking term.
+Your plans can change. Your stake’s maturity doesn’t. Garuda gives WiseOne NFT stakes a market: sell your position, accept a bid, or buy an existing stake without ending it or restarting the clock.
 
-The next part of the product is stake-backed lending: owners borrowing against a specific stake and lenders offering terms for that position.
+Owners get another route to liquidity. Buyers acquire the stake’s current shares, remaining reward rights, and original maturity. Listings and bids are discoverable through **Arkiv**; payment and ownership settle on **Ethereum**.
 
-This repository contains the application, market API, Arkiv integration, and verification tools. The current focus is the working marketplace; funding, lending, privacy tools, and the homepage follow in separate steps.
+**Next: stake-backed borrowing and lending.** Access capital while keeping a stake as collateral, or offer funding against a specific position.
+
+For the proposed Ethereum Foundation Continuity submission, see [CROPS: independent access when Garuda is unavailable](#crops), including the before/after scope, runnable tool, and verification evidence.
 
 ## Why Garuda exists
 
@@ -101,12 +103,13 @@ The [Signature deployment manifest](scripts/fixtures/signature-market.json) reco
 
 ## Sponsors and ecosystem integrations
 
-**Arkiv is the implemented sponsor integration**, targeting the [ETHGlobal Mumbai Build on Arkiv track for existing projects](https://ethglobal.com/events/mumbai/prizes/arkiv). Users publish listings and bids to Arkiv and discover them through the Market.
+The implemented Arkiv integration targets the [ETHGlobal Mumbai Build on Arkiv track for existing projects](https://ethglobal.com/events/mumbai/prizes/arkiv). Users publish listings and bids to Arkiv and discover them through the Market. The [CROPS upgrade](#crops) targets the Ethereum Foundation's existing-project prize: users can manage supported positions and cancel orders without Garuda's application services. These are proposed submission targets, subject to Continuity eligibility.
 
 | Integration | Current role | Status |
 | --- | --- | --- |
 | [Arkiv](https://docs.arkiv.network/) | Expiring order discovery and reusable stake snapshots | Implemented; Rabdi writes and user-facing reads verified |
-| Nym / Anon-RPC | Optional private Ethereum reads for the planned CROPS page | Present in the earlier prototype; not enabled in this repository yet |
+| [EF CROPS](https://ethglobal.com/events/mumbai/prizes) | Independent Signature recovery, cancellation, permission revocation and matured redemption | Implemented; live read and fork execution evidence recorded; submission video and eligibility not yet established |
+| Nym / Anon-RPC | Optional private Ethereum reads | Present in the earlier prototype; not enabled in this repository yet |
 | [Swarm](https://docs.ethswarm.org/) | Possible persistent content storage alongside Arkiv references | Under consideration for the Arkiv + Swarm bonus; no integration claimed yet |
 
 Thirdweb, viem, and Seaport are implementation dependencies. Their use here does not imply sponsorship or endorsement.
@@ -253,13 +256,50 @@ CROPS now provides independent backup access for Signature stakes. Private Ether
 
 ## CROPS
 
-**C:** The ordinary marketplace depends on our domain, API, configured Arkiv publisher, and RPC services. A saved `garuda-backup.html` can optionally recover published orders directly from Arkiv, cancel Signature orders, revoke Seaport permissions, and redeem matured Signature NFTs without our domain/API; saved-file and counter cancellation need no Arkiv; an external wallet, reachable Ethereum, and gas are still required.
+**Submission target:** Ethereum Foundation — **Best CROPS Upgrade to an Existing Project**, Continuity Track. See the [official prize criteria](https://ethglobal.com/events/mumbai/prizes).
 
-**O:** MIT licensed. The committed lockfile and `npm ci && npm run build:backup` build the standalone tool from this repo without API keys or a backend; the full market has the separately documented service dependencies.
+**Lead property: censorship resistance through independent access to existing positions and permissions.** A user who keeps the backup tool can cancel Signature orders, remove market permissions, or redeem a matured Signature stake even if Garuda's domain and API become unavailable or refuse service. They can choose a different Ethereum read provider and optionally recover published orders directly from Arkiv. Garuda does not need to approve, relay, or host those actions.
 
-**P:** The standalone tool has no trackers or analytics. The selected Ethereum RPC and optional Arkiv RPC see IP and queried addresses; the external wallet sees accounts and requests. The normal market additionally exposes order/query metadata to our API, RPC, Arkiv, pricing/indexing and wallet providers; public orders and transactions are not private.
+**C:** The normal market depends on our domain/API, configured Arkiv publisher, and RPC services; the saved tool removes our domain/API from the exit path, and file/counter cancellation also works without Arkiv. Users still need their external wallet, a reachable Ethereum RPC, and gas; wallet submission RPC settings are separate from the tool's read provider.
 
-**S:** The standalone tool never receives wallet keys. It pins contract code hashes, checks chain/account/ownership/maturity, simulates actions, and verifies receipts/state; it still trusts the wallet, RPC answers, downloaded build, and deployed contracts. Embedded/social wallets in the full app have separate provider-managed key/authentication dependencies.
+**O:** [MIT licensed](LICENSE); `npm ci && npm run build:backup` builds the tool from this repo without application API keys or a backend, using the committed lockfile. Dependencies must be obtainable; running the full market additionally needs the documented services.
+
+**P:** The standalone tool has no trackers or analytics; chosen Ethereum/Arkiv RPCs see IP and queried addresses, and the external wallet sees accounts and requests. The normal market also exposes order/query and authentication metadata to its API, indexing/pricing and wallet providers; public orders are intentionally public, and reads are not anonymous.
+
+**S:** Keys remain in the external wallet, imported files stay on-device, and the tool checks contracts, account, ownership/maturity, simulation and receipt results. Users still trust the wallet, RPC answers, downloaded build and deployed contracts; embedded/social wallets in the full app have separate provider-managed authentication and recovery dependencies.
+
+### Application access and independent access
+
+| User situation | Application-dependent path | Garuda independent access |
+| --- | --- | --- |
+| Garuda's domain or API disappears | The full application used its hosted frontend and service; cached configuration supported some API-outage cancellation | A saved HTML file includes the interface, code and pinned contracts, and runs from a fresh local origin without Garuda configuration or login |
+| An order is missing from the current browser | Orders were saved locally; ordinary Arkiv discovery went through the market service | The tool reads live published v1/v2 orders directly from Arkiv, verifies signatures and Ethereum status, and exports the maker's orders |
+| The user needs to withdraw market authority | Managing Seaport and token permissions depends on an available interface | Individual order cancellation, WISE/NFT permission removal, and counter invalidation share the independent interface and verification flow |
+| A Signature stake has matured | The deployed contracts already supported redemption | The saved tool reads the stake from Ethereum, rejects early ending, and verifies NFT burn and WISE receipt without the application services |
+
+Garuda’s marketplace, Arkiv integration and independent access tool were developed during ETHGlobal Mumbai. The table compares access paths within that work; it is not a pre-event feature inventory. Garuda reuses WiseOne’s existing staking contracts and application foundations, and uses Seaport for settlement. The contribution is the new application and its integrated trading, discovery and recovery flows, rather than new staking or settlement protocols.
+
+### Why the upgrade matters
+
+The user's ability to exit no longer depends on keeping Garuda's application running. Arkiv adds a useful recovery source: an already-published signature can be retrieved without our database or API and checked before cancellation. Arkiv is optional for the exit path, so its outage, record expiry, or publisher censorship does not disable saved-file or counter cancellation.
+
+This submission claims independent access for supported Signature positions. It does not claim a fully autonomous marketplace, permanent Arkiv storage, anonymous reads, lost-key recovery, or removal of wallet/Ethereum dependencies. The rest of WiseOne is outside this release's verification scope. EF-specific tooling is not required for this property; Anon-RPC and the alt mempool are not presented as implemented integrations.
+
+### Evidence for judging
+
+| Judging consideration | Implementation and recorded evidence |
+| --- | --- |
+| End-to-end behavior | The [fork verifier](scripts/verify-backup-fork.mjs) recovers an Arkiv-format order, checks its signature/state, exports/imports it, cancels it and proves previously executable settlement now fails. It also checks permission removal and matured redemption. |
+| Works without the operator | The [standalone build](scripts/build-backup.mjs) embeds code/styles/configuration and excludes application/server and wallet SDK imports. Exit actions use the wallet and Ethereum directly; the fork flow rejects non-fork HTTP calls. |
+| Other CROPS properties and trade-offs | The four-letter disclosure and recipient table below describe public data, RPC trust, key custody and remaining services. [Build-time telemetry removal](scripts/no-analytics.ts) covers the pinned client SDK integrations. |
+| Usable without CROPS terminology | The interface offers **Find my published orders**, **Review cancellation**, permission removal and matured redemption, with wallet review before transactions. [The in-app page](src/pages/BackupAccessPage.tsx) provides download and export entry points. |
+| Can ship after the event | The [HTML artifact](public/garuda-backup.html), [checksum](public/garuda-backup.sha256), lockfile, build command and automated checks are included. Release distribution, wallet-browser rehearsal and the documented dependency review remain relevant to shipping. |
+
+The recorded verification on **6 November 2026** includes 96 passing tests, TypeScript and production builds, a live public-Rabdi read of a listing and incoming bid with Ethereum verification, and a disposable Ethereum fork exercising cancellation and redemption. Live discovery and fork transactions are separate evidence: no live transaction was submitted by those checks, and the fork's Arkiv response was synthetic. Browser layout checks did not exercise an actual wallet extension. See [commands, receipts and verification limits](docs/backup-access.md#automated-verification).
+
+The decisive video moment should be visible: Garuda's domain/API and original read provider are blocked; a saved copy opens from a fresh local origin, connects to an external wallet, uses a working provider, and completes a supported action with its result shown. The [three-minute demonstration script](docs/backup-access.md#three-minute-beforeafter-demonstration) describes the sequence. A fork recording must be labeled as such; the current CLI evidence is not a completed video.
+
+The submission is not yet represented as qualified or complete. Continuity acceptance, the eligible baseline, public repository access, the required video of at most three minutes, and the no-tracker requirement across the submitted client still need to be established. The README's privacy disclosure does not waive that requirement. A public mirror is not claimed; users currently need a saved or independently obtained copy. Submission work is tracked in beads (`garuda-fo4`). Only one EF prize can be awarded to this project under the published rules.
 
 ### Independent backup access
 
@@ -300,12 +340,6 @@ The Garuda build removes Thirdweb's connection/transaction analytics sender and 
 
 The normal app retains optional email/social wallets for familiar onboarding. Those flows send authentication identifiers to Thirdweb and the selected identity provider and rely on their wallet/recovery services; they are not claimed to keep all personal or recovery data exclusively on-device. Use an external wallet for the independent tool. Submitted order signatures and addresses are intentionally public so counterparties can discover and settle offers; the app never requests an external wallet's seed or private key.
 
-### Before and after this implementation
-
-Before this change, `garuda-full` already had onchain settlement, locally saved signed orders, same-origin cached configuration for API-outage cancellation, and read-RPC failover. The earlier `vitenix` prototype also had a standalone Seaport counter tool and optional Nym reads. Those features are explicitly prior work, not newly invented here.
-
-This implementation adds the integrated downloadable build, fresh-origin operation with bundled contract configuration, versioned order export/import, direct Arkiv discovery with signature/Ethereum checks and individual cancellation, WISE/NFT permission revocation, matured Signature redemption, transaction/result checks, and verification tooling. The implementation starting commit is `afc4da0`; that is not a verified hackathon eligibility cutoff. The team must supply the actual accepted Continuity baseline and dates before claiming which changes qualify. No public mirror or completed demo video is claimed by this local implementation.
-
 The [implementation plan](history/PLAN.md) explains sequencing and design decisions. Issue status is tracked with beads.
 
 ## Repository map
@@ -324,11 +358,11 @@ The [implementation plan](history/PLAN.md) explains sequencing and design decisi
 
 ## Continuity scope, license, and AI assistance
 
-The existing product baseline includes WISE NFT stake portfolios, Seaport listings and bids, Ethereum settlement checks, and a manual Arkiv proof of concept with order publication and snapshots under `wiseone.yoda`.
+Garuda was developed during ETHGlobal Mumbai as a new extension of WiseOne. It reuses existing WiseOne staking code, portfolio-reading logic and UI foundations from `vitenix`. The Garuda marketplace, Arkiv publication and discovery, and independent access workflows were built during the hackathon, including work developed in parallel and brought together in `garuda-full`.
 
-The work documented for the Garuda integration adds `wiseone.garuda` schemas and API routes, automatic durable publication for listings and bids, retries and deduplication, default Arkiv discovery, entity links, validation tests, and reproducible evidence. Existing public signed orders were used for Rabdi verification; those checks did not create new mainnet orders or transfers.
+The current app publishes orders under `wiseone.garuda.orders.v2`, reads `wiseone.garuda.orders.v1` for compatibility, and uses `wiseone.garuda.stakes.v1` for display snapshots. It implements automatic durable publication for listings and bids, retries and deduplication, default Arkiv discovery, entity links, validation tests, and reproducible evidence. Existing public signed orders were used for Rabdi verification; those checks did not create new mainnet orders or transfers.
 
-The team still needs to confirm ETHGlobal Continuity acceptance and which changes fall inside the eligible event work window before claiming qualification. Measured user and volume data have not yet been supplied; see [reach](arkiv/reach.md).
+The existing foundation is WiseOne’s staking application; the hackathon contribution is the Garuda extension described here. Submission acceptance and supporting evidence are tracked separately. Measured user and volume data have not yet been supplied; see [reach](arkiv/reach.md).
 
 Released under the [MIT License](LICENSE).
 

@@ -1,4 +1,4 @@
-/** Shared NFT discovery for the dashboard and yoda. The caller supplies its RPC transport. */
+/** Shared NFT discovery for the dashboard and Garuda. The caller supplies its RPC transport. */
 export type NftStakeRef = {
     nftId: string;
     isScrapable: boolean;
