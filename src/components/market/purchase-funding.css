@@ -5,13 +5,13 @@
 .purchase-funding-token:focus-visible { outline: none; box-shadow: 0 2px var(--accent); }
 .purchase-funding-options button:focus-visible { outline: none; background: color-mix(in srgb, var(--accent) 18%, var(--panel)); }
 .purchase-funding-options > p { display: flex; justify-content: space-between; margin: 4px 8px 8px; font-size: 11px; color: var(--muted); }
-.purchase-funding-options > .purchase-picker-note { display: block; margin: 10px 8px 4px; line-height: 1.5; }
+.purchase-funding-options > .purchase-picker-note { display: block; margin: 10px 8px 4px; line-height: 1.5; white-space: nowrap; }
 .purchase-funding-options button > svg { color: var(--accent); flex-shrink: 0; }
 .purchase-funding-picker { position: relative; flex-shrink: 0; }
 .purchase-funding-token { display: inline-flex; align-items: center; gap: 6px; border: 0; padding: 6px 0; background: none; color: var(--text-primary); font: inherit; font-size: 15px; font-weight: 600; }
 .purchase-funding-token img { width: 28px; height: 28px; flex: 0 0 28px; object-fit: contain; }
 .purchase-funding-token > svg { margin-left: 4px; color: var(--muted); }
-.purchase-funding-options { position: absolute; z-index: 10; right: 0; top: calc(100% + 8px); width: 260px; max-width: calc(100vw - 100px); padding: 8px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--panel); box-shadow: 0 12px 32px #0004; }
+.purchase-funding-options { position: absolute; z-index: 10; right: 0; top: calc(100% + 8px); width: 308px; max-width: calc(100vw - 32px); padding: 8px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--panel); box-shadow: 0 12px 32px #0004; }
 .purchase-funding-options button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; border: 0; border-radius: 8px; background: none; color: var(--text-primary); font: inherit; font-size: 14px; }
 .purchase-funding-options button:hover, .purchase-funding-options button[aria-pressed=true] { background: var(--accent-soft); }
 .purchase-funding-options img { width: 32px; height: 32px; flex: 0 0 32px; object-fit: contain; }

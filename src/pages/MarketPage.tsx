@@ -49,10 +49,21 @@ export function MarketPage() {
     try { return localStorage.getItem("garuda:market:use-cache:v1") === "1"; }
     catch { return false; }
   });
+  function refetchActiveBook(nextBook: "listings" | "bids" = book) {
+    const kind = nextBook === "bids" ? "bid" : "listing";
+    for (const [index, deployment] of deployments.entries()) {
+      if (!deployment) continue;
+      const id = index === 0 ? "signature" : "advanced";
+      void queryClient.invalidateQueries({
+        queryKey: ["market-book", id, deployment.adapter, source, source === "arkiv" ? kind : null],
+      });
+    }
+  }
   function onCacheChange(enabled: boolean) {
     setUseCache(enabled);
     try { localStorage.setItem("garuda:market:use-cache:v1", enabled ? "1" : "0"); }
     catch { /* The choice remains for this visit. */ }
+    if (!enabled) refetchActiveBook();
   }
   const sourceSwitch = useRef<{ source: "arkiv" | "catalog"; started: number; cached: boolean } | null>(null);
   function setBook(value: "listings" | "bids") {
@@ -62,6 +73,7 @@ export function MarketPage() {
       else next.delete("book");
       return next;
     });
+    if (!useCache && value !== book && source === "arkiv") refetchActiveBook(value);
   }
   const [filters, setFilters] = useState<MarketFilters>(emptyFilters);
   const columnSettings = useTableColumns("garuda:market:columns:v1", marketColumns);

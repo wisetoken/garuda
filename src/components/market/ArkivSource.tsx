@@ -15,7 +15,7 @@ export function ArkivSource({source,onChange,onReload,useCache,onCacheChange}: {
     <div className="arkiv-source-options">
     {source==='arkiv' ? <p>Listings and bids published on Arkiv. Availability verified on Ethereum.</p>
     : <p>The service order catalog, for comparison with Arkiv.</p>}
-      <label className="market-cache-toggle" title="Reuse recently loaded order results in this browser. Turn off to fetch fresh results when switching sources.">
+      <label className="market-cache-toggle" title="Reuse recently loaded order results. Turn off to refetch the current tab.">
         <input type="checkbox" role="switch" checked={useCache} onChange={event=>onCacheChange(event.target.checked)} />
         <span className="market-cache-track" aria-hidden="true" />
         <span>Use cache</span>

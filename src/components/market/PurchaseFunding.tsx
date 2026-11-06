@@ -92,7 +92,7 @@ export function PurchaseFunding(props: Props) {
               <small>{balance === undefined ? "—" : displayTokenAmount(balance, option.decimals)}</small>
             </button>;
           })}
-          <p className="purchase-picker-note">Buy using another token. The seller receives {target.symbol}.</p>
+          <p className="purchase-picker-note">Buy using another token through Uniswap.</p>
         </div>}
       </div>
     </div>

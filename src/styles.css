@@ -34,7 +34,7 @@ nav a[aria-current="page"] { color: var(--accent); background: #192e2b; }
 .page-label > span:first-child { color: var(--accent); text-transform: uppercase; letter-spacing: .14em; font-size: 12px; font-weight: 600; }
 .preview-badge { padding: 4px 12px; border: 1px solid var(--border); border-radius: 100px; color: var(--muted); font-size: 12px; }
 h1 { max-width: 900px; margin: 0; font-size: clamp(36px, 4vw, 54px); font-weight: 450; line-height: 1.15; letter-spacing: -2px; text-wrap: balance; }
-.page-description { max-width: 690px; margin: 20px 0 40px; color: var(--muted); font-size: 17px; }
+.page-description { max-width: 760px; margin: 20px 0 40px; color: var(--muted); font-size: 17px; }
 .placeholder { padding: 48px 24px; border: 1px solid var(--border); border-radius: 14px; background: #121a1b; text-align: center; }
 .placeholder-symbol { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto 20px; border: 1px solid #345a50; border-radius: 12px; color: var(--accent); font-size: 24px; }
 .placeholder h2 { margin: 0 0 8px; font-size: 22px; font-weight: 500; }
