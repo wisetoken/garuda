@@ -43,7 +43,7 @@ Status as of **6 November 2026**:
 | Area | Available now | Next step or boundary |
 | --- | --- | --- |
 | Wallet and portfolio | External wallet connection; live Signature and Advanced NFT positions; cards and table; principal, interest, maturity, historical yield, and indexed creation links | Creation links depend on indexer coverage |
-| Signature marketplace | Listings, purchase bids, buying, accepting bids, and onchain cancellation in WISE; owner/bidder identities; filters, sorting, cards and table | Ethereum mainnet contracts are configured; settlement has been verified on disposable mainnet forks |
+| Signature marketplace | Listings, purchase bids, buying, accepting bids, and onchain cancellation in WISE; owner/bidder identities; filters, sorting, cards and table | Ethereum mainnet contracts are configured; settlement has been verified on disposable mainnet forks and in [one recorded mainnet purchase](#example-a-completed-ownership-change) |
 | Order publication | Signed-order validation, PostgreSQL persistence, automatic Arkiv publication, retries, and entity links | A funded Rabdi publisher is needed for Arkiv writes |
 | Market discovery | Arkiv is the default source; an explicit **All orders** catalog shows the service's order book | Ethereum checks determine whether a discovered order can still execute |
 | Advanced stakes | Portfolio display and collection-aware infrastructure | Trading stays disabled until a verified Advanced validator deployment is configured |
@@ -86,7 +86,20 @@ Suppose an active Signature Stake has **1,000 WISE principal** and its owner ask
 
 The buyer receives the existing NFT position and its remaining rights. The sale does not withdraw its principal, reset maturity, or create new shares. Ethereum gas is separate.
 
-Alternatively, a buyer could offer **950 WISE**. If the owner accepts, the fee is **4.75 WISE** and the owner receives **945.25 WISE**. These are illustrative calculations, not reported mainnet transactions. The deployment manifest determines the actual fee and permitted contracts.
+Alternatively, a buyer could offer **950 WISE**. If the owner accepts, the fee is **4.75 WISE** and the owner receives **945.25 WISE**. These 1,000 and 950 WISE figures are illustrative. The deployment manifest determines the actual fee and permitted contracts. A reported mainnet settlement at the same **0.5%** fee follows.
+
+### Example: a completed ownership change
+
+[This Ethereum transaction](https://etherscan.io/tx/0xa8f2c8485561e5908b2262dce110a256561bed616b0ef2d94bbba1b018c296f2) filled the published Signature Stake **#20** listing for **20 WISE** on **6 November 2026 at 12:12:35 UTC (17:42:35 India time)**, in block [26,355,734](https://etherscan.io/block/26355734). The buyer called Seaport 1.6 `fulfillAdvancedOrder`. The receipt succeeded.
+
+| Settlement item | Result |
+| --- | --- |
+| Buyer [`0x641AD78BAca220C5BD28b51Ce8e0F495e85Fe689`](https://etherscan.io/address/0x641AD78BAca220C5BD28b51Ce8e0F495e85Fe689) paid | 20 WISE |
+| Marketplace fee to [`0xB8d92F2E8D1A98c18cDe85e49a0F11e3c64D0a68`](https://etherscan.io/address/0xB8d92F2E8D1A98c18cDe85e49a0F11e3c64D0a68) | 0.1 WISE |
+| Seller [`0x22079A848266A7D2E40CF0fF71a6573D78adcF37`](https://etherscan.io/address/0x22079A848266A7D2E40CF0fF71a6573D78adcF37) received | 19.9 WISE |
+| [Signature NFT #20](https://etherscan.io/nft/0x48791dbdfb38baa58e48329148c321bf33b3c1e1/20) | Transferred from the seller to the buyer |
+
+The stake validator emitted `SaleValidated` for order `0x2a33b8001857cec5a80157b059c253ebc8976cc4b23ac17d5042f297bae2a2af` and set the ownership epoch for token 20 to **1**. The receipt records that NFT transfer and the two WISE payments. It contains no WISE `StakeEnd`, so the underlying stake continued under the new owner. This is the Signature Stake #20 listing in [Live publication examples](#live-publication-examples).
 
 ## Technology and data flow
 
@@ -164,7 +177,7 @@ The following existing public signed orders were republished as **v2** and verif
 
 All three publication transactions returned successful receipts on **Arkiv Rabdi testnet (chain 7794095)**. Their `wiseone.garuda.orders.v2` entities were read back and checked against the original signed orders and fresh Ethereum stake observations. Prices, signatures, deadlines and original publication blocks were preserved. Signature Stake #53's listing was skipped because its current NFT approval check failed.
 
-These transactions publish discovery data; they do not execute an Ethereum purchase or bid acceptance. Entities expire at the original signed deadlines, so active queries will eventually stop returning them. [Verification evidence](arkiv/evidence.md) records the keys, deadlines, block provenance and runnable queries.
+These transactions publish discovery data. Ethereum settlement is separate: the Signature Stake #20 listing was later purchased in the [ownership-change example](#example-a-completed-ownership-change). Entities expire at the original signed deadlines, so active queries will eventually stop returning them. [Verification evidence](arkiv/evidence.md) records the keys, deadlines, block provenance and runnable queries.
 
 After installing dependencies, run these read-only queries; they do not load a signer:
 
