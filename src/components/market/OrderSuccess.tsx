@@ -1,19 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Check, CheckCircle2, Copy, ExternalLink, LoaderCircle } from "lucide-react";
-import type confetti from "canvas-confetti";
+import { Check, Copy, ExternalLink, LoaderCircle } from "lucide-react";
 import { formatAmount } from "../../lib/blend/domain";
 import { stakeCollection } from "../../lib/blend/stake-collections";
 import { marketApi } from "../../lib/market/api";
 import { readPublication, type OrderSuccess as Receipt } from "../../lib/market/success";
-import "./order-success.css";
+import { SuccessFrame } from "./SuccessFrame";
 
 const shortHash = (hash: string) => `${hash.slice(0, 10)}…${hash.slice(-8)}`;
 
 export function OrderSuccess({ receipt, onClose, onView }: {
   receipt: Receipt; onClose: () => void; onView: () => void;
 }) {
-  const canvas = useRef<HTMLCanvasElement>(null), heading = useRef<HTMLHeadingElement>(null);
   const [copied, setCopied] = useState(false), [copyError, setCopyError] = useState(false);
   const meta = stakeCollection(receipt.order.collection), bid = receipt.order.kind === 1;
   const publication = useQuery({
@@ -22,31 +20,16 @@ export function OrderSuccess({ receipt, onClose, onView }: {
     refetchInterval:query => ["published","unavailable"].includes(query.state.data?.state ?? "") ? false : 5_000,
     staleTime:0, retry:1,
   });
-  useEffect(() => {
-    heading.current?.focus();
-    let disposed = false, burst: confetti.CreateTypes | undefined;
-    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      void import("canvas-confetti").then(({ default: confetti }) => {
-        if (disposed || !canvas.current) return;
-        burst = confetti.create(canvas.current,{resize:true});
-        const base = {origin:{x:0.5,y:0.7},colors:["#00b0aa","#4ade80","#7b5ea7","#ffffff"],disableForReducedMotion:true};
-        const fire = (ratio:number,opts:confetti.Options) => burst!({...base,...opts,particleCount:Math.floor(200*ratio)});
-        // Same layered celebration used by WiseOne's staking success dialogs.
-        fire(.25,{spread:26,startVelocity:55}); fire(.2,{spread:60});
-        fire(.35,{spread:100,decay:.91,scalar:.8});
-        fire(.1,{spread:120,startVelocity:25,decay:.92,scalar:1.2}); fire(.1,{spread:120,startVelocity:45});
-      }).catch(() => { /* Receipt remains usable if the animation cannot load. */ });
-    }
-    return () => { disposed=true; burst?.reset(); };
-  }, [receipt.hash]);
   const state = publication.data?.state;
   const publishing = !publication.isError && state !== "published" && state !== "unavailable";
-  return <>
-    <canvas ref={canvas} className="order-success-confetti" aria-hidden="true" />
-    <section className="order-success">
-      <div className="order-success-icon"><CheckCircle2 size={36} aria-hidden="true" /></div>
-      <h2 id="sale-title" ref={heading} tabIndex={-1}>{bid ? "Bid placed!" : "Stake listed!"}</h2>
-      <p className="order-success-description">{bid ? "Your signed bid has been saved." : "Your signed listing has been saved."}</p>
+  return <SuccessFrame
+    receiptKey={receipt.hash}
+    title={bid ? "Bid placed!" : "Stake listed!"}
+    description={bid ? "Your signed bid has been saved." : "Your signed listing has been saved."}
+    next={bid ? "The owner can accept your bid before it expires. Keep enough WISE in your wallet." : "Your stake stays in your wallet until a buyer completes the purchase."}
+    viewLabel={bid ? "View purchase bids" : "View listings"}
+    onClose={onClose} onView={onView}
+  >
       <div className="order-success-summary">
         <p>{meta.name} Stake #{receipt.order.tokenId}</p>
         <strong>{formatAmount(BigInt(receipt.order.amount), 18)} WISE</strong>
@@ -66,11 +49,5 @@ export function OrderSuccess({ receipt, onClose, onView }: {
         {publication.data?.txHash && <div><dt>Arkiv transaction</dt><dd><a href={`https://rabdi.explorer.arkiv.network/tx/${publication.data.txHash}`} target="_blank" rel="noopener noreferrer" title={publication.data.txHash}>{shortHash(publication.data.txHash)}<ExternalLink size={14} /></a></dd></div>}
       </dl>
       {copyError && <p role="status" className="order-success-copy-error">Copy unavailable. Order hash: <code>{receipt.hash}</code></p>}
-      <p className="order-success-next">{bid ? "The owner can accept your bid before it expires. Keep enough WISE in your wallet." : "Your stake stays in your wallet until a buyer completes the purchase."}</p>
-      <div className="order-success-actions">
-        <button type="button" className="stake-primary" onClick={onView}>{bid ? "View purchase bids" : "View listings"}</button>
-        <button type="button" className="market-secondary" onClick={onClose}>Done</button>
-      </div>
-    </section>
-  </>;
+  </SuccessFrame>;
 }

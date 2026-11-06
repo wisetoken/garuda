@@ -1,3 +1,4 @@
+import { MEDIA_SCHEMA, enqueueMedia } from '../media/publication';
 import { PUBLICATION_SCHEMA, enqueuePublication } from './publication';
 import { Pool, type PoolClient } from "pg";
 import type { Hex } from "viem";
@@ -56,7 +57,7 @@ export class SaleStore {
         this.scope = deploymentScope(deployment);
     }
     async migrate() {
-        await this.pool.query(SALES_SCHEMA + PUBLICATION_SCHEMA);
+        await this.pool.query(SALES_SCHEMA + PUBLICATION_SCHEMA + MEDIA_SCHEMA);
     }
     async saveAvailability(rows: SaleRow[], blockNumber: bigint) {
         if (!rows.length) return;
@@ -132,6 +133,7 @@ export class SaleStore {
             );
             if (existing.rowCount) {
                 await enqueuePublication(db, this.scope, hash);
+                await enqueueMedia(db, this.scope, hash);
                 return false; // Keep the original ownership observation.
             }
             const count = await db.query(
@@ -160,6 +162,7 @@ export class SaleStore {
                 ],
             );
             await enqueuePublication(db, this.scope, hash);
+            await enqueueMedia(db, this.scope, hash);
             return true;
         });
     }

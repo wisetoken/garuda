@@ -15,6 +15,7 @@ import {
   cancelSale,
 } from "../src/lib/blend/sales-wallet.ts";
 import { parseSignedSale } from "../src/lib/blend/sales.ts";
+import { settlementSuccess } from "../src/lib/market/success.ts";
 import {
   SEAPORT,
   SALES_TREASURY,
@@ -146,7 +147,7 @@ function fixture(account = seller) {
     },
     waitForTransactionReceipt: async ({ confirmations }) => {
       assert.equal(confirmations, 12);
-      return { status: "success", logs: state.logs };
+      return { status: "success", transactionHash: blockHash, logs: state.logs };
     },
   };
   const session = {
@@ -329,6 +330,8 @@ test("fills require current service validation and matching settlement events", 
   ];
   const receipt = await fillSale(f.session, signed);
   assert.equal(receipt.hash, hash);
+  assert.equal(settlementSuccess(receipt).transactionHash, blockHash);
+  assert.equal(settlementSuccess(receipt).action, "purchase");
   assert.equal(f.state.events.filter((x) => x === "validated").length, 2);
   assert.equal(f.state.writes.at(-1).functionName, "fulfillAdvancedOrder");
   const blocked = fixture(buyer);
@@ -402,7 +405,9 @@ test("accepting a bid approves the owner's NFT, not the owner's WISE", async () 
       recipient: seller.address, offer: [], consideration: [],
     }),
   ];
-  await fillSale(owner.session, signed);
+  const result = await fillSale(owner.session, signed);
+  assert.equal(settlementSuccess(result).action, "accept-bid");
+  assert.equal(settlementSuccess(result).net, input.amount - saleAmounts(order).fee);
   assert.deepEqual(owner.state.writes.map(({ address, functionName }) => ({ address, functionName })), [
     { address: d.collection, functionName: "approve" },
     { address: d.market, functionName: "matchAdvancedOrders" },
@@ -437,6 +442,7 @@ test("success receipts use the accepted signed terms without exposing the signat
     const signed=await publishSale(f.session,{...input,kind},async()=>{});
     const receipt=orderSuccess(signed,d,'/garuda/?screen=trade');
     assert.equal(receipt.hash,parseSignedSale(signed,d).hash);
+    assert.equal(receipt.kind,"publication");
     assert.equal(receipt.order.amount,String(input.amount));
     assert.equal(receipt.order.kind,kind);assert.equal(receipt.order.deadline,signed.order.deadline);
     assert.equal(receipt.signature,undefined);

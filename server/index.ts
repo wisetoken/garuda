@@ -1,3 +1,4 @@
+import { processMediaBackup } from './media/publication';
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { registerMarketRoutes } from './market/routes';
@@ -19,6 +20,8 @@ async function tick() {
     if(stopped) break;
     try { const service=await resolve(); if(service) { await processPublication(service); await processStakeSnapshot(service); } }
     catch { console.error('Garuda publication worker will retry.'); }
+    try { const service=await resolve(); if(service && !stopped) await processMediaBackup(service); }
+    catch { console.error('Garuda artwork backup is not configured or unavailable.'); }
   }
   if(!stopped) timer=setTimeout(tick,15000);
 }

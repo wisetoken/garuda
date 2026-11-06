@@ -5,6 +5,7 @@ import type { SalesStep } from "../lib/blend/sales-wallet";
 import type { MarketIntent } from "../lib/market/types";
 import { useMarketController } from "../lib/market/useMarketController";
 import { OrderSuccess } from "./market/OrderSuccess";
+import { SettlementSuccess } from "./market/SettlementSuccess";
 import { SaleForm } from "./market/SaleForm";
 import "./market.css";
 import "./market/sale-dialog.css";
@@ -94,7 +95,9 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
           >
             <X size={20} />
           </button>
-          {success ? <OrderSuccess receipt={success} onClose={() => setIntent(null)} onView={viewSuccess} /> : <>
+          {success ? (success.kind === "publication"
+            ? <OrderSuccess receipt={success} onClose={() => setIntent(null)} onView={viewSuccess} />
+            : <SettlementSuccess receipt={success} onClose={() => setIntent(null)} onView={viewSuccess} />) : <>
           <SaleForm
             key={
               "position" in intent

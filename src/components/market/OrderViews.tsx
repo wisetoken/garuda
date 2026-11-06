@@ -1,6 +1,7 @@
+import { ArtworkBackupDialog } from "./ArtworkBackupDialog";
 import { ArkivPublication } from "./ArkivSource";
 import { RowMenu } from "./RowMenu";
-import { CalendarPlus, ExternalLink, HandCoins } from "lucide-react";
+import { CalendarPlus, ExternalLink, HandCoins, Image as ImageIcon } from "lucide-react";
 import { useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { AddressIdentity } from "../AddressIdentity";
@@ -25,6 +26,7 @@ export function RowActions({
   const account = useActiveAccount(),
     { open, busy } = useMarketActions();
   const [extendOpen, setExtendOpen] = useState(false);
+  const [artworkOpen, setArtworkOpen] = useState(false);
   const maker = !!account && sameAddress(account.address, row.order.maker),
     owner = !!account && sameAddress(account.address, row.order.owner),
     available = orderAvailable(row);
@@ -58,14 +60,16 @@ export function RowActions({
   const canBid = !maker && row.order.kind === 0 && !owner;
   return <div className="market-row-actions">
     {extendOpen && entity && <ExtendOfferDialog row={row} entity={entity} onClose={() => setExtendOpen(false)} />}
+    {artworkOpen && <ArtworkBackupDialog row={row} onClose={() => setArtworkOpen(false)} />}
     {primary}
-    {(entity || canBid) && <RowMenu label={`More actions for ${stakeCollection(row.order.collection).name} Stake #${row.order.tokenId}`}>
+    <RowMenu label={`More actions for ${stakeCollection(row.order.collection).name} Stake #${row.order.tokenId}`}>
       {owner && entity && <button type="button" role="menuitem" disabled={busy || !available}
         onClick={() => setExtendOpen(true)}><CalendarPlus aria-hidden="true" />Extend offer</button>}
       {canBid && <button type="button" role="menuitem" disabled={busy || !position?.canList}
         onClick={() => position && open({ kind: "bid", position })}><HandCoins aria-hidden="true" />Place Bid</button>}
       {entity && <a role="menuitem" href={`https://rabdi.explorer.arkiv.network/entity/${entity}`} target="_blank" rel="noopener noreferrer"><ExternalLink aria-hidden="true" />View on Arkiv</a>}
-    </RowMenu>}
+      <button type="button" role="menuitem" onClick={() => setArtworkOpen(true)}><ImageIcon aria-hidden="true" />Artwork backup</button>
+    </RowMenu>
   </div>;
 }
 

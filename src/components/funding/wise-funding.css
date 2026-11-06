@@ -247,8 +247,8 @@
   margin: -8px auto;
   border: 4px solid var(--ba-panel);
   border-radius: 10px;
-  background: var(--panel-strong);
-  color: var(--ba-mint);
+  background: var(--ba-mint);
+  color: white;
 }
 
 .funding-token-picker { margin: 12px 0 20px; }

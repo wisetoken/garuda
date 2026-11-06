@@ -46,14 +46,14 @@ export function SaleStakeDetails({ name, tokenId, position, usd, fallback }: {
                 <small>{position ? usdAmount(position.unclaimedInterest, usd) : "—"}</small>
               </dd>
             </div>
-            <div>
+            <div className={term ? "sale-yield" : undefined}>
               <dt>Annualized yield</dt>
+              {term && <p className="sale-term">{term.map(part => <span key={part}>{part}</span>)}</p>}
               <dd>
                 {yieldValue === null ? "—" : `${yieldValue.toFixed(2)}%`}
               </dd>
             </div>
           </dl>
-          {term && <p className="sale-term">{term.map(part => <span key={part}>{part}</span>)}</p>}
           <div className="sale-dates">
             <div>
               <span>Started / UTC</span>

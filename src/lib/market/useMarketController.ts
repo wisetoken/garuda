@@ -36,7 +36,7 @@ import {
   rememberOrder,
   forgetCancelledOrder,
 } from "./recovery";
-import { orderSuccess, type OrderSuccess } from "./success";
+import { orderSuccess, settlementSuccess, type MarketSuccess } from "./success";
 import type { MarketIntent, PendingTx } from "./types";
 import { refreshTradeData, tradeDestination } from "./workflow";
 import { useAppToast } from "../../components/AppToast";
@@ -54,7 +54,7 @@ export function useMarketController() {
     [step, setStep] = useState<SalesStep>("checking");
   const [revision, setRevision] = useState(0),
     [pending, setPending] = useState<PendingTx | null>(null);
-  const [success, setSuccess] = useState<OrderSuccess | null>(null);
+  const [success, setSuccess] = useState<MarketSuccess | null>(null);
   const [unsaved, setUnsaved] = useState<SignedSale | null>(null);
   const dialog = useRef<HTMLDialogElement>(null),
     lock = useRef(false),
@@ -266,11 +266,7 @@ export function useMarketController() {
         setSuccess(orderSuccess(signed, d, tradeDestination(activeIntent, id)));
       } else if (activeIntent.kind === "fill") {
         const result = await fillSale(session, activeIntent.row);
-        showToast(
-          result.order.kind === 0
-            ? "Purchase confirmed. The stake is now in your wallet."
-            : "Sale confirmed. The payment is now in your wallet.",
-        );
+        setSuccess(settlementSuccess(result));
       } else {
         await cancelSale(session, activeIntent.row);
         try {
@@ -287,7 +283,7 @@ export function useMarketController() {
       )
         setUnsaved(null);
       refresh();
-      if (activeIntent.kind !== "list" && activeIntent.kind !== "bid") {
+      if (activeIntent.kind === "cancel") {
         setIntent(null);
         navigate(tradeDestination(activeIntent, id));
       }

@@ -23,5 +23,6 @@ This is not a claim that no other database could provide public access or replic
 | Original publication anchors and operational catalog | PostgreSQL preserves the service's validation history; republication must not reset it |
 | Publication queue, retry state and rate-limit accounting | PostgreSQL provides transactional coordination for server jobs |
 | Local backup imports and user preferences | User device; no need to publish personal recovery files or UI choices |
+| Generated NFT artwork and image metadata (optional, prepared) | Swarm holds the larger files; Arkiv makes their references, checksums and observation provenance queryable. Uploads are disabled pending infrastructure and live verification. See [artwork backups](../docs/swarm-artwork.md). |
 
 Published envelopes include signatures, wallet addresses and trade terms. They are intentionally public offers, not encrypted private data. RPC operators can observe queries; this integration does not provide anonymous reads. The dedicated publisher controls Arkiv entity updates and can censor publication or delete its copies. Expiry and RPC limits remain dependencies, documented in [feedback](friction.md). User signatures and Ethereum checks constrain what a modified copy can execute; they do not prevent censorship.

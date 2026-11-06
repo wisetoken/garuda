@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Hono } from 'hono';
-import { readPublication } from '../src/lib/market/success.ts';
+import { parseEther } from 'viem';
+import { STAKE_COLLECTIONS } from '../src/lib/blend/stake-collections.ts';
+import { readPublication, settlementSuccess } from '../src/lib/market/success.ts';
 import { registerMarketRoutes } from '../server/market/routes.ts';
 const hash = `0x${'11'.repeat(32)}`, entity = `0x${'22'.repeat(32)}`, tx = `0x${'33'.repeat(32)}`;
 
@@ -38,4 +40,40 @@ test('missing publication record and storage outage are not reported as publishe
  const app=new Hono();registerMarketRoutes(app,async()=>({store:{scope:'scope',limit:async()=>true,get:async()=>({}),pool:{query:async()=>{if(broken)throw Error('offline');return {rows:[]}}}}}));
  const first=await app.request(`/api/garuda/arkiv/status/${hash}`);assert.equal(readPublication(await first.json(),hash),null);
  broken=true;assert.equal((await app.request(`/api/garuda/arkiv/status/${hash}`)).status,503);
+});
+
+
+const settled = (kind = 0, collection = STAKE_COLLECTIONS.signature) => ({
+ receipt: { status: 'success', transactionHash: tx, logs: [{ data: 'private implementation detail' }] },
+ hash,
+ order: { kind, collection: collection.address, tokenId: 40n,
+  amount: parseEther('300.000000000000000001'), feeBps: collection.purchaseFeeBps },
+});
+test('purchase receipt keeps the confirmed transaction distinct from the signed order', () => {
+ const receipt = settlementSuccess(settled());
+ assert.equal(receipt.kind, 'settlement'); assert.equal(receipt.action, 'purchase');
+ assert.equal(receipt.transactionHash, tx); assert.equal(receipt.hash, hash);
+ assert.equal(receipt.tokenId, '40'); assert.equal(receipt.destination, '/garuda/?screen=stakes');
+ assert.equal(receipt.gross, 300000000000000000001n);
+ assert.equal(receipt.fee, 1500000000000000000n);
+ assert.equal(receipt.net, 298500000000000000001n);
+ assert.equal(receipt.logs, undefined); assert.equal(receipt.signature, undefined);
+});
+test('accepted bid receipts show net proceeds using each collection fee without rounding WISE', () => {
+ for (const collection of Object.values(STAKE_COLLECTIONS)) {
+  const receipt = settlementSuccess(settled(1, collection));
+  assert.equal(receipt.action, 'accept-bid');
+  assert.equal(receipt.fee, collection.id === 'signature' ? 1500000000000000000n : 6000000000000000000n);
+  assert.equal(receipt.net + receipt.fee, receipt.gross);
+  assert.equal(receipt.destination, `/garuda/?screen=trade&collection=${collection.id}&view=market&book=bids`);
+ }
+});
+test('failed or incomplete settlement receipts cannot become success screens or explorer links', () => {
+ for (const receipt of [
+  { status: 'reverted', transactionHash: tx },
+  { status: 'success' },
+  { status: 'success', transactionHash: 'https://example.com' },
+  { status: 'success', transactionHash: '0x1234' },
+ ]) assert.throws(() => settlementSuccess({ ...settled(), receipt }), /confirmed settlement/);
+ assert.throws(() => settlementSuccess({ ...settled(), hash: 'bad hash' }), /confirmed settlement/);
 });

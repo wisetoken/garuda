@@ -46,3 +46,9 @@ Records retained beyond their trading deadline can remain readable as records bu
 Both listings and bids enter the durable publication queue. A saved order is not labeled published until receipt validation succeeds. RPC throttling produces an explicit error and a catalog fallback, not a false empty-market count. “Use cache” defaults off and controls browser order-result reuse; it does not remove provider limits or server dependencies. Ethereum availability checks remain separate from indexed discovery.
 
 The [standalone backup](../docs/backup-access.md) offers direct Arkiv reads, maker-signature verification and Ethereum checks without the Garuda API. It can recover and export verified own orders and distinguish incoming bids, but it is not a replacement trading UI. The normal hosted discovery path still depends on the service database for original order anchors.
+
+## Prepared Swarm artwork integration
+
+The optional media worker uses `wiseone.garuda.media.v1` for public references to an SVG artwork snapshot and JSON metadata on Swarm. It indexes deployment scope, order hash, collection, token ID and renderer. The publisher owns these entities, with a 90-day lifetime independent of order deadlines and stake maturity. Files must pass gateway retrieval and checksum checks before the reference is published and the UI reports a completed backup.
+
+The **Artwork backup** viewer supports gateway selection and reference export. This adds another way to retrieve the generated artwork without the original metadata host; the NFT's `tokenURI` is unchanged. Uploads remain disabled pending Bee/postage configuration and a real retrieval demonstration. See [setup, privacy and retention limits](../docs/swarm-artwork.md). This is prepared functionality, not live-network evidence.

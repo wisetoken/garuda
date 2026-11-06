@@ -126,7 +126,7 @@ The implemented Arkiv integration targets the [ETHGlobal Mumbai Build on Arkiv t
 | [Arkiv](https://docs.arkiv.network/) | Expiring order discovery and reusable stake snapshots | Implemented; Rabdi writes and user-facing reads verified |
 | [EF CROPS](https://ethglobal.com/events/mumbai/prizes) | Independent Signature recovery, cancellation, permission revocation and matured redemption | Implemented; live read and fork execution evidence recorded; submission video and eligibility not yet established |
 | Nym / Anon-RPC | Optional private Ethereum reads | Present in the earlier prototype; not enabled in this repository yet |
-| [Swarm](https://docs.ethswarm.org/) | Possible persistent content storage alongside Arkiv references | Under consideration for the Arkiv + Swarm bonus; no integration claimed yet |
+| [Swarm](https://docs.ethswarm.org/) | Artwork snapshots on Swarm, discoverable through separate Arkiv references | Integration prepared and tested with fixtures; disabled pending Bee, funded postage and a live retrieval demonstration. [Setup and limits](docs/swarm-artwork.md) |
 
 Thirdweb, viem, and Seaport are implementation dependencies. Their use here does not imply sponsorship or endorsement.
 
@@ -138,6 +138,7 @@ The integration uses **Rabdi testnet, chain ID `7794095`**:
 | --- | --- | --- |
 | `wiseone.garuda.orders.v2` | Signed listings and bids with indexed price, currency, principal, shares, stake type, maturity, parties and Ethereum block provenance | Initial storage follows the signed trading deadline (1, 3, 7 or 30 days); storage can be extended separately |
 | `wiseone.garuda.stakes.v1` | Temporary display cache of stake data, not the stake or its offer | Refreshed from Ethereum as needed: observations usable for five minutes; stored cache copy expires after 15 minutes |
+| `wiseone.garuda.media.v1` (optional, not enabled yet) | Swarm artwork/metadata references, SHA-256 checksums and Ethereum observation details | 90-day Arkiv reference lifetime; Swarm storage has its own postage-dependent lifetime |
 
 **These are separate timelines.** A stake keeps its Ethereum maturity date, potentially years away. A listing or bid has the maker's chosen trading deadline. Only the disposable display-cache record has a 15-minute storage lifetime; its expiry does not cancel an offer or end a stake. Fresh Ethereum reads replace stale cache data.
 
@@ -272,7 +273,7 @@ The application comes first. The next phase strengthens market reliability, publ
 
 Get WISE now supports direct Uniswap v2 funding. Lending next adds borrower requests and stake-specific lender offers, with explicit collateral custody, repayment, expiration, and default behavior. Signing and funding those loans will require verified contracts and settlement tests before being enabled.
 
-CROPS now provides independent backup access for Signature stakes. Private Ethereum reads and wider stake support remain future work. Advanced trading follows its validator configuration. The full homepage and broader product presentation come after these application foundations. Sponsor evidence will expand as integrations gain real usage; Swarm remains a possible addition.
+CROPS now provides independent backup access for Signature stakes. Private Ethereum reads and wider stake support remain future work. Advanced trading follows its validator configuration. The full homepage and broader product presentation come after these application foundations. The optional Swarm artwork integration is prepared; real uploads and retrieval still need infrastructure and live verification.
 
 ## CROPS
 
@@ -304,6 +305,12 @@ Garuda’s marketplace, Arkiv integration and independent access tool were devel
 The user's ability to exit no longer depends on keeping Garuda's application running. Arkiv adds a useful recovery source: an already-published signature can be retrieved without our database or API and checked before cancellation. Arkiv is optional for the exit path, so its outage, record expiry, or publisher censorship does not disable saved-file or counter cancellation.
 
 This submission claims independent access for supported Signature positions. It does not claim a fully autonomous marketplace, permanent Arkiv storage, anonymous reads, lost-key recovery, or removal of wallet/Ethereum dependencies. The rest of WiseOne is outside this release's verification scope. EF-specific tooling is not required for this property; Anon-RPC and the alt mempool are not presented as implemented integrations.
+
+### Optional artwork resilience: prepared, not live yet
+
+The new [Swarm integration](docs/swarm-artwork.md) adds another storage path for generated WiseOne NFT artwork. Previously the renderer was served through the project's metadata service. When enabled, Garuda queues artwork snapshots for accepted listings and bids, uploads the SVG and metadata to Swarm, verifies retrieval, and publishes their references on Arkiv. The **Artwork backup** viewer can switch gateways and export those references. The artwork renderer is reused existing work; the upload, reference publication and verification path are new.
+
+This can preserve an artwork snapshot when the original metadata service is unavailable. The original NFT `tokenURI` stays unchanged, and the snapshot does not determine ownership or trade eligibility. Initial publication still depends on our worker and publisher; subsequent retrieval needs a working Swarm gateway and retained data, not our image server. Arkiv references expire after 90 days, Swarm retention depends on funded postage, and gateway reads reveal IP addresses and file references. Uploads are disabled until infrastructure is configured; no live Swarm availability or bonus qualification is claimed yet.
 
 ### Evidence for judging
 
@@ -354,6 +361,7 @@ The chosen read RPC is separate from the wallet's submission RPC. A failed read 
 | Garuda host/API | Connection metadata; requested wallet/stake data; signed listings and bids | No requests |
 | Ethereum RPC | Calls, addresses, transaction metadata and source connection | Same for the selected RPC; reads are direct, not anonymized |
 | Arkiv/publisher | Public signed orders, maker/stake fields and publication metadata | Optional direct Rabdi reads expose IP and queried wallet to the chosen RPC; no publisher API or signing key |
+| Swarm / Bee / selected gateway (optional) | Public generated artwork and metadata, NFT/order identifiers and block provenance; gateway sees reader IP and file reference. Bee upload credentials remain server-only | No Swarm requests; downloaded artwork references can be used separately |
 | WiseOne pricing/indexer | Requested pricing or stake-index information and connection metadata | No requests |
 | Thirdweb / social login / embedded wallet services | Wallet-service and authentication requests; third-party custody/recovery assumptions apply to embedded wallets | No SDK, login, or requests |
 | External wallet / its RPC | Connected accounts, requested signatures/transactions, RPC metadata | Same; keys remain under the external wallet's custody |

@@ -133,11 +133,16 @@
   color: var(--muted);
   margin-top: 5px;
 }
+.sale-facts > .sale-yield {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
 .sale-term {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  margin: -6px 0 16px;
+  margin: 0;
   font-size: 12px;
   line-height: 1.4;
   color: var(--muted);

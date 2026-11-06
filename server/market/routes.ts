@@ -23,6 +23,17 @@ export function registerMarketRoutes(
     c.header("Cache-Control", "no-store");
     await next();
   });
+  app.get(`${prefix}/media/:hash`, async c => {
+    const hash = c.req.param('hash').toLowerCase();
+    if (!/^0x[0-9a-f]{64}$/.test(hash)) return c.json({error:'Invalid order hash.'},400);
+    try {
+      const service=await resolve();
+      if (!service) return c.json({error:'Market unavailable.'},503);
+      if (!(await service.store.get(hash))) return c.json({error:'Order not found.'},404);
+      const {mediaStatus}=await import('../media/publication');
+      return c.json(await mediaStatus(service.store,hash));
+    } catch { return c.json({error:'Artwork backup status unavailable.'},503); }
+  });
   app.get(`${prefix}/stake-details/:hash`, async c => {
     const hash = c.req.param('hash').toLowerCase();
     if (!/^0x[0-9a-f]{64}$/.test(hash)) return c.json({error:'Invalid order hash.'},400);

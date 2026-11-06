@@ -1,3 +1,4 @@
+import { seedMedia } from '../media/publication';
 import { Pool } from 'pg';
 import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
@@ -21,7 +22,7 @@ export function serviceResolver(collection: 'signature' | 'advanced') {
     const pool=new Pool(runtime.database);
     pool.on('error',()=>console.error('Garuda database connection interrupted.'));
     const store=new SaleStore(pool,runtime.deployment);
-    try { await store.migrate(); await seedPublications(store); }
+    try { await store.migrate(); await seedPublications(store); await seedMedia(store); }
     catch(error) { await pool.end(); throw error; }
     return new SalesService(client,store);
   })().catch(error=>{pending=undefined;throw error;});
