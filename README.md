@@ -32,7 +32,7 @@ Status as of **6 November 2026**:
 | Product guides | The Problem and The Solution, including stake ownership and share comparisons | Expand alongside the product |
 | Get WISE | Navigation and page structure | Funding and swap flow is not enabled in this app yet |
 | Lending | Navigation and page structure | Borrower requests, lender offers, collateral, repayment, and default handling are planned |
-| CROPS | Navigation and page structure | Recovery tools and optional private Ethereum reads are planned |
+| CROPS | Independent backup HTML; direct Arkiv order recovery and export; cancellation, permission revocation, and matured Signature redemption | External wallet and reachable Ethereum RPC required; private reads are not enabled |
 | Homepage | Initial concept page at `/` | Full homepage comes after the app flows |
 
 The marketplace is under active development. Local integration evidence and fork tests are documented below; they do not establish a public launch or a completed security audit.
@@ -117,26 +117,30 @@ The integration uses **Rabdi testnet, chain ID `7794095`**:
 
 | Schema | Contents | Lifetime |
 | --- | --- | --- |
-| `wiseone.garuda.orders.v1` | Signed listing or bid; deployment scope, order hash, maker, stake owner, collection, token ID, and expiry | Follows the signed order deadline |
+| `wiseone.garuda.orders.v2` | Signed listings and bids with indexed price, currency, principal, shares, stake type, maturity, parties and Ethereum block provenance | Follows the original signed order deadline |
 | `wiseone.garuda.stakes.v1` | Stake display data with Ethereum block provenance | 15-minute entity lifetime; cache reads accepted for at most five minutes after canonical block checks |
 
 Entity writer: **`0x8d5b491D2c843F6B996De1EC66269809138cA60A`**.
 
 This is a dedicated server publisher. It owns the Arkiv entities; the Ethereum maker and stake owner are separate indexed fields. Users authenticate their orders with Ethereum signatures. The app trusts its configured publisher and deployment scope, and switching publisher addresses changes the entity set it reads.
 
-Accepted orders and publication requests are stored together. A worker retries temporary failures, deduplicates by deployment and order hash, and reads the entity back before marking it published. Pending publication is visible in the catalog. An Arkiv outage is shown explicitly, with an option to use **All orders**.
+V2 uses exact `u256` values for price, principal and shares, typed addresses for parties and currency, and `u64` timestamps for maturity and expiry. The Market sends price, principal and expiry sorting to Arkiv; the API and CLI also support numeric ranges. Stake metadata records the observed Ethereum block, while current Ethereum checks determine whether the order can execute. V1 records remain readable with duplicate suppression.
+
+Accepted orders and publication requests are stored together. A worker retries temporary failures, tracks the schema version, deduplicates by deployment and order hash, and reads the entity back before marking it published. Pending publication is visible in the catalog. An Arkiv outage is shown explicitly, with an option to use **All orders**.
 
 ### Live publication examples
 
-The following public signed orders were published to the Garuda namespace and read back during verification on 6 November 2026, India time:
+The following existing public signed orders were republished as **v2** and verified on **6 November 2026 at 02:43 UTC (08:13 India time)**:
 
 | Order | Arkiv entity | Publication transaction |
 | --- | --- | --- |
-| Signature Stake #20 listing, 20 WISE | [Listing entity](https://rabdi.explorer.arkiv.network/entity/0x3b43f78444e67a97578e67fe70a7fed914d2a5061642072670b397207c31968d) | [View transaction](https://rabdi.explorer.arkiv.network/tx/0x52af21cf776b59560940b43721b2c48c0462a7ce1a88e4120070620cb89f3584) |
-| Signature Stake #40 listing, 42,000 WISE | [Listing entity](https://rabdi.explorer.arkiv.network/entity/0x6e7ca02501fff22985e5f727facdb675f56471d08f21e58c0e55be5f54f13587) | [View transaction](https://rabdi.explorer.arkiv.network/tx/0x7125d44b38861f9a5b30c113736999f96a1c38fbf813987e527967fdff131b52) |
-| Signature Stake #20 purchase bid, 15 WISE | [Bid entity](https://rabdi.explorer.arkiv.network/entity/0x757c37b009ce7f1adee68722660543c832d4ef3e2896bcfb2e0520149094b0f7) | [View transaction](https://rabdi.explorer.arkiv.network/tx/0x0cca6b67baece4aa8df1d4ef1374e542a6318f98b5721cc1ba42c3e1afa57b5c) |
+| Signature Stake #20 listing, 20 WISE | [View v2 entity](https://rabdi.explorer.arkiv.network/entity/0x42bcdf1507105a321cfb43d6aa14890d8c23507e15ce9f6e642e17991f33b4c8) | [View transaction](https://rabdi.explorer.arkiv.network/tx/0xc1ea6dc7e0b2bc6ae4f757b211dc1bc17b1b5bedce0d011b68e10349419bd31a) |
+| Signature Stake #40 listing, 42,000 WISE | [View v2 entity](https://rabdi.explorer.arkiv.network/entity/0x586e6195475e49a9b3bc03fbada5b6eaac2cfdebd874a061aadfc5bc43e73df5) | [View transaction](https://rabdi.explorer.arkiv.network/tx/0xcb01e10e18300ec13015e3e7646a432a5d736332c3d492aa4549ea7a792c2e7d) |
+| Signature Stake #20 purchase bid, 15 WISE | [View v2 entity](https://rabdi.explorer.arkiv.network/entity/0x8219b6b1ea667898b94e1c9dde770fa40dcc49fd56862f0354a619f75cce2e1d) | [View transaction](https://rabdi.explorer.arkiv.network/tx/0x2c325e2d097ade2df1fb9e7ad9572cd5d72080ebe3678766feaefa690f8efcc9) |
 
-All three publication transactions returned successful receipts on **Arkiv Rabdi testnet (chain 7794095)**. They create expiring listing or bid entities under `wiseone.garuda.orders.v1`; they do not execute an Ethereum purchase or bid acceptance. The records expire, so they may no longer appear in active queries. [Verification evidence](arkiv/evidence.md) records their keys, deadlines, and the checks performed.
+All three publication transactions returned successful receipts on **Arkiv Rabdi testnet (chain 7794095)**. Their `wiseone.garuda.orders.v2` entities were read back and checked against the original signed orders and fresh Ethereum stake observations. Prices, signatures, deadlines and original publication blocks were preserved. Signature Stake #53's listing was skipped because its current NFT approval check failed.
+
+These transactions publish discovery data; they do not execute an Ethereum purchase or bid acceptance. Entities expire at the original signed deadlines, so active queries will eventually stop returning them. [Verification evidence](arkiv/evidence.md) records the keys, deadlines, block provenance and runnable queries.
 
 After installing dependencies, run these read-only queries; they do not load a signer:
 
@@ -144,16 +148,25 @@ After installing dependencies, run these read-only queries; they do not load a s
 npm run arkiv:query
 npm run arkiv:query -- listing
 npm run arkiv:query -- bid
+npm run arkiv:query -- listing --minPrice=20000000000000000000 --sort=price --direction=asc
 ```
 
-The query filters schema, publisher, deployment scope, unexpired deadlines, and optional order kind, then returns entity keys and order hashes. An empty result can mean the recorded offers have expired. See [schema and runnable query](arkiv/schema.md), [why Arkiv](arkiv/why-arkiv.md), [user-facing behavior](arkiv/how-you-use-arkiv.md), [reach](arkiv/reach.md), and [integration feedback](arkiv/friction.md).
+The final example finds listings asking at least **20 WISE**, ordered by price. Queries filter schema, publisher, deployment scope and unexpired deadlines, then return entity keys and the indexed fields. Amount filters use token base units (18 decimals for WISE). An empty result can mean the recorded offers have expired. See [schema and runnable query](arkiv/schema.md), [why Arkiv](arkiv/why-arkiv.md), [user-facing behavior](arkiv/how-you-use-arkiv.md), [reach](arkiv/reach.md), and [integration feedback](arkiv/friction.md).
+
+To inspect existing orders before republishing them, run:
+
+```sh
+node --env-file-if-exists=.env.local --import tsx scripts/arkiv-republish.mjs
+```
+
+Adding `--publish` writes valid existing orders as v2 using the configured Rabdi publisher. It preserves signatures, prices, deadlines and original publication blocks, verifies receipts and entity read-backs, and skips unavailable orders. Run it with the background publisher stopped; restart the API afterward. Repeating it reuses verified v2 entities.
 
 ## Run locally
 
 Requirements: **Node.js 22.12+**, npm, PostgreSQL, an Ethereum RPC endpoint, and a public Thirdweb client ID configured for your app origin.
 
 ```sh
-npm install --package-lock=false
+npm ci
 cp .env.example .env.local
 createdb garuda
 ```
@@ -236,7 +249,62 @@ The application comes first. The next phase strengthens market reliability, publ
 
 Funding follows with a Get WISE flow. Lending then adds borrower requests and stake-specific lender offers, with explicit collateral custody, repayment, expiration, and default behavior. Signing and funding those loans will require verified contracts and settlement tests before being enabled.
 
-CROPS adds independent recovery and optional private Ethereum reads. Advanced trading follows its validator configuration. The full homepage and broader product presentation come after these application foundations. Sponsor evidence will expand as integrations gain real usage; Swarm remains a possible addition.
+CROPS now provides independent backup access for Signature stakes. Private Ethereum reads and wider stake support remain future work. Advanced trading follows its validator configuration. The full homepage and broader product presentation come after these application foundations. Sponsor evidence will expand as integrations gain real usage; Swarm remains a possible addition.
+
+## CROPS
+
+**C:** The ordinary marketplace depends on our domain, API, configured Arkiv publisher, and RPC services. A saved `garuda-backup.html` can optionally recover published orders directly from Arkiv, cancel Signature orders, revoke Seaport permissions, and redeem matured Signature NFTs without our domain/API; saved-file and counter cancellation need no Arkiv; an external wallet, reachable Ethereum, and gas are still required.
+
+**O:** MIT licensed. The committed lockfile and `npm ci && npm run build:backup` build the standalone tool from this repo without API keys or a backend; the full market has the separately documented service dependencies.
+
+**P:** The standalone tool has no trackers or analytics. The selected Ethereum RPC and optional Arkiv RPC see IP and queried addresses; the external wallet sees accounts and requests. The normal market additionally exposes order/query metadata to our API, RPC, Arkiv, pricing/indexing and wallet providers; public orders and transactions are not private.
+
+**S:** The standalone tool never receives wallet keys. It pins contract code hashes, checks chain/account/ownership/maturity, simulates actions, and verifies receipts/state; it still trusts the wallet, RPC answers, downloaded build, and deployed contracts. Embedded/social wallets in the full app have separate provider-managed key/authentication dependencies.
+
+### Independent backup access
+
+Open **CROPS** in Garuda to download the tool and export saved Signature orders. The tool can also be built without any configured application services:
+
+```sh
+npm ci
+npm run build:backup
+python3 -m http.server 8080 --bind 127.0.0.1 --directory public
+```
+
+Open [the local backup tool](http://127.0.0.1:8080/garuda-backup.html) in a browser with an external wallet. Download and keep the file before an outage, or obtain the same verified build from someone else. It contains its own scripts and styles; direct `file://` access may not support wallet injection. This is independent frontend access, not offline Ethereum or lost-key recovery.
+
+The tool supports individual cancellation from direct Arkiv discovery or an imported order backup, broad Seaport 1.6 counter invalidation without a backup, WISE allowance removal, Signature collection/token permission removal, and redemption of matured Signature NFTs. It does not provide new trades, early stake ending, Advanced redemption, loans, or ordinary WISE stake redemption. Revoking permission does not cancel a signature; broad counter invalidation affects other apps using the same Seaport deployment. Order backups contain signatures and should be kept private while executable.
+
+**Find my published orders** queries Rabdi directly under the pinned publisher and deployment, supports v1/v2 records, verifies maker signatures (EOA or ERC-1271), and checks Ethereum order hashes, counters, cancellation/fills and signed deadlines. It separates your listings/bids from incoming bids and exports only your verified orders. A custom Rabdi endpoint is available; no publisher key is shipped. Search is explicit, capped at 50 records per schema, and reports malformed records, verification failures, truncation and partial outages.
+
+Discovery only finds live, published records. The publisher can omit or delete records, and expiry removes them from queries; the RPC can also omit results. A missing result never proves that no order exists. Exported files and current-counter cancellation preserve an exit without Arkiv. A verified signature and uncancelled status do not establish trade eligibility: the normal market's original publication anchors, transfer history, ownership and asset checks still apply. The standalone tool does not execute new trades.
+
+Arkiv storage lifetime and signed trading deadlines are separate. The installed SDK 1.0.1 offers `ExpirationTime.max()` (7,884,000 blocks, about 182 days) and extension **before** expiry, not a permanent-storage method. Current publication retains the original signed deadline. Ongoing renewal would need funding and an available renewer; it is not operator-independent permanence. See [Arkiv expiration](https://docs.arkiv.network/writing/expiration/).
+
+The chosen read RPC is separate from the wallet's submission RPC. A failed read endpoint can be changed in the tool; a failed wallet endpoint must be changed in the wallet. The tool never automatically broadcasts transactions to additional providers. After submission, it retains the transaction hash locally and blocks another action until the transaction is resolved. A lost wallet response before the hash is returned remains a wallet-level ambiguity: inspect wallet activity before retrying.
+
+`npm run build` also rebuilds the standalone file. `public/garuda-backup.sha256` identifies the exact artifact. Tests build twice and compare bytes; this proves repeatability in the tested environment, not yet reproducibility on every operating system. A checksum from the same compromised download source is not an independent trust anchor. See [backup verification and demonstration](docs/backup-access.md).
+
+### Who receives information
+
+| Recipient | Normal Garuda application | Standalone backup tool |
+| --- | --- | --- |
+| Garuda host/API | Connection metadata; requested wallet/stake data; signed listings and bids | No requests |
+| Ethereum RPC | Calls, addresses, transaction metadata and source connection | Same for the selected RPC; reads are direct, not anonymized |
+| Arkiv/publisher | Public signed orders, maker/stake fields and publication metadata | Optional direct Rabdi reads expose IP and queried wallet to the chosen RPC; no publisher API or signing key |
+| WiseOne pricing/indexer | Requested pricing or stake-index information and connection metadata | No requests |
+| Thirdweb / social login / embedded wallet services | Wallet-service and authentication requests; third-party custody/recovery assumptions apply to embedded wallets | No SDK, login, or requests |
+| External wallet / its RPC | Connected accounts, requested signatures/transactions, RPC metadata | Same; keys remain under the external wallet's custody |
+
+The Garuda build removes Thirdweb's connection/transaction analytics sender and disables WalletConnect telemetry. Compilation fails if either pinned SDK integration changes. The standalone bundle excludes both SDKs entirely. This does not assert that provider-hosted authentication pages or the separate legacy WiseOne website are tracker-free; the latter still needs its own analytics cleanup before being included in a whole-site claim.
+
+The normal app retains optional email/social wallets for familiar onboarding. Those flows send authentication identifiers to Thirdweb and the selected identity provider and rely on their wallet/recovery services; they are not claimed to keep all personal or recovery data exclusively on-device. Use an external wallet for the independent tool. Submitted order signatures and addresses are intentionally public so counterparties can discover and settle offers; the app never requests an external wallet's seed or private key.
+
+### Before and after this implementation
+
+Before this change, `garuda-full` already had onchain settlement, locally saved signed orders, same-origin cached configuration for API-outage cancellation, and read-RPC failover. The earlier `vitenix` prototype also had a standalone Seaport counter tool and optional Nym reads. Those features are explicitly prior work, not newly invented here.
+
+This implementation adds the integrated downloadable build, fresh-origin operation with bundled contract configuration, versioned order export/import, direct Arkiv discovery with signature/Ethereum checks and individual cancellation, WISE/NFT permission revocation, matured Signature redemption, transaction/result checks, and verification tooling. The implementation starting commit is `afc4da0`; that is not a verified hackathon eligibility cutoff. The team must supply the actual accepted Continuity baseline and dates before claiming which changes qualify. No public mirror or completed demo video is claimed by this local implementation.
 
 The [implementation plan](history/PLAN.md) explains sequencing and design decisions. Issue status is tracked with beads.
 

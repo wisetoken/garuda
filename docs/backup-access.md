@@ -71,7 +71,7 @@ The fixture uses deployed Signature NFTs #20 and #53 and selects one already mat
 
 ### Verified on 6 November 2026
 
-The unit suite passed 95 tests, TypeScript checking passed, and the production build passed. The self-contained page and in-app CROPS page rendered in the browser without console errors; custom RPC selection worked and transaction controls stayed disabled without a wallet. That browser did not have a wallet extension, so it did not test wallet popups.
+The unit suite passed 96 tests, TypeScript checking passed, and the production build passed. The self-contained page and in-app CROPS page rendered in the browser without console errors; custom Ethereum and Arkiv RPC selection worked and transaction/recovery controls stayed disabled without a wallet. The updated discovery section rendered without console errors. That browser did not have a wallet extension, so it did not test wallet popups.
 
 The extended fork run passed with non-fork application HTTP requests rejected, including recovery of an Arkiv-format order, verification, cancellation, and a fresh cancelled-status read. The selected matured fixture was Signature #20. The redemption receipt recorded `10005830589267733449` base units (`10.005830589267733449` WISE) received by the synthetic owner, matched by its balance increase, and the NFT disappeared from ownership and inventory. The fork-only transaction hash was `0x4028273b0080ff3959f06607df76041b15ff83af8f194bcfc9d4422d339ab207`; it is not a mainnet transaction or public explorer proof. The test also established executable orders before individual/counter cancellation and rejected settlement afterward, and checked zero allowances/permissions after revocation. The fork snapshot was restored.
 
