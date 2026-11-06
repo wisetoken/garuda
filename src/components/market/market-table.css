@@ -9,7 +9,7 @@
 .market-table-scroll {
   max-width: 100%;
   overflow-x: auto;
-  border-radius: 0 0 20px 20px;
+  border-radius: 0;
 }
 .market-table-scroll:focus-visible {
   outline: 2px solid var(--accent);

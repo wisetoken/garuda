@@ -1,4 +1,5 @@
-import { useErrorToast } from "../components/AppToast";
+import { useAppToast, useErrorToast } from "../components/AppToast";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArkivSource } from "../components/market/ArkivSource";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -30,6 +31,8 @@ import "../components/market/market-table.css";
 import "../components/market/market-controls.css";
 
 export function MarketPage() {
+  const { showToast } = useAppToast();
+  const queryClient = useQueryClient();
   const markets = useMarkets();
   const deployments = markets.map((query) =>
     query.data?.enabled ? query.data.deployment : undefined,
@@ -39,9 +42,8 @@ export function MarketPage() {
   const [view, setView] = useState<"table" | "cards">("table");
   const book = params.get("book") === "bids" ? "bids" : "listings";
   const source = params.get("source") === "catalog" ? "catalog" : "arkiv";
-  function setSource(value: "arkiv" | "catalog") {
-    setParams(current=> {const next=new URLSearchParams(current); next.set("source",value);return next;});
-  }
+  const [useCache, setUseCache] = useState(false);
+  const sourceSwitch = useRef<{ source: "arkiv" | "catalog"; started: number; cached: boolean } | null>(null);
   function setBook(value: "listings" | "bids") {
     setParams((current) => {
       const next = new URLSearchParams(current);
@@ -56,10 +58,32 @@ export function MarketPage() {
   const [sort, setSort] = useState<MarketSort>("price"),
     [direction, setDirection] = useState<"asc" | "desc">("asc");
   const indexedSort = sort === "shares" ? "shares" : sort === "amount" ? "principal" : sort === "expiry" ? "expires" : sort === "created" ? "stakeStartAt" : "price";
-  const listingSignature = useBook("signature", deployments[0], source, "listing", indexedSort, direction, remoteFilters.query),
-    listingAdvanced = useBook("advanced", deployments[1], source, "listing", indexedSort, direction, remoteFilters.query),
-    bidSignature = useBook("signature", deployments[0], source, "bid", indexedSort, direction, remoteFilters.query),
-    bidAdvanced = useBook("advanced", deployments[1], source, "bid", indexedSort, direction, remoteFilters.query);
+  function setSource(value: "arkiv" | "catalog") {
+    if (value === source) return;
+    const kind = value === "arkiv" ? (book === "bids" ? "bid" : "listing") : null;
+    if (!useCache) { reloadSource(value); return; }
+    const cached = deployments.every((deployment, index) => {
+      if (!deployment) return true;
+      const id = index === 0 ? "signature" : "advanced";
+      return !!queryClient.getQueryState(["market-book", id, deployment.adapter, value, kind, indexedSort, direction, value === "arkiv" ? remoteFilters.query : null, useCache])?.data;
+    });
+    sourceSwitch.current = { source: value, started: performance.now(), cached };
+    setParams(current => { const next = new URLSearchParams(current); next.set("source", value); return next; });
+  }
+  function reloadSource(value: "arkiv" | "catalog") {
+    sourceSwitch.current = { source: value, started: performance.now(), cached: false };
+    for (const [index, deployment] of deployments.entries()) {
+      if (!deployment) continue;
+      const id = index === 0 ? "signature" : "advanced";
+      void queryClient.resetQueries({ queryKey: ["market-book", id, deployment.adapter, value] });
+    }
+    if (value === source) return;
+    setParams(current => { const next = new URLSearchParams(current); next.set("source", value); return next; });
+  }
+  const listingSignature = useBook("signature", deployments[0], source, "listing", indexedSort, direction, remoteFilters.query, useCache),
+    listingAdvanced = useBook("advanced", deployments[1], source, "listing", indexedSort, direction, remoteFilters.query, useCache),
+    bidSignature = useBook("signature", deployments[0], source, "bid", indexedSort, direction, remoteFilters.query, useCache),
+    bidAdvanced = useBook("advanced", deployments[1], source, "bid", indexedSort, direction, remoteFilters.query, useCache);
   const listingQueries = [listingSignature, listingAdvanced];
   const bidQueries = [bidSignature, bidAdvanced];
   const [signature, advanced] = book === "bids" ? bidQueries : listingQueries;
@@ -152,6 +176,17 @@ export function MarketPage() {
   const openCount = { count: filtered.length, pending: loading, failed: false };
   const saleCount = bids ? closedCount : openCount;
   const bidCount = bids ? openCount : closedCount;
+  useEffect(() => {
+    const mark = sourceSwitch.current;
+    if (!mark || mark.source !== source) return;
+    const active = [signature, advanced];
+    const ready = deployments.some(Boolean) && deployments.every((deployment, index) => !deployment || active[index].data || active[index].isError);
+    if (!ready) return;
+    const seconds = (performance.now() - mark.started) / 1000;
+    const time = seconds < 0.1 ? "<0.1s" : `${seconds.toFixed(1)}s`;
+    showToast(`${source === "arkiv" ? "Arkiv" : "Graph"} loaded in ${time}. ${mark.cached ? "Cached." : "Not cached."}`, { id: `market-source-${mark.started}` });
+    sourceSwitch.current = null;
+  }, [source, deployments, signature, advanced, showToast]);
   useErrorToast("market-data", unavailable && !fetching && "Could not refresh the market. Please try again.", refresh);
   useErrorToast("market-availability", availability.some(query => query.isError && !query.isFetching) && "Could not verify order availability. Please try again.", refresh);
   useErrorToast("market-positions", positions.some(query => query.isError && !query.isFetching) && "Could not refresh stake details. Please try again.", refresh);
@@ -182,11 +217,11 @@ export function MarketPage() {
           <div className="stake-view-switch" role="group" aria-label="Order book">
             <button aria-pressed={book === "listings"} onClick={() => setBook("listings")}>
               <Tag size={15} aria-hidden="true" />
-              For sale{countLabel(saleCount)}
+              For sale ({saleCount.count})
             </button>
             <button aria-pressed={bids} onClick={() => setBook("bids")}>
               <HandCoins size={15} aria-hidden="true" />
-              Purchase bids{countLabel(bidCount)}
+              Purchase bids ({bidCount.count})
             </button>
           </div>
         </div>
@@ -202,7 +237,6 @@ export function MarketPage() {
             List a stake
           </Link>
         </header>
-        <ArkivSource source={source} onChange={setSource} />
         <MarketToolbar
           count={filtered.length}
           bids={bids}
@@ -224,7 +258,7 @@ export function MarketPage() {
         {!filtered.length ? (
           <div className="market-empty" role="status">
             {loading
-                ? <span className="market-loading"><LoaderCircle size={16} aria-hidden="true" /><span>{source === "arkiv" ? "Loading orders from Arkiv…" : "Loading market orders…"}</span></span>
+                ? <span className="market-loading"><LoaderCircle size={16} aria-hidden="true" /><span>{source === "arkiv" ? "Loading orders from Arkiv…" : "Loading orders from Graph…"}</span></span>
                 : unavailable
                   ? <button className="market-secondary" disabled={fetching} onClick={refresh}>{fetching ? "Refreshing…" : "Refresh market"}</button>
                   : "No matching orders right now."}
@@ -246,6 +280,7 @@ export function MarketPage() {
           </div>
         )}
         <div ref={pageEnd} className="market-page-end" aria-hidden="true" />
+        <ArkivSource source={source} onChange={setSource} onReload={reloadSource} useCache={useCache} onCacheChange={setUseCache} />
       </section>
       {activityOpen && <MarketActivityDialog
         books={pages}
@@ -261,9 +296,4 @@ export function MarketPage() {
 
 function collectOrders(queries: Array<{ data?: { pages: Array<{ orders: SaleRow[] }> } }>) {
   return [...new Map(queries.flatMap((query) => (query.data?.pages ?? []).flatMap((page) => page.orders)).map((row) => [row.hash, row])).values()];
-}
-
-function countLabel(state: { count: number; pending: boolean; failed: boolean }) {
-  if ((state.pending || state.failed) && state.count === 0) return "";
-  return ` (${state.count})`;
 }

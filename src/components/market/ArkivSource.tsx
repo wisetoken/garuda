@@ -2,17 +2,25 @@ import { ExternalLink } from 'lucide-react';
 import type { SaleRow } from '../../lib/blend/sales';
 import './arkiv-source.css';
 
-export function ArkivSource({source,onChange}: {
-  source:'arkiv'|'catalog';onChange:(source:'arkiv'|'catalog')=>void;
+export function ArkivSource({source,onChange,onReload,useCache,onCacheChange}: {
+  useCache:boolean;onCacheChange:(enabled:boolean)=>void;
+  source:'arkiv'|'catalog';onChange:(source:'arkiv'|'catalog')=>void;onReload:(source:'arkiv'|'catalog')=>void;
 }) {
   return <div className="arkiv-source">
     <div role="group" aria-label="Order discovery source">
       <span>Discover through</span>
-      <button aria-pressed={source==='arkiv'} onClick={()=>onChange('arkiv')}>Arkiv</button>
-      <button aria-pressed={source==='catalog'} onClick={()=>onChange('catalog')}>All orders</button>
+      <button aria-pressed={source==='arkiv'} title="Double-click to reload without cache" onClick={()=>onChange('arkiv')} onDoubleClick={()=>onReload('arkiv')}>Arkiv</button>
+      <button aria-pressed={source==='catalog'} title="Double-click to reload without cache" onClick={()=>onChange('catalog')} onDoubleClick={()=>onReload('catalog')}>Graph</button>
     </div>
+    <div className="arkiv-source-options">
     {source==='arkiv' ? <p>Listings and bids published on Arkiv. Availability verified on Ethereum.</p>
-    : <p>The complete order catalog, including orders awaiting Arkiv publication.</p>}
+    : <p>The service order catalog, for comparison with Arkiv.</p>}
+      <label className="market-cache-toggle" title="Reuse recently loaded order results in this browser. Turn off to fetch fresh results when switching sources.">
+        <input type="checkbox" role="switch" checked={useCache} onChange={event=>onCacheChange(event.target.checked)} />
+        <span className="market-cache-track" aria-hidden="true" />
+        <span>Use cache</span>
+      </label>
+    </div>
   </div>;
 }
 export function ArkivPublication({row}: {row:SaleRow}) {

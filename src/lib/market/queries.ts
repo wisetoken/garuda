@@ -15,9 +15,9 @@ import {
 } from "../blend/stake-snapshot";
 import { ethereumClient } from "../portfolio";
 
-export function useBook(id: StakeCollectionId, deployment?: SalesDeployment, source: "arkiv" | "catalog" = "catalog", kind?: "listing" | "bid", sort?: "price" | "principal" | "shares" | "expires" | "stakeStartAt", direction: "asc" | "desc" = "asc", filters: MarketQueryFilters = {}) {
+export function useBook(id: StakeCollectionId, deployment?: SalesDeployment, source: "arkiv" | "catalog" = "catalog", kind?: "listing" | "bid", sort?: "price" | "principal" | "shares" | "expires" | "stakeStartAt", direction: "asc" | "desc" = "asc", filters: MarketQueryFilters = {}, useCache = true) {
   return useInfiniteQuery({
-    queryKey: ["market-book", id, deployment?.adapter, source, source === "arkiv" ? kind : null, sort, direction, source === "arkiv" ? filters : null],
+    queryKey: ["market-book", id, deployment?.adapter, source, source === "arkiv" ? kind : null, sort, direction, source === "arkiv" ? filters : null, useCache],
     enabled: !!deployment,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
@@ -54,7 +54,8 @@ export function useBook(id: StakeCollectionId, deployment?: SalesDeployment, sou
       }
     },
     getNextPageParam: (last) => last.nextCursor ?? undefined,
-    staleTime: 15_000,
+    staleTime: useCache ? 15_000 : 0,
+    gcTime: useCache ? 5 * 60_000 : 0,
     refetchInterval: 30_000,
   });
 }
