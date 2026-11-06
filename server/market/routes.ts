@@ -6,12 +6,13 @@ import { SalesError, parseSignedSale } from "../../src/lib/blend/sales";
 import type { SalesService } from "./service";
 import { zoneAbi } from "../../src/lib/blend/seaport";
 import { parseArkivFilters } from "./arkiv-filters";
-import { publicationStates } from "./publication";
+import { processPublication, publicationStates } from "./publication";
 
 export function registerMarketRoutes(
   app: Hono,
   resolve: () => Promise<SalesService | null> ,
   prefix = "/api/garuda",
+  runPublication: typeof processPublication = processPublication,
 ) {
   app.use(
     `${prefix}/*`,
@@ -210,6 +211,9 @@ export function registerMarketRoutes(
         return c.json({ error: "Invalid signed order." }, 400);
       }
       const result = await service.publish(raw);
+      // The order and queue entry are durable before starting the worker.
+      // A transient worker failure is retried by the scheduled queue processor.
+      void runPublication(service).catch(() => {});
       return c.json({...result,arkiv:{state:"queued"}}, result.created ? 201 : 200);
     } catch (e) {
       return c.json(

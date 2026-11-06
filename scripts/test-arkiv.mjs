@@ -65,7 +65,9 @@ test('does not disguise Arkiv outages as database results',async()=>{
 test('rejects wrong network, invalid pagination and canonical chain change',async()=>{
  const {s}=fixture(),r=runtime();r.reader.getChainId=async()=>1;
  await assert.rejects(discoverArkiv(s,{},r),/Rabdi/);
- await assert.rejects(publishArkiv(s,'0xhash',r),/Rabdi/);
+ let metadataReads=0;
+ await assert.rejects(publishArkiv(s,'0xhash',r,async()=>{metadataReads++;throw Error('Metadata must not be read on the wrong network');}),/Rabdi/);
+ assert.equal(metadataReads,0);
  await assert.rejects(discoverArkiv(s,{before:'-1'},runtime()),/page/);
  s.client.getBlock=async()=>({hash:'changed'});
  await assert.rejects(discoverArkiv(s,{},runtime()),/Chain changed/);
@@ -79,7 +81,9 @@ for(const kind of [0,1]) test(`publishes ${kind?'bid':'listing'} with signed exp
  assert.equal(expiry.expiresAt.getTime(),Number(deadline)*1000);
  assert.equal(receipt.expiresAt,'123');assert.doesNotThrow(()=>JSON.stringify(receipt));
  const existing=runtime([entity]);existing.writer=r.writer;existing.reader.getEntity=r.reader.getEntity;
- assert.equal((await publishArkiv(s,hash,existing)).created,false);assert.equal(count,1);
+ let metadataReads=0;
+ assert.equal((await publishArkiv(s,hash,existing,async()=>{metadataReads++;throw Error('Ethereum metadata unavailable');})).created,false);
+ assert.equal(metadataReads,0);assert.equal(count,1);
 });
 test('refuses forks and unavailable orders before spending testnet gas',async()=>{
  const {s,hash}=fixture();s.store.deployment={...d,environment:'local-fork'};

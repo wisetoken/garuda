@@ -121,7 +121,6 @@ async function discoverArkivRows(service: SalesService, input: ArkivFilters, run
 export async function publishArkiv(service: SalesService, hash: string, runtime = arkivRuntime(), readMetadata = readOrderMetadata) {
   if (!runtime?.writer) throw new SalesError("arkiv-disabled", "Arkiv publication is not configured.");
   const writer = runtime.writer;
-  if (await runtime.reader.getChainId() !== 7794095) throw new Error("Arkiv Rabdi required.");
   if (service.store.deployment.environment !== "ethereum-mainnet") throw new Error("Only Ethereum orders can be published to Rabdi.");
   if (!(await service.store.limit("arkiv-publish", 6))) throw new SalesError("rate-limit", "Please wait before publishing another Arkiv order.");
   return service.store.transaction(async db => {
@@ -130,16 +129,21 @@ export async function publishArkiv(service: SalesService, hash: string, runtime 
     const row = await service.get(hash);
     if (row.status !== "available") throw new SalesError("order-unavailable", `Order is ${row.status}.`);
     const scope = arkivScope(service.store.deployment);
-    const existing = await runtime.reader.select().from(ArkivListings)
-      .where(and(eq("scope", scope), eq("orderHash", hash))).ownedBy(runtime.publisher).limit(1).fetch();
+    const expires = BigInt(row.order.deadline), now = BigInt(Math.floor(Date.now()/1000));
+    if (expires <= now || expires > now+30n*86400n) throw new Error("Unsupported Arkiv order lifetime.");
+    const [chainId, existing] = await Promise.all([
+      runtime.reader.getChainId(),
+      runtime.reader.select().from(ArkivListings)
+        .where(and(eq("scope", scope), eq("orderHash", hash))).ownedBy(runtime.publisher).limit(1).fetch(),
+    ]);
+    if (chainId !== 7794095) throw new Error("Arkiv Rabdi required.");
     if (existing.entities.length) {
       const entity = existing.entities[0];
       if (parseOrderEntity(entity, service.store.deployment, 2).hash !== hash)
         throw new Error("Existing Arkiv entity does not match the signed order.");
       return { entityKey: entity.$key, created: false };
     }
-    const expires = BigInt(row.order.deadline), now = BigInt(Math.floor(Date.now()/1000));
-    if (expires <= now || expires > now+30n*86400n) throw new Error("Unsupported Arkiv order lifetime.");
+    // Already-published orders do not depend on a new Ethereum metadata read.
     const metadata = await readMetadata(service, row);
     // Slow metadata reads may cross an expiry or a cancellation. Recheck before spending gas.
     const checked = await service.get(hash);

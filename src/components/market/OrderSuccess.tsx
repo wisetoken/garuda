@@ -17,7 +17,7 @@ export function OrderSuccess({ receipt, onClose, onView }: {
   const publication = useQuery({
     queryKey:["market-publication",meta.id,receipt.hash],
     queryFn:async()=>readPublication(await marketApi(meta.id,`arkiv/status/${receipt.hash}`),receipt.hash),
-    refetchInterval:query => ["published","unavailable"].includes(query.state.data?.state ?? "") ? false : 5_000,
+    refetchInterval:query => query.state.status === "error" || ["published","unavailable"].includes(query.state.data?.state ?? "") ? false : 1_000,
     staleTime:0, retry:1,
   });
   const state = publication.data?.state;
