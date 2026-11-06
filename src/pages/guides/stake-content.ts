@@ -20,5 +20,5 @@ export const stakeCards = [
     ['Your wallet authorizes the trade', 'Signing a listing does not transfer the NFT. A completed settlement exchanges payment for ownership, with live checks before purchase.'],
     ['Borrow against a stake', 'Use a Signature stake as collateral to borrow funds, or lend to stake owners under agreed loan terms. Review the collateral, loan amount, repayment cost and due date before committing.'],
     ['Understand collateral', 'Unpaid loans can put collateral at risk. Review repayment terms and collateral enforcement rules before borrowing or lending.']
-  ], href: '/garuda/?screen=trade&collection=signature&view=market', link: 'Open Garuda Extension' }
+  ], href: '/market', link: 'Open Garuda Extension' }
 ];

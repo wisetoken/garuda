@@ -1,3 +1,4 @@
+import { screenHref } from "../../navigation";
 import type { fillSale } from "../blend/sales-wallet";
 import { saleAmounts } from "../blend/seaport";
 import { stakeCollection } from "../blend/stake-collections";
@@ -50,7 +51,7 @@ export function settlementSuccess(result: Awaited<ReturnType<typeof fillSale>> &
     currency: order.currency, collection: order.collection, tokenId: String(order.tokenId),
     action: order.kind === 0 ? "purchase" : "accept-bid",
     ...saleAmounts(order),
-    destination: order.kind === 0 ? "/garuda/?screen=stakes" :
-      `/garuda/?screen=trade&collection=${collection.id}&view=market&book=bids`,
+    destination: order.kind === 0 ? screenHref("stakes") :
+      screenHref("trade", { collection: collection.id, book: "bids" }),
   };
 }

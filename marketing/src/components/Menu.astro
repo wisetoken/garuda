@@ -17,7 +17,7 @@ interface Props {
 }
 const { c, path } = Astro.props;
 const latest = { cover: c.home.slides[0].image };
-const menuLinks = c.site.nav.filter((link) => !['/garuda/?screen=trade&collection=signature&view=market', 'https://wise.one/'].includes(link.href));
+const menuLinks = c.site.nav.filter((link) => !['/market', 'https://wise.one/'].includes(link.href));
 // One preview per link (links without one show the latest case), then the case itself as the default.
 const previews = menuLinks.map((l) => c.menu.previews[l.href] ?? latest?.cover).filter(Boolean);
 const caseIndex = previews.length;
@@ -72,7 +72,7 @@ const current = (href: string) => path === href || (href !== '/' && path.startsW
         )
       }
       <nav class="menu__apps" aria-label="WiseOne apps">
-        <a class="menu__app" href="/garuda/?screen=trade&collection=signature&view=market">
+        <a class="menu__app" href="/market">
           <span class="menu__app-title">Open Garuda Extension <Arrow /></span>
           <span class="menu__app-description">List NFT stakes, place bids, or buy directly from another owner.</span>
         </a>

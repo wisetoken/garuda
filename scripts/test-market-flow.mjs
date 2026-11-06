@@ -426,7 +426,7 @@ test("success receipts use the accepted signed terms without exposing the signat
   for(const kind of [0,1]) {
     const f=fixture(kind===0?seller:buyer);
     const signed=await publishSale(f.session,{...input,kind},async()=>{});
-    const receipt=orderSuccess(signed,d,'/garuda/?screen=trade');
+    const receipt=orderSuccess(signed,d,'/market');
     assert.equal(receipt.hash,parseSignedSale(signed,d).hash);
     assert.equal(receipt.kind,"publication");
     assert.equal(receipt.order.amount,String(input.amount));

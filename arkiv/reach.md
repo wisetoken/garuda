@@ -17,7 +17,7 @@ The feature addresses an existing stake-owner workflow, but we have not yet demo
 Yes, through the repository and local app. A public hosted marketplace URL has not been verified for this submission.
 
 1. Follow [Run locally](../README.md#run-locally): Node.js 22.12+, PostgreSQL, the deployment configuration, Ethereum RPC and app client ID are required. Start `npm run server` and `npm run dev` in separate terminals.
-2. Open `http://127.0.0.1:3212/garuda/?screen=trade`. Browse listings and bids, use the indexed filters, and inspect an entity link. Initializing an empty database does not import the operator's existing orders; the hosted marketplace path checks records against its stored publication anchors.
+2. Open `http://127.0.0.1:3212/market`. Browse listings and bids, use the indexed filters, and inspect an entity link. Initializing an empty database does not import the operator's existing orders; the hosted marketplace path checks records against its stored publication anchors.
 3. To inspect the published integration without a copy of our database, use the [direct Arkiv query](schema.md#query) and [entity receipts](evidence.md). Records expire, so historical examples may no longer appear. An RPC access key is recommended; writes additionally require a funded Rabdi publisher.
 4. Build and open the [standalone backup](../docs/backup-access.md) to inspect its independent recovery path. Viewing the interface requires no transaction. Wallet actions use real Ethereum unless a documented disposable-fork test is being run.
 

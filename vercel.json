@@ -42,6 +42,69 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
+    },
+    {
+      "source": "/market",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/stakes",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/lend",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/get-wise",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/problem",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/solution",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/crops",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -68,9 +131,38 @@
     {
       "source": "/garuda/:path*",
       "destination": "/garuda/index.html"
+    },
+    {
+      "source": "/market",
+      "destination": "/garuda/index.html"
+    },
+    {
+      "source": "/stakes",
+      "destination": "/garuda/index.html"
+    },
+    {
+      "source": "/lend",
+      "destination": "/garuda/index.html"
+    },
+    {
+      "source": "/get-wise",
+      "destination": "/garuda/index.html"
+    },
+    {
+      "source": "/problem",
+      "destination": "/garuda/index.html"
+    },
+    {
+      "source": "/solution",
+      "destination": "/garuda/index.html"
+    },
+    {
+      "source": "/crops",
+      "destination": "/garuda/index.html"
     }
   ],
   "regions": [
     "iad1"
-  ]
+  ],
+  "trailingSlash": false
 }

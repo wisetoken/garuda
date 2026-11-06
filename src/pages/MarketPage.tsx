@@ -219,7 +219,8 @@ export function MarketPage() {
   function setActivityOpen(open: boolean) {
     setParams((current) => {
       const next = new URLSearchParams(current);
-      next.set("view", open ? "activity" : "market");
+      if (open) next.set("view", "activity");
+      else next.delete("view");
       return next;
     }, { replace: true });
   }

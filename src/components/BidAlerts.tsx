@@ -132,7 +132,7 @@ export function BidAlerts() {
                             <span>{formatPaymentAmount(BigInt(item.notice.net),item.notice.currency ?? paymentTokens[0].address,6)} {paymentToken(item.notice.currency ?? paymentTokens[0].address).symbol}</span>
                         </a>
                     </li> : <li key={item.row.hash}>
-                        <Link to={`${screenHref("trade")}&book=bids`} onClick={() => setOpen(false)}>
+                        <Link to={screenHref("trade", { book: "bids" })} onClick={() => setOpen(false)}>
                             {stakeLabel(item.row.order.collection, item.row.order.tokenId)}
                             <span>{formatPaymentAmount(BigInt(item.row.order.amount),item.row.order.currency,6)} {paymentToken(item.row.order.currency).symbol}</span>
                         </Link>

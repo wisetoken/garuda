@@ -36,7 +36,7 @@ export function StakeCard({ position, onList, actions }: { position: SignaturePo
     </div>
     <div className="garuda-stake-footer"><div className="garuda-stake-actions">
       {actions ?? <><button className="stake-primary" disabled={!position.canList || !onList} onClick={onList}>List for sale <ArrowUpRight size={17} aria-hidden="true" /></button>
-      <Link className="ba-text-button" to={`/garuda/?screen=lend&collection=${stakeCollection(collection).id}&tokenId=${position.tokenId}`}>Explore borrowing <ChevronRight size={17} aria-hidden="true" /></Link></>}
+      <Link className="ba-text-button" to={`/lend?collection=${stakeCollection(collection).id}&tokenId=${position.tokenId}`}>Explore borrowing <ChevronRight size={17} aria-hidden="true" /></Link></>}
     </div></div>
   </article>;
 }

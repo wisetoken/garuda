@@ -55,7 +55,7 @@ test('purchase receipt keeps the confirmed transaction distinct from the signed 
  const receipt = settlementSuccess(settled());
  assert.equal(receipt.kind, 'settlement'); assert.equal(receipt.action, 'purchase');
  assert.equal(receipt.transactionHash, tx); assert.equal(receipt.hash, hash);
- assert.equal(receipt.tokenId, '40'); assert.equal(receipt.destination, '/garuda/?screen=stakes');
+ assert.equal(receipt.tokenId, '40'); assert.equal(receipt.destination, '/stakes');
  assert.equal(receipt.gross, 300000000000000000001n);
  assert.equal(receipt.fee, 1500000000000000000n);
  assert.equal(receipt.net, 298500000000000000001n);
@@ -67,7 +67,7 @@ test('accepted bid receipts show net proceeds using each collection fee without 
   assert.equal(receipt.action, 'accept-bid');
   assert.equal(receipt.fee, collection.id === 'signature' ? 1500000000000000000n : 6000000000000000000n);
   assert.equal(receipt.net + receipt.fee, receipt.gross);
-  assert.equal(receipt.destination, `/garuda/?screen=trade&collection=${collection.id}&view=market&book=bids`);
+  assert.equal(receipt.destination, `/market?collection=${collection.id}&book=bids`);
  }
 });
 test('failed or incomplete settlement receipts cannot become success screens or explorer links', () => {

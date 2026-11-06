@@ -232,9 +232,9 @@ Adding `--publish` writes valid existing orders as v2 using the configured Rabdi
 
 ## Production on Vercel
 
-The homepage is at **[garuda.wise.one](https://garuda.wise.one)**, with the [marketplace app at `/garuda/`](https://garuda.wise.one/garuda/); the [Vercel URL](https://garuda-vmarinchenkos-projects.vercel.app/garuda/) remains available. The **Garuda** project in the `vmarinchenkos-projects` team is connected to `wisetoken/garuda`: every push to `master` deploys production automatically; other branches receive previews. Production uses a dedicated Neon PostgreSQL database on the Free plan. The API and database run in `iad1` to keep database calls in the same region.
+The homepage is at **[garuda.wise.one](https://garuda.wise.one)**, with the [marketplace at `/market`](https://garuda.wise.one/market); the [Vercel URL](https://garuda-vmarinchenkos-projects.vercel.app/market) remains available. The **Garuda** project in the `vmarinchenkos-projects` team is connected to `wisetoken/garuda`: every push to `master` deploys production automatically; other branches receive previews. Production uses a dedicated Neon PostgreSQL database on the Free plan. The API and database run in `iad1` to keep database calls in the same region.
 
-[`vercel.json`](vercel.json) runs the test suite before building the Vite frontend and the [Hono API entry](server/vercel-entry.ts) together. A failed test or build prevents that deployment from replacing production. `/garuda/` serves the app and `/api/garuda/*` serves its market API. Price, subgraph and owl-avatar requests use the existing public WiseOne API through explicit same-origin rewrites. The standalone backup remains available at `/garuda-backup.html`.
+[`vercel.json`](vercel.json) runs the test suite before building the Vite frontend and the [Hono API entry](server/vercel-entry.ts) together. A failed test or build prevents that deployment from replacing production. `/` serves the homepage. App pages have their own paths: `/market`, `/stakes`, `/lend`, `/get-wise`, `/problem`, `/solution`, and `/crops`. Filters and selected stakes remain in query parameters; existing `/garuda/?screen=…` bookmarks redirect to the matching page. `/api/garuda/*` serves the market API. Price, subgraph and owl-avatar requests use the existing public WiseOne API through explicit same-origin rewrites. The standalone backup remains available at `/garuda-backup.html`.
 
 Production needs a dedicated hosted PostgreSQL database, with `sslmode=verify-full`, and these server-only variables: `GARUDA_DATABASE_URL`, `GARUDA_DEPLOYMENT_JSON`, `GARUDA_RPC_URL`, `ARKIV_PUBLISHER_PRIVATE_KEY`, and `CRON_SECRET` (a random secret of at least 32 characters). Set `VITE_THIRDWEB_CLIENT_ID` at build time and allow the production domain in the corresponding Thirdweb app. `GARUDA_DEPLOYMENT_JSON` contains the public [Ethereum deployment manifest](contracts/seaport/deployments/ethereum-mainnet-v2-with-router.json); do not also set `GARUDA_DEPLOYMENT_FILE`. Preview deployments must use an isolated database and publisher before enabling writes.
 
@@ -264,7 +264,7 @@ npm run server
 npm run dev
 ```
 
-Open [the homepage](http://127.0.0.1:3212/), [Market](http://127.0.0.1:3212/garuda/?screen=trade&collection=signature&view=market), [My stakes](http://127.0.0.1:3212/garuda/?screen=stakes), [The Problem](http://127.0.0.1:3212/garuda/?screen=problem), or [The Solution](http://127.0.0.1:3212/garuda/?screen=how).
+Open [the homepage](http://127.0.0.1:3212/), [Market](http://127.0.0.1:3212/market), [My stakes](http://127.0.0.1:3212/stakes), [The Problem](http://127.0.0.1:3212/problem), or [The Solution](http://127.0.0.1:3212/solution).
 
 The development server uses Vite hot module replacement and React Fast Refresh. Saving app components or CSS updates the open page automatically, preserving component state where possible; HTML changes reload the page. Keep `npm run dev` running while you work. No rebuild is needed for app source edits. The Astro homepage lives in `marketing/` and is built automatically before development and production builds. After editing homepage files, run `npm run build:homepage` and refresh the local root page.
 
@@ -292,7 +292,7 @@ npm run build
 npm run preview
 ```
 
-Open [the homepage build preview](http://127.0.0.1:3214/) or [the app preview](http://127.0.0.1:3214/garuda/). This serves the last build and does not hot reload; use `npm run dev` on port `3212` while editing. Vite's proxy is local-only. The Vercel setup above packages the market API and production routes with the frontend.
+Open [the homepage build preview](http://127.0.0.1:3214/) or [the app preview](http://127.0.0.1:3214/market). This serves the last build and does not hot reload; use `npm run dev` on port `3212` while editing. Vite's proxy is local-only. The Vercel setup above packages the market API and production routes with the frontend.
 
 ## Verification
 
@@ -388,7 +388,7 @@ node --import tsx scripts/verify-seaport-v2-fork.mjs
 
 The runner only writes to the fixed loopback endpoint, verifies Anvil and the fork chain ID, uses temporary test accounts, and rolls back the scenarios. Results vary with the fork block.
 
-For wallet deployment, run the app locally and open `/garuda/?screen=deploy`. Review the validator and payment-router deployments, sign them with your wallet, and wait for bytecode/configuration checks and automatic Sourcify source verification. The screen also supplies compiler inputs and Etherscan verification links. Both [contracts are deployed and verified on Etherscan and Sourcify](contracts/seaport/README.md), and the marketplace is active. The third card confirms contract verification, API configuration and market activation, with one confirmation required for wallet transactions. These operator endpoints exist only on the local Vite development server; deployment alone does not activate the market.
+For wallet deployment, run the app locally and open `/deploy`. Review the validator and payment-router deployments, sign them with your wallet, and wait for bytecode/configuration checks and automatic Sourcify source verification. The screen also supplies compiler inputs and Etherscan verification links. Both [contracts are deployed and verified on Etherscan and Sourcify](contracts/seaport/README.md), and the marketplace is active. The third card confirms contract verification, API configuration and market activation, with one confirmation required for wallet transactions. These operator endpoints exist only on the local Vite development server; deployment alone does not activate the market.
 
 See [FEEDBACK.md](FEEDBACK.md) for integration feedback. The [Uniswap Developer Feedback Form](https://developers.uniswap.org/hackathon-feedback) still needs to be completed by the project owner with the public feedback-file link.
 

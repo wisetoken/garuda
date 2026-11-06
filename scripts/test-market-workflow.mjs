@@ -6,7 +6,8 @@ import { refreshTradeData, tradeDestination } from "../src/lib/market/workflow.t
 test("bid actions return to Purchase bids, while listings return to For sale", () => {
   for (const kind of ["list", "bid"]) {
     const url = new URL(tradeDestination({ kind }, "signature"), "http://localhost");
-    assert.equal(url.searchParams.get("view"), "market");
+    assert.equal(url.pathname, "/market");
+    assert.equal(url.searchParams.has("screen"), false);
     assert.equal(url.searchParams.get("book"), kind === "bid" ? "bids" : null);
   }
   for (const kind of ["fill", "cancel"]) {

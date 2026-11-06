@@ -1,3 +1,4 @@
+import { screenHref } from "../../navigation";
 import { paymentToken } from "../blend/payment-tokens";
 import type { QueryClient } from "@tanstack/react-query";
 import type { MarketIntent } from "./types";
@@ -14,10 +15,10 @@ export function tradeInstructions(intent: MarketIntent) {
 }
 
 export function tradeDestination(intent: MarketIntent, collection: string) {
-  const params = new URLSearchParams({ screen: "trade", collection, view: "market" });
+  const filters: Record<string, string> = { collection };
   if (intent.kind === "bid" || ("row" in intent && intent.row.order.kind === 1))
-    params.set("book", "bids");
-  return `/garuda/?${params}`;
+    filters.book = "bids";
+  return screenHref("trade", filters);
 }
 
 export function refreshTradeData(cache: QueryClient) {
