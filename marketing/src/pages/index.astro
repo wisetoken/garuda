@@ -1,0 +1,52 @@
+---
+/**
+ * Home (Figma "Home / Desktop" and "Home / Mobile"): the fitted wordmark and the hero slider, the four
+ * service tiles, the about lead with numbers, and
+ * the contact card.
+ */
+import Ecosystem from '../components/home/Ecosystem.astro';
+import SignatureStakes from '../components/home/SignatureStakes.astro';
+import ProblemIntro from '../components/home/ProblemIntro.astro';
+import Base from '../layouts/Base.astro';
+import Hero from '../components/home/Hero.astro';
+import Services from '../components/home/Services.astro';
+import About from '../components/home/About.astro';
+import ContactCard from '../components/ContactCard.astro';
+import { getContent } from '../lib/content';
+import { pageLd } from '../lib/seo';
+
+const c = await getContent();
+const site = Astro.site!;
+const ld = [pageLd('WebPage', site, '/', c.home.seo.title, c.home.seo.description)];
+---
+
+<Base title={c.home.seo.title} description={c.home.seo.description} ld={ld} home>
+  <Hero c={c} />
+  <About c={c} />
+  <ProblemIntro />
+  <SignatureStakes />
+  <Services services={c.services} />
+  <Ecosystem />
+  <ContactCard c={c} />
+</Base>
+
+<style is:global>
+  .is-home .token-details { padding-bottom:20px; }
+  @media(max-width:540px){.is-home .token-details { padding-bottom:12px; }}
+  /* One shared outer gutter for landing sections and card grids. */
+  .is-home .token-details,
+  .is-home .signature-intro,
+  .is-home .section-lead,
+  .is-home .sh,
+  .is-home .row,
+  .is-home .stake-flow {
+    padding-inline: var(--pad);
+  }
+  .is-home .row { column-gap: calc(3 * var(--g)); }
+  .is-home .row > .tile,
+  .is-home .row > li > .tile,
+  .is-home .stake-flow > .tile { margin-inline: 0; }
+  .is-home .stake-flow { column-gap: calc(3 * var(--g)); }
+  .is-home > .cta,
+  .is-home .hero .sl { margin-inline: var(--pad); }
+</style>

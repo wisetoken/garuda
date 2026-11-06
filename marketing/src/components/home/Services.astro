@@ -1,0 +1,152 @@
+---
+import Arrow from '../Arrow.astro';
+import type { Service } from '../../lib/types';
+interface Props { services: Service[]; }
+const { services } = Astro.props;
+const actions = [
+  { href: '/garuda/?screen=stakes', cta: 'Choose a stake', eyebrow: 'YOUR STAKE / YOUR PRICE', description: 'Turn an eligible NFT stake into a sale listing. Choose your price, currency and expiry, then sign with your wallet. Your stake stays in your wallet until someone buys it.', steps: ['Choose stake', 'Set terms', 'Sign listing'] },
+  { href: '/garuda/?screen=trade&view=market', cta: 'Browse the market', eyebrow: 'A NEW OWNER / THE SAME STAKE', description: 'Compare the asking price, staked amount and remaining lock time. Pay with a supported currency at the seller’s price and receive the NFT stake, with its original timeline intact.', steps: ['Review stake', 'Confirm purchase', 'Receive NFT'] },
+  { href: '/garuda/?screen=trade&view=market', cta: 'Find a stake to bid on', eyebrow: 'MAKE YOUR OWN OFFER', description: 'Have a different price in mind? Sign a purchase offer for a specific stake and choose when it expires. The owner decides whether to accept; an open bid does not reserve the stake.', steps: ['Choose stake', 'Set your offer', 'Await decision'] },
+  { href: '/garuda/?screen=stakes', cta: 'Review your stakes', eyebrow: 'YOUR OFFER / YOUR DECISION', description: 'Review purchase bids on your stake and accept the terms that suit you. When a valid bid settles, the settlement currency goes to you and the NFT goes to the buyer in the same transaction.', steps: ['Review offers', 'Accept a bid', 'Receive payment'] },
+  { title: 'Lend against a stake · coming next', href: '/garuda/?screen=how', cta: 'Explore lending', eyebrow: 'PROVIDE FUNDS / AGREE ON TERMS', description: 'Provide funds to a borrower using a Signature stake as collateral. Review the position, agree on loan terms and receive repayments. Lending involves repayment and collateral risk.', steps: ['Review collateral', 'Agree on terms', 'Receive repayments'] },
+  { title: 'Borrow against your stake · coming next', href: '/garuda/?screen=how', cta: 'Explore borrowing', eyebrow: 'YOUR STAKE / ACCESS TO FUNDS', description: 'Use a Signature stake as collateral to access funds without selling it outright. Review loan terms and repay to release your collateral. Failure to repay can put your stake at risk.', steps: ['Choose collateral', 'Review loan terms', 'Repay loan'] },
+];
+---
+<ul class="row row--2 hs">
+  {actions.map((action, i) => {
+    const s = services[i];
+    return <li data-rise>
+      <article class="tile hs__t" data-action-card>
+        <div class="hs__top"><span class="label">{s?.n ?? String(i + 1).padStart(2, '0')} / {action.eyebrow}</span><a class="hs__go" href={action.href} aria-label={action.cta}><Arrow /></a></div>
+        <div class:list={['preview', `preview--${i}`]}>
+          <div class="mini">
+            <div class="mini__head"><span class="nft"><img src="/wiseone-logo.png" width="32" height="36" alt="" /></span><div><strong>Signature stake</strong><span>1,000 WISE staked</span></div><span class="pill">NFT</span></div>
+            {i === 0 && <>
+              <div class="timeline"><span>Original stake timeline</span><span>Active</span><div class="track"><i /></div></div>
+              <div class="fields"><div><span>Your asking price</span><strong>1,200 <small>WISE</small></strong></div><div><span>Listing expires in</span><strong>7 <small>days</small></strong></div></div>
+              <button type="button" class="mini__action" aria-label="Explore this example">Sign listing <span>↗</span></button>
+              <p class="flow__detail" aria-live="polite"></p>
+                </>}
+            {i === 1 && <>
+              <div class="line"><span>Seller’s asking price</span><strong>1,200 WISE</strong></div>
+              <div class="line"><span>What you receive</span><strong>Complete NFT ownership</strong></div>
+              <div class="exchange"><span>Your WISE</span><div class="transfer" aria-hidden="true"><svg viewBox="0 0 36 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path class="transfer__out" d="M5 9h24m-6-5 6 5-6 5" /><path class="transfer__back" d="M31 19H7m6-5-6 5 6 5" /></svg></div><span>Seller’s NFT</span></div>
+              <button type="button" class="mini__action" aria-label="Explore this example">Review purchase <span>↗</span></button>
+              <p class="flow__detail" aria-live="polite"></p>
+                </>}
+            {i === 2 && <>
+              <div class="line"><span>Asking price</span><strong>1,200 WISE</strong></div>
+              <div class="offer"><span>Your offer</span><strong>1,100 <small>WISE</small><i class="caret" /></strong><span>Valid for 7 days</span></div>
+              <button type="button" class="mini__action" aria-label="Explore this example">Sign purchase bid <span>↗</span></button>
+              <p class="flow__detail" aria-live="polite"></p>
+                </>}
+            {i === 3 && <>
+              <button type="button" class="bid selected" aria-pressed="true"><span><b>Offer 01</b><small>Expires in 3 days</small></span><strong>1,100 WISE</strong><em>✓</em></button>
+              <button type="button" class="bid" aria-pressed="false"><span><b>Offer 02</b><small>Expires in 5 days</small></span><strong>1,050 WISE</strong><em>○</em></button>
+              <button type="button" class="mini__action" aria-label="Explore this example">Review & accept <span>↗</span></button>
+              <p class="flow__detail" aria-live="polite"></p>
+                </>}
+            {i === 4 && <>
+              <div class="line"><span>Collateral</span><strong>Signature stake NFT</strong></div>
+              <div class="fields"><div><span>Loan amount</span><strong>Agreed terms</strong></div><div><span>Repayment</span><strong>Agreed date</strong></div></div>
+              <div class="exchange"><span>Lender’s funds</span><div class="transfer" aria-hidden="true"><svg viewBox="0 0 36 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path class="transfer__out" d="M5 9h24m-6-5 6 5-6 5" /><path class="transfer__back" d="M31 19H7m6-5-6 5 6 5" /></svg></div><span>Borrower</span></div>
+              <button type="button" class="mini__action" aria-label="Explore this example">Review lending terms <span>↗</span></button>
+              <p class="flow__detail" aria-live="polite"></p>
+                </>}
+            {i === 5 && <>
+              <div class="line"><span>Your collateral</span><strong>Signature stake NFT</strong></div>
+              <div class="line"><span>Loan terms</span><strong>Amount / Cost / Due date</strong></div>
+              <div class="exchange exchange--repayment"><span>Repay loan</span><div class="transfer" aria-hidden="true"><svg viewBox="0 0 36 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path class="transfer__out" d="M5 9h24m-6-5 6 5-6 5" /><path class="transfer__back" d="M31 19H7m6-5-6 5 6 5" /></svg></div><span>Release collateral</span></div>
+              <p class="repayment-note">Review the total repayment and due date. Repay under the agreed terms to release your stake.</p>
+              <button type="button" class="mini__action" aria-label="Explore this example">Review borrowing terms <span>↗</span></button>
+              <p class="flow__detail" aria-live="polite"></p>
+                </>}
+          </div>
+          <div class="flow">{action.steps.map((step, n) => <button type="button" class="flow__step" aria-pressed={n === 0 ? "true" : "false"}><b>{n + 1}</b><span>{step}</span></button>)}</div>
+        </div>
+        <div class="hs__b"><h2>{'title' in action ? action.title : s.title}</h2><p>{action.description}</p><span class="hs__link">{action.cta}<a class="hs__go" href={action.href} aria-label={action.cta}><Arrow /></a></span></div>
+      </article>
+    </li>;
+  })}
+</ul>
+<style>
+.hs{margin-top:30px;row-gap:35px}
+.hs__t{display:flex;flex-direction:column;padding:clamp(20px,3vw,40px);height:100%;gap:28px;color:var(--ink);overflow:hidden}
+.hs__top{display:flex;justify-content:space-between;align-items:center;gap:16px}.hs__top .label{font-size:13px;letter-spacing:.08em}.hs__top :global(.arr){width:18px;color:inherit}
+.preview{padding:24px 24px 18px;background:radial-gradient(ellipse at 50% 60%,#cde8e1,transparent 70%),#eaf2ef;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:18px}
+.mini{width:100%;max-width:430px;background:#fff;border:1px solid #d6e5df;border-radius:14px;padding:22px;box-shadow:0 12px 32px #164b3b0c;transition:transform .6s ease,box-shadow .6s ease;font-size:14px}.hs__t:hover .mini,.hs__t:focus-visible .mini{transform:translateY(-4px);box-shadow:0 18px 36px #164b3b18}
+.mini__head{display:flex;align-items:center;gap:10px;padding-bottom:18px;border-bottom:1px solid #e8efeb}.mini__head>div{display:flex;flex-direction:column;gap:3px;min-width:0}.mini__head strong{font-size:17px;font-weight:500;display:block;line-height:1.2;margin:0}.mini__head div>span{display:block;color:#738078;font-size:13px;line-height:1.3;margin:0}.nft{width:38px;height:44px;display:grid;place-items:center;background:#e5f4ef;color:#008b82;border:1px solid #c2ded4;border-radius:9px;font-size:30px}.nft img{display:block;width:32px;height:36px;object-fit:contain;filter:hue-rotate(-45deg) saturate(1.4)}.pill{margin-left:auto;padding:5px 8px;background:#edf5f1;border-radius:6px;color:#427665;font-size:12px}.timeline{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;margin-top:18px;color:#64756e;font-size:14px}.track{height:5px;background:#e8efeb;border-radius:9px;width:100%;overflow:hidden}.track i{display:block;width:58%;height:100%;background:#00a59b;border-radius:9px}.fields{display:grid;grid-template-columns:1.3fr 1fr;gap:10px;margin:18px 0}.fields>div{border:1px solid #dfe8e3;border-radius:8px;padding:12px}.fields span,.offer>span{display:block;color:#6c7b73;font-size:14px}.fields strong{display:block;margin-top:7px;font-size:21px;font-weight:500}small{font-size:14px;font-weight:400}.mini__action{display:flex;align-items:center;justify-content:space-between;background:#007f79;color:white;padding:12px 14px;border-radius:7px;font-size:14px;margin-top:17px}.receipt{font-size:12px;color:#217b68;text-align:center;margin-top:14px;line-height:1.5;animation:receipt-in 1s ease both}.line{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:18px;font-size:13px}.line>span{color:#6c7b73}.line strong{font-weight:500;text-align:right}.exchange{display:flex;align-items:center;justify-content:space-between;margin:20px 0;background:#f1f8f5;border-radius:8px;padding:14px;font-size:13px;color:#267264}.exchange--repayment>span{font-size:15px;font-weight:600}.transfer{width:60px;display:grid;place-items:center;flex-shrink:0}.transfer svg{display:block;width:36px;height:28px}.transfer path{transition:transform .65s cubic-bezier(.45,0,.55,1)}.offer{background:#f1f8f5;border:1px solid #bdddd2;border-radius:8px;padding:14px;margin-top:16px}.offer strong{display:flex;align-items:center;gap:7px;font-size:27px;font-weight:500;margin:6px 0}.caret{height:22px;width:1px;background:#008b82;margin-left:2px}.bid{display:flex;align-items:center;gap:12px;border:1px solid #e4ebe7;padding:12px;border-radius:8px;margin-top:12px}.bid span{flex:1;display:flex;flex-direction:column;gap:3px}.bid b,.bid small{display:block;margin:0;line-height:1.25}.bid b{font-weight:400;font-size:15px}.bid small{font-size:13px;color:#748078}.bid strong{font-size:14px;font-weight:500}.bid em{font-style:normal;color:#168977}.bid.selected{background:#edf8f3;border-color:#a7d7c6}.flow{display:flex;justify-content:center;gap:14px;width:100%;font-size:11px;color:#58746a}.flow>.flow__step{display:flex;align-items:center;gap:5px}.flow b{display:grid;place-items:center;border:1px solid #b8d4c8;border-radius:50%;width:17px;height:17px;font-size:11px;font-weight:400;color:#007f79;flex-shrink:0}
+.hs__b{margin-top:auto}.hs__b h2{font-size:clamp(30px,calc(3vw + 2px),46px);line-height:1.15;font-weight:400}.hs__b p{font-size:clamp(16px,calc(1.15vw + 2px),19px);line-height:1.6;color:var(--grey-text);max-width:550px;margin-top:16px}.hs__link{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #d8e4dd;padding-top:18px;margin-top:24px;font-size:19px;color:var(--orange-ink)}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){.hs__t:hover .receipt,.hs__t:focus-visible .receipt{animation:receipt-in .65s ease both}.hs__t:hover .transfer__out{transform:translateX(3px)}.hs__t:hover .transfer__back{transform:translateX(-3px)}.hs__t:hover .caret{animation:blink 1s steps(2) 4}.hs__t:hover .track i{animation:grow 1.5s ease both}}
+@keyframes receipt-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}@keyframes blink{50%{opacity:0}}@keyframes grow{from{width:15%}to{width:58%}}
+@media(max-width:420px){.hs__t{padding:20px;gap:22px}.preview{padding:18px 10px 14px}.mini{padding:15px}.flow{gap:7px;font-size:10px}.flow>.flow__step{gap:3px}.hs__top .label{font-size:11px}.line{font-size:12px}}
+.flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:430px;gap:12px;padding-top:8px;font-size:12px;line-height:1.35}
+.flow>.flow__step{display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;min-width:0}
+.flow b{display:flex;align-items:center;justify-content:center;position:static;transform:none;margin:0;padding:0;box-sizing:border-box;width:26px;height:26px;line-height:1;font-size:12px;font-weight:500;background:#f7fcfa;border:1px solid #b8d4c8;border-radius:50%}
+.flow>.flow__step>span{display:block;line-height:1.35}
+@media(max-width:420px){.flow{gap:8px;font-size:11px}.mini__head{gap:8px}.nft,.pill{flex-shrink:0}.fields{grid-template-columns:1fr 1fr}.fields>div{padding:10px}.fields strong{font-size:19px}.line{flex-wrap:wrap}.exchange{gap:8px}.transfer{flex-shrink:0;width:40px}}
+@media(prefers-reduced-motion:reduce){.mini{transition:none}.receipt{animation:none}.transfer path{transition:none}}
+
+.hs__go{display:grid;place-items:center;width:44px;height:44px;flex-shrink:0;border:1px solid #b8d4ce;border-radius:50%;color:var(--orange-ink);background:transparent;transition:background .25s ease-in-out,color .25s ease-in-out,box-shadow .25s ease-in-out}
+.hs__go :global(.arr){width:18px;color:inherit}
+.hs__go:hover,.hs__go:focus-visible{background:#007f79;color:white;box-shadow:0 5px 16px #007f7926}
+
+.repayment-note{margin:0 0 18px;color:#6c7b73;font-size:14px;line-height:1.6;text-align:left}
+.mini__action,.bid{width:100%;text-align:left;cursor:pointer;font-family:inherit}
+.mini__action{font-size:16px;border:0;transition:background .25s ease-in-out,box-shadow .25s ease-in-out}
+.mini__action:hover{background:#006b65;box-shadow:0 4px 14px #007f7926}
+.bid{background:white;color:var(--ink);transition:background .25s ease-in-out,border-color .25s ease-in-out}
+.bid:hover{border-color:#008b82;background:#f2faf7}
+.flow__step{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;padding:4px;border-radius:8px;transition:background .25s ease-in-out}
+.flow__step:hover{background:#d7ebe5}.flow__step[aria-pressed="true"] b{background:#007f79;color:white;border-color:#007f79}
+.flow__detail{font-size:13px;line-height:1.5;text-align:center;color:#427665;width:100%;margin:14px 0 0;min-height:3em}
+.hs__go:focus-visible,.mini__action:focus-visible,.bid:focus-visible,.flow__step:focus-visible{outline:2px solid #007f79;outline-offset:4px}
+@media(prefers-reduced-motion:reduce){.hs__go,.hs__go :global(.arr){transition:none;transform:none}}
+
+/* Share row tracks so each pair stays aligned without fixed heights. */
+.preview--2 .offer{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 12px;padding:12px}
+.preview--2 .offer>span:last-child{grid-column:2;grid-row:1;font-size:13px}
+.preview--2 .offer strong{grid-column:1 / -1;margin:0}
+@media(min-width:768px){
+ .hs>li{display:grid;grid-template-rows:subgrid;grid-row:span 4;min-width:0}
+ .hs__t{display:grid;grid-template-rows:subgrid;grid-row:span 4;row-gap:24px}
+ .preview{display:grid;grid-template-rows:subgrid;grid-row:span 2;justify-items:center;align-items:stretch;row-gap:18px}
+ .mini{display:flex;flex-direction:column}
+ .mini>:has(+ .mini__action){margin-bottom:17px}
+ .mini__action{margin-top:auto}
+ .flow{align-self:start}
+ .flow__detail{align-self:stretch}
+ .hs__b{margin-top:0}
+}
+</style>
+<script>
+const explanations = [
+ ['Choose an eligible Signature stake from your wallet.', 'Set your WISE asking price and the listing expiry.', 'In the app, review and sign the listing with your wallet.'],
+ ['Compare the price, maturity and remaining stake rewards.', 'In the app, review the purchase before confirming in your wallet.', 'A settled purchase transfers the NFT and its remaining rights.'],
+ ['Choose the Signature stake you want to make an offer on.', 'Set your WISE offer and when it expires.', 'The owner chooses whether to accept your offer.'],
+ ['Select an offer to compare its price and expiry.', 'In the app, review the selected bid and its terms.', 'Settlement exchanges the NFT for the agreed WISE payment.'],
+ ['Inspect the Signature stake offered as collateral.', 'Review the loan amount, repayment cost and due date.', 'Repayments follow the loan terms; review collateral enforcement rules.'],
+ ['Choose the Signature stake to use as collateral.', 'Review the amount, repayment cost and due date.', 'Repay under the loan terms to release your collateral.'],
+];
+document.querySelectorAll<HTMLElement>('[data-action-card]').forEach((card, index) => {
+ const steps = [...card.querySelectorAll<HTMLButtonElement>('.flow__step')];
+ const detail = card.querySelector<HTMLElement>('.flow__detail')!;
+ let current = 0;
+ const select = (next: number) => {
+  current = next;
+  steps.forEach((step, n) => step.setAttribute('aria-pressed', String(n === current)));
+  detail.textContent = explanations[index][current];
+ };
+ steps.forEach((step, n) => step.addEventListener('click', () => select(n)));
+ card.querySelector('.mini__action')?.addEventListener('click', () => select((current + 1) % steps.length));
+ card.querySelectorAll<HTMLButtonElement>('.bid').forEach(bid => bid.addEventListener('click', () => {
+  card.querySelectorAll('.bid').forEach(other => {
+   other.classList.toggle('selected', other === bid);
+   other.setAttribute('aria-pressed', String(other === bid));
+   other.querySelector('em')!.textContent = other === bid ? '✓' : '○';
+  });
+  select(1);
+ }));
+ select(0);
+});
+</script>

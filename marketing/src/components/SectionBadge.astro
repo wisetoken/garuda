@@ -1,0 +1,21 @@
+<span class="section-badge"><i aria-hidden="true"></i><slot /></span>
+<style>
+  .section-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--grey-text);
+    padding: 8px 14px;
+    background: var(--tile);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+  }
+  .section-badge i {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--orange);
+  }
+</style>

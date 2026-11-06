@@ -1,0 +1,27 @@
+---
+import SectionHead from '../SectionHead.astro';
+---
+<section class="ecosystem" id="technology" aria-labelledby="tech-heading">
+  <SectionHead title="Built with purpose" id="tech-heading" />
+  <p class="section-lead">The integrations behind Garuda: discover stakes, choose how you read the chain, and settle a trade from your wallet.</p>
+  <div class="row row--2 info-grid">
+    <article class="tile info-card featured" data-rise>
+      <p class="label">FEATURED INTEGRATION · RABDI TESTNET</p><h3>Arkiv</h3><p class="tech-role">Queryable data for stake discovery.</p>
+      <p>Garuda integrates Arkiv to publish and discover signed listings and cache stake snapshots. Indexed attributes help find the relevant records without rebuilding every detail for each visit.</p>
+      <p>Arkiv stores discovery data; Ethereum remains the source of truth for ownership and settlement. Live checks run before a purchase.</p><a class="lk" href="https://arkiv.network/">Explore Arkiv ↗</a>
+    </article>
+    <article class="tile info-card featured" data-rise>
+      <p class="label">FEATURED INTEGRATION · OPTIONAL PRIVACY</p><h3>Anon-RPC + Nym</h3><p class="tech-role">A choice in how you read Ethereum.</p>
+      <p>Garuda can route supported reads through the Nym network using Anon-RPC. The destination RPC sees the network’s exit address instead of a direct connection from your device.</p>
+      <p>This is an opt-in setting for supported app reads. Wallet traffic, marketplace servers and price feeds remain separate.</p><a class="lk" href="https://ethereum.github.io/anon-rpc/">Explore Anon-RPC ↗</a>
+    </article>
+  </div>
+  <div class="row row--3 info-grid">
+    <article class="tile info-card" data-rise><p class="label">SETTLEMENT</p><h3>Ethereum + Seaport</h3><p>Signed sales and bids settle through Seaport, with a validator checking the committed stake state. The buyer receives the NFT; the seller receives the proceeds after fees.</p><a class="lk" href="https://docs.opensea.io/docs/seaport">Seaport documentation ↗</a></article>
+    <article class="tile info-card" data-rise><p class="label">PAYMENTS</p><h3>Uniswap Router</h3><p>Pay for a listed stake with ETH, WETH, USDC or WISE. The Garuda payment router uses Uniswap v2 to supply the exact settlement token, completes the purchase in the same transaction, and returns unused input.</p><a class="lk" href="https://developers.uniswap.org/docs/protocols/v2/overview">Uniswap documentation ↗</a></article>
+    <article class="tile info-card" data-rise><p class="label">PRINCIPLES</p><h3>Built around CROPS.</h3><p>Censorship resistance / Open source / Privacy / Security. Garuda puts these principles into practice through a downloadable recovery tool, inspectable code, optional private reads and wallet-controlled approvals.</p><a class="lk" href="/garuda/?screen=privacy">Explore CROPS principles ↗</a></article>
+  </div>
+</section>
+<style>
+.ecosystem{padding-top:56px;scroll-margin-top:100px}.info-grid{margin-top:12px}.info-grid.row--3{margin-top:30px;margin-bottom:25px}.info-card{padding:28px;display:flex;flex-direction:column;gap:22px;min-width:0}.info-card h3{font-size:clamp(25px,2.8vw,40px);font-weight:400;line-height:1.13}.info-card p:not(.label){font-size:16px;line-height:1.6;color:var(--grey-text)}.info-card .lk{margin-top:auto;font-size:17px;align-self:flex-start;color:var(--orange-ink)}.info-card.featured{background:#dceee9;border:1px solid #bedbd3}.info-card .tech-role{font-size:22px!important;color:var(--ink)!important}.section-lead{padding:16px 24px;max-width:780px;font-size:20px;line-height:1.5;color:var(--grey-text)}
+</style>

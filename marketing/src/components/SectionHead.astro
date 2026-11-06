@@ -1,0 +1,28 @@
+---
+/**
+ * Section head (Figma "Section head"): a title on the left and an optional link on the right. On
+ * phones a long title shrinks to stay on one line ("Employer branding projects").
+ */
+import Arrow from './Arrow.astro';
+import { emWidth } from '../lib/fit';
+import type { Link } from '../lib/types';
+
+interface Props {
+  title: string;
+  link?: Link;
+  id?: string;
+}
+const { title, link, id } = Astro.props;
+---
+
+<div class="sh" style={`--em:${emWidth(title, 300, -0.02)}`}>
+  <h2 id={id} data-lines>{title}</h2>
+  {
+    link && (
+      <a class="lk" href={link.href}>
+        <span class="ul">{link.label}</span>
+        <Arrow />
+      </a>
+    )
+  }
+</div>

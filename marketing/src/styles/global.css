@@ -1,0 +1,878 @@
+@import './tokens.css';
+
+/* ---------- reset ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+* {
+  margin: 0;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: var(--canvas);
+  color-scheme: light;
+  scroll-padding-top: calc(var(--header) + 16px);
+}
+body {
+  min-height: 100vh;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  font-weight: 400;
+  line-height: var(--lh-body);
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g);
+  padding-top: var(--header);
+  padding-bottom: var(--g);
+}
+/* Inner pages: the first block sits one gap under the header, as in the frames. */
+main:not(.is-home) {
+  padding-top: calc(var(--header) + var(--g));
+}
+main:focus {
+  outline: none;
+}
+/* The open menu locks the page behind it. */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+/* Lenis (scripts/desktop.ts) */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+img,
+picture,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+img {
+  height: auto;
+}
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 300;
+}
+:target {
+  scroll-margin-top: calc(var(--header) + 24px);
+}
+::selection {
+  background: var(--orange);
+  color: var(--white);
+}
+
+/* ---------- accessibility ---------- */
+:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.skip {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 200;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--white);
+  font-size: var(--fs-xs);
+  transform: translateY(-160%);
+  transition: transform var(--t-ui) var(--ease);
+}
+.skip:focus {
+  transform: none;
+}
+
+/* ---------- shared pieces ---------- */
+/* A tile: 12 px from the page edge, tile colour, radius 10. */
+.tile {
+  margin-inline: var(--g);
+  border-radius: var(--r);
+  background: var(--tile);
+}
+/* "( about )" labels */
+.label {
+  font-size: var(--fs-label);
+  line-height: 1.3;
+  color: var(--grey-text);
+}
+.px {
+  padding-inline: var(--pad);
+}
+/* A row of tiles: one column on phones. */
+.row {
+  display: grid;
+  gap: var(--g);
+  padding-inline: var(--g);
+}
+@media (min-width: 768px) {
+  .row--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .row--3,
+  .row--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .row--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .row--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* The up-right arrow and the right arrow (inline SVGs from components/Arrow.astro). */
+.arr {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--orange);
+}
+
+/* ---------- text links: the underline sweeps in from the left and leaves to the right ---------- */
+.ul {
+  --ul-h: 1px;
+  --ul-gap: 2px;
+  --ul-lift: 0px;
+  padding-bottom: var(--ul-gap);
+  margin-bottom: calc(-1 * var(--ul-gap));
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 100% calc(100% - var(--ul-lift));
+  background-size: 0 var(--ul-h);
+  transition: background-size var(--t-hover) var(--ease);
+}
+:is(h1, h2, h3, h4) .ul {
+  --ul-gap: 0px;
+  --ul-lift: 0.08em;
+}
+a:hover .ul,
+a:focus-visible .ul,
+a.ul:hover,
+a.ul:focus-visible,
+[data-card]:hover .ul,
+[data-card]:focus-within .ul {
+  background-size: 100% var(--ul-h);
+  background-position: 0 calc(100% - var(--ul-lift));
+}
+/* A link with an arrow after it ("All projects", "More about branding"). */
+.lk {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: var(--fs-small);
+}
+.lk .arr {
+  transition: transform var(--t-hover) var(--ease);
+}
+.lk:hover .arr,
+.lk:focus-visible .arr {
+  transform: translate(3px, -3px);
+}
+.lk--orange {
+  color: var(--orange-ink);
+}
+
+/* ---------- buttons (Figma "Button": Orange, Outline, Ink) ---------- */
+/* A layer sweeps in from the left and leaves to the right; the label rolls up; the arrow exits to the
+   top-right and comes back from the bottom-left. */
+.btn {
+  --btn-bg: var(--orange-deep);
+  --btn-fg: var(--white);
+  --btn-sweep: var(--ink);
+  --btn-sweep-fg: var(--white);
+  --btn-arrow: var(--white);
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 48px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-size: var(--fs-small);
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: color var(--t-hover) var(--ease);
+}
+@media (min-width: 768px) {
+  .btn {
+    height: 56px;
+    padding: 0 26px;
+    font-size: 1rem;
+  }
+}
+.btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--btn-sweep);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--t-hover) var(--ease);
+}
+.btn--outline {
+  --btn-bg: transparent;
+  --btn-fg: var(--ink);
+  --btn-sweep: var(--orange-deep);
+  --btn-arrow: var(--orange);
+  box-shadow: inset 0 0 0 1px var(--rule-strong);
+}
+.btn--ink {
+  --btn-bg: var(--ink);
+  --btn-sweep: var(--orange-deep);
+}
+.btn:hover,
+.btn:focus-visible {
+  color: var(--btn-sweep-fg);
+}
+.btn:hover::before,
+.btn:focus-visible::before {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+.btn__t {
+  position: relative;
+  display: grid;
+  height: 20px;
+  overflow: hidden;
+}
+.btn__t > span {
+  grid-area: 1 / 1;
+  transition: transform var(--t-hover) var(--ease);
+}
+.btn__t > span + span {
+  transform: translateY(110%);
+}
+.btn:hover .btn__t > span:first-child,
+.btn:focus-visible .btn__t > span:first-child {
+  transform: translateY(-110%);
+}
+.btn:hover .btn__t > span + span,
+.btn:focus-visible .btn__t > span + span {
+  transform: none;
+}
+.btn .arr {
+  color: var(--btn-arrow);
+  transition: color var(--t-hover) var(--ease);
+}
+.btn:hover .arr,
+.btn:focus-visible .arr {
+  color: var(--btn-sweep-fg);
+  animation: arrow-loop 0.6s var(--ease);
+}
+/* The arrow leaves to the top-right and comes back in from the bottom-left. */
+@keyframes arrow-loop {
+  0% {
+    transform: none;
+  }
+  45% {
+    transform: translate(140%, -140%);
+  }
+  46% {
+    transform: translate(-140%, 140%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+.btn--block {
+  width: 100%;
+}
+
+/* ---------- chips: ink fill wipes in from the left; the active one stays ink ---------- */
+.chip {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 20px;
+  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.2);
+  font-size: var(--fs-label);
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  transition: color var(--t-hover) var(--ease);
+}
+@media (min-width: 768px) {
+  .chip {
+    height: 40px;
+    padding: 0 18px;
+    font-size: var(--fs-xs);
+  }
+}
+/* 44 px touch target around a 34-40 px chip. */
+.chip::after {
+  content: '';
+  position: absolute;
+  inset: -5px 0;
+}
+.chip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--t-hover) var(--ease);
+}
+.chip:hover,
+.chip:focus-visible,
+.chip.is-on,
+.chip[aria-pressed='true'],
+:checked + .chip {
+  color: var(--white);
+}
+.chip:hover::before,
+.chip:focus-visible::before,
+.chip.is-on::before,
+.chip[aria-pressed='true']::before,
+:checked + .chip::before {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+:focus-visible + .chip {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+}
+.chips {
+  display: flex;
+  gap: 8px;
+}
+
+/* ---------- section head (Figma "Section head") ---------- */
+.sh {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  column-gap: 24px;
+  padding: 16px var(--pad) 4px;
+}
+.sh h2 {
+  font-size: min(var(--fs-h2), calc((100vw - 34px) / var(--em, 1)));
+  line-height: 1.26;
+  letter-spacing: -0.02em;
+}
+.sh .lk {
+  margin-bottom: -6px;
+}
+@media (min-width: 768px) {
+  .sh {
+    padding-top: 32px;
+    padding-bottom: 8px;
+  }
+  .sh h2 {
+    font-size: var(--fs-h2);
+  }
+  .sh .lk {
+    margin-bottom: 0;
+  }
+}
+
+/* ---------- circle buttons: the arrow exits and re-enters ---------- */
+.circ {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.circ .arr {
+  width: 20px;
+  height: 20px;
+}
+.circ:hover .arr,
+.circ:focus-visible .arr {
+  animation: arrow-loop 0.6s var(--ease);
+}
+.circ--right:hover .arr,
+.circ--right:focus-visible .arr {
+  animation-name: arrow-right;
+}
+@keyframes arrow-right {
+  45% {
+    transform: translateX(160%);
+  }
+  46% {
+    transform: translateX(-160%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+/* The ring draws its border with a conic sweep (next slide, next project). */
+@property --ring {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+.circ--ring {
+  box-shadow: inset 0 0 0 1px var(--rule-strong);
+}
+.circ--ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, var(--ink) var(--ring), transparent 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1px));
+  transition: --ring 0.7s var(--ease);
+}
+.circ--ring:hover::before,
+.circ--ring:focus-visible::before {
+  --ring: 360deg;
+}
+
+/* ---------- logo mark: the pill spins half a turn and the circle squashes for a beat ---------- */
+.mark {
+  display: block;
+  flex: none;
+  width: 30px;
+  height: 30px;
+}
+.mark__c {
+  transform-origin: 15px 15px;
+}
+.mark__p {
+  transform-origin: 15px 15px;
+  transform: rotate(35deg);
+  transition: transform 0.6s var(--ease);
+}
+a:hover > .mark .mark__p,
+a:focus-visible > .mark .mark__p {
+  transform: rotate(215deg);
+}
+a:hover > .mark .mark__c,
+a:focus-visible > .mark .mark__c {
+  animation: squash 0.6s var(--ease);
+}
+@keyframes squash {
+  35% {
+    transform: scale(1.06, 0.94);
+  }
+}
+
+/* ---------- notches: canvas-coloured cut-outs with concave fillets (Figma notchBL / notchTR) ---------- */
+/* Bottom-left: a rounded outer corner, and a fillet where it meets each edge of the image. */
+.notch {
+  --nr: var(--r);
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 2;
+  background: var(--canvas);
+  border-top-right-radius: var(--nr);
+}
+.notch::before,
+.notch::after {
+  content: '';
+  position: absolute;
+  width: var(--nr);
+  height: var(--nr);
+  background: radial-gradient(circle at 100% 0, transparent calc(var(--nr) - 0.5px), var(--canvas) var(--nr));
+  pointer-events: none;
+}
+.notch::before {
+  left: 0;
+  bottom: 100%;
+}
+.notch::after {
+  left: 100%;
+  bottom: 0;
+}
+/* Top-right */
+.notch--tr {
+  left: auto;
+  right: 0;
+  top: 0;
+  bottom: auto;
+  border-radius: 0 0 0 var(--nr);
+}
+.notch--tr::before,
+.notch--tr::after {
+  background: radial-gradient(circle at 0 100%, transparent calc(var(--nr) - 0.5px), var(--canvas) var(--nr));
+}
+.notch--tr::before {
+  left: auto;
+  right: 100%;
+  top: 0;
+  bottom: auto;
+}
+.notch--tr::after {
+  left: auto;
+  right: 0;
+  top: 100%;
+  bottom: auto;
+}
+
+/* ---------- photo cards: no zoom. A notch grows out of the bottom-left corner, the image shifts 8 px ---------- */
+.pc {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--r);
+  background: var(--tile);
+  isolation: isolate;
+}
+.pc picture {
+  display: block;
+  height: 100%;
+}
+.pc img {
+  width: calc(100% + 8px);
+  max-width: none;
+  height: 100%;
+  margin-left: -8px;
+  object-fit: cover;
+  transition: transform 0.7s var(--ease);
+}
+.pc__notch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px 12px 14px;
+  font-size: var(--fs-xs);
+  line-height: 18px;
+  transform: scale(0);
+  transform-origin: 0 100%;
+  transition: transform 0.55s var(--ease);
+}
+.pc__notch .arr {
+  width: 12px;
+  height: 12px;
+}
+:is(a, [data-card]):hover .pc img,
+:is(a, [data-card]):focus-visible .pc img,
+[data-card]:focus-within .pc img {
+  transform: translateX(8px);
+}
+:is(a, [data-card]):hover .pc__notch,
+:is(a, [data-card]):focus-visible .pc__notch,
+[data-card]:focus-within .pc__notch {
+  transform: none;
+}
+
+/* ---------- reveals (once, when the element enters the screen; off without JS or for reduced motion) ---------- */
+/* Tiles and cards: rise 32 px and fade, staggered per row by scripts/site.ts (--d). */
+.js [data-rise] {
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity var(--t-reveal) var(--ease) var(--d, 0ms),
+    transform var(--t-reveal) var(--ease) var(--d, 0ms);
+}
+.js [data-rise].is-in {
+  opacity: 1;
+  transform: none;
+}
+/* Images: open from the bottom edge while the corners ease in, over the tile colour of their frame
+   (the frame itself stays unclipped, so the observer can see it). */
+.js [data-img] > picture {
+  clip-path: inset(100% 0 0 0 round 48px);
+  transition: clip-path var(--t-reveal) var(--ease) var(--d, 0ms);
+}
+.js [data-img].is-in > picture {
+  clip-path: inset(0 0 0 0 round var(--r));
+}
+/* Section titles, leads and page titles: hidden until scripts/site.ts splits them and lets them rise. */
+.js [data-lines]:not(.is-split):not(.is-done),
+.js [data-words]:not(.is-split):not(.is-done),
+.js [data-letters]:not(.is-in) .lt {
+  opacity: 0;
+}
+.ln {
+  display: block;
+  overflow: hidden;
+  /* Room for descenders inside the mask. */
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+.ln__i {
+  display: block;
+  transition: transform var(--t-reveal) var(--ease) calc(var(--i, 0) * 80ms);
+}
+.js .ln__i {
+  transform: translateY(105%);
+}
+.js .is-in > .ln > .ln__i {
+  transform: none;
+}
+.wd {
+  transition:
+    opacity 0.6s var(--ease) calc(var(--i, 0) * 12ms),
+    filter 0.6s var(--ease) calc(var(--i, 0) * 12ms);
+}
+.js .wd {
+  opacity: 0;
+  filter: blur(8px);
+}
+.js .is-in > .wd {
+  opacity: 1;
+  filter: none;
+}
+/* Letters (wordmark, page titles): rise from below inside a mask, 40 ms apart. */
+.lts {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.06em;
+  margin-bottom: -0.06em;
+}
+.lt {
+  display: inline-block;
+  white-space: pre;
+}
+.js [data-letters] .lt {
+  transform: translateY(105%);
+  transition:
+    transform var(--t-reveal) var(--ease) calc(var(--i, 0) * 40ms),
+    opacity 0.01ms linear calc(var(--i, 0) * 40ms);
+}
+.js [data-letters].is-in .lt {
+  opacity: 1;
+  transform: none;
+}
+/* Columns that fade up (footer). */
+.js [data-fade] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.8s var(--ease) var(--d, 0ms),
+    transform 0.8s var(--ease) var(--d, 0ms);
+}
+.js [data-fade].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- page transition: an orange tile with the hero notch rises, the logo pill spins ---------- */
+.pt {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  pointer-events: none;
+  visibility: hidden;
+}
+.pt__tile {
+  position: absolute;
+  inset: 0 0 -24px;
+  border-radius: 24px 24px 0 0;
+  background: var(--orange);
+  transform: translateY(100%);
+}
+/* The canvas-coloured cut-out in the top-left corner, with concave fillets like the hero notch. */
+.pt__notch {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: min(34vw, 300px);
+  height: 64px;
+  border-bottom-right-radius: 16px;
+  background: var(--canvas);
+}
+.pt__notch::before,
+.pt__notch::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: radial-gradient(circle at 100% 100%, transparent 15.5px, var(--canvas) 16px);
+}
+.pt__notch::before {
+  top: 0;
+  left: 100%;
+}
+.pt__notch::after {
+  top: 100%;
+  left: 0;
+}
+.pt__mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 72px;
+  height: 72px;
+  margin: -36px 0 0 -36px;
+}
+.pt__mark .mark__c {
+  fill: var(--white);
+}
+.pt__mark .mark__p {
+  fill: var(--orange);
+}
+html.pt-on .pt,
+html.pt-in .pt {
+  visibility: visible;
+}
+html.pt-on .pt__tile {
+  transform: none;
+  transition: transform 0.55s var(--ease-io);
+}
+html.pt-on .pt__mark .mark__p {
+  transform: rotate(395deg);
+  transition: transform 0.9s var(--ease-io);
+}
+html.pt-in .pt__tile {
+  transform: none;
+}
+html.pt-in .pt__mark .mark__p {
+  animation: pill-spin 1.2s linear infinite;
+}
+html.pt-out .pt {
+  visibility: visible;
+}
+html.pt-out .pt__tile {
+  transform: translateY(calc(-100% - 24px));
+  transition: transform 0.6s var(--ease-io);
+}
+@keyframes pill-spin {
+  from {
+    transform: rotate(35deg);
+  }
+  to {
+    transform: rotate(395deg);
+  }
+}
+
+/* ---------- custom cursor (pointer: fine): an orange pill with "View" over photos ---------- */
+.cur {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 90;
+  pointer-events: none;
+}
+.cur__p {
+  display: block;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--orange-deep);
+  color: var(--white);
+  font-size: var(--fs-xs);
+  line-height: 18px;
+  transform: translate(-50%, -50%) scale(0.4) rotate(0deg);
+  opacity: 0;
+  transition:
+    transform 0.4s var(--ease),
+    opacity 0.3s var(--ease);
+}
+.cur.is-on .cur__p {
+  transform: translate(-50%, -50%) scale(1) rotate(-8deg);
+  opacity: 1;
+}
+
+/* ---------- reduced motion: everything in place, nothing moves ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+  .js [data-rise],
+  .js [data-fade],
+  .js [data-lines],
+  .js [data-words],
+  .js [data-letters] .lt,
+  .js .ln__i,
+  .js .wd {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+  }
+  .js [data-img] > picture {
+    clip-path: none !important;
+  }
+  .pt {
+    display: none !important;
+  }
+}
+
+/* Match WiseOne's teal identity while retaining the supplied theme's layout. */
+img.mark { object-fit: contain; filter: hue-rotate(-45deg) saturate(1.4); }
+.hero .sl img, .offers img, .offer img { filter: grayscale(1) sepia(1) hue-rotate(120deg) saturate(1.5); }

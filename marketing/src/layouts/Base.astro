@@ -1,0 +1,117 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Menu from '../components/Menu.astro';
+import Footer from '../components/Footer.astro';
+import Mark from '../components/Mark.astro';
+import Preloader from '../components/Preloader.astro';
+import { getContent } from '../lib/content';
+import { breadcrumbLd, studioLd, websiteLd } from '../lib/seo';
+import type { Link } from '../lib/types';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Extra JSON-LD blocks for this page (the studio and website blocks are always included). */
+  ld?: Record<string, unknown>[];
+  /** Absolute or root-relative URL of the social image. Defaults to /og.jpg (1200 x 630). */
+  image?: string;
+  imageAlt?: string;
+  type?: 'website' | 'article';
+  noindex?: boolean;
+  /** Skip the canonical tag (used by the 404 page). */
+  noCanonical?: boolean;
+  /** The home page: the header with the descriptor, and the preloader on a first visit. */
+  home?: boolean;
+  /** Breadcrumbs after "Home" (header and BreadcrumbList); the last one is this page. */
+  crumbs?: Link[];
+  /** Different breadcrumbs for the BreadcrumbList only (a note shows its category in the header). */
+  ldCrumbs?: Link[];
+}
+
+const { title, description, ld = [], image = '/wiseone-logo.png', imageAlt, type = 'website', noindex = false, noCanonical = false, home = false, crumbs = [], ldCrumbs = crumbs } = Astro.props;
+const c = await getContent();
+
+const site = Astro.site!;
+// build.format 'file' renders the home page as /index.html, so map it back to /.
+const path = Astro.url.pathname.replace(/\.html$/, '').replace(/\/index$/, '/').replace(/(.)\/$/, '$1');
+const canonical = new URL(path, site).href;
+const ogImage = new URL(image, site).href;
+const crumbLd = ldCrumbs.length && !noindex ? [breadcrumbLd(site, [{ name: c.ui.home, path: '/' }, ...ldCrumbs.map((x) => ({ name: x.label, path: x.href }))])] : [];
+const blocks = [studioLd(c, site), websiteLd(c, site), ...crumbLd, ...ld];
+const json = (o: unknown) => JSON.stringify(o).replace(/</g, '\\u003c');
+const fullTitle = home ? title : `${title} | ${c.site.name}`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    {/* Scripts on: reveal states apply. Arriving through the page transition: start covered by the
+        orange tile (no flash). The home page plays the preloader on the first visit of a session. */}
+    <script is:inline define:vars={{ home }}>
+      var d = document.documentElement;
+      d.classList.add('js');
+      try {
+        var calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var ss = sessionStorage;
+        if (ss.getItem('bd-pt')) {
+          ss.removeItem('bd-pt');
+          if (!calm) d.classList.add('pt-in');
+        }
+        if (home && !calm && !ss.getItem('bd-seen') && !d.classList.contains('pt-in') && document.visibilityState === 'visible') d.classList.add('pre');
+        ss.setItem('bd-seen', '1');
+      } catch (e) {}
+      // Safety net: never leave the page covered if the main script fails to load.
+      setTimeout(function () {
+        d.classList.remove('pre', 'pt-in');
+      }, 4000);
+    </script>
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {!noCanonical && <link rel="canonical" href={canonical} />}
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="preload" href="/homepage/fonts/outfit.woff2" as="font" type="font/woff2" crossorigin />
+
+    <link rel="icon" href="/favicon.svg?v=wiseone" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico?v=wiseone" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#ECECEA" />
+
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={c.site.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    {imageAlt && <meta property="og:image:alt" content={imageAlt} />}
+    <meta property="og:locale" content="en_GB" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    {blocks.map((b) => <script is:inline type="application/ld+json" set:html={json(b)} />)}
+  </head>
+  <body>
+    <a class="skip" href="#main">{c.ui.skip}</a>
+    {home && <Preloader />}
+    <Header c={c} home={home} crumbs={crumbs} />
+    <main id="main" class:list={[home && 'is-home']} tabindex="-1">
+      <slot />
+    </main>
+    <Footer c={c} />
+    <Menu c={c} path={path} />
+
+    <div class="pt" aria-hidden="true">
+      <div class="pt__tile">
+        <span class="pt__notch"></span>
+        <Mark class="mark pt__mark" />
+      </div>
+    </div>
+    <script>
+      import '../scripts/site.ts';
+    </script>
+  </body>
+</html>

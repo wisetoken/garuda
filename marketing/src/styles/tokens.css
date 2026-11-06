@@ -1,0 +1,102 @@
+/*
+ * WiseOne design tokens: colours, type, layout, motion. Change the theme here.
+ * Sizes scale smoothly between a 390 px phone and a 1440 px desktop; each line notes both ends.
+ */
+
+/* Outfit (SIL Open Font License, public/fonts/OFL-Outfit.txt): one variable file, Latin characters,
+   weights 100 to 900. The theme uses 200, 300, 400 and 500. */
+@font-face {
+  font-family: 'Outfit';
+  src: url('/homepage/fonts/outfit.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+/* Size-matched local fallback, so text keeps roughly its width and line breaks while Outfit loads. */
+@font-face {
+  font-family: 'Outfit Fallback';
+  src: local('Arial'), local('ArialMT'), local('Helvetica'), local('Roboto');
+  size-adjust: 100%;
+  ascent-override: 100%;
+  descent-override: 26%;
+  line-gap-override: 0%;
+}
+
+:root {
+  /* Colour */
+  --canvas: #edf4f2; /* page */
+  --tile: #f7faf9; /* cards and tiles */
+  --line: #d9d9d5; /* tracks */
+  --rule: rgba(17, 17, 17, 0.12); /* thin dividers */
+  --rule-strong: rgba(17, 17, 17, 0.25); /* outlines of chips, fields and outline buttons */
+  --ink: #111111;
+  --grey: #8a8a86; /* large grey text and decoration only */
+  --grey-text: #696965; /* small grey text: 4.6:1 on canvas, 5.1:1 on tiles */
+  --soft: #c4c4c0; /* the "DO" of the wordmark, placeholders: decorative only */
+  --band: #dce9e5; /* the middle of the statement band */
+  --orange: #00a9a5; /* the one accent: icons, arrows, the contact card, the price badge */
+  --orange-ink: #007c78; /* small orange text (links): 4.7:1 on canvas */
+  --orange-deep: #007c78; /* orange buttons and tags with white text: 4.6:1 */
+  --white: #ffffff;
+
+  /* Type */
+  --font: 'Outfit', 'Outfit Fallback', system-ui, sans-serif;
+  --fs-title: clamp(5rem, 1.75rem + 13.3333vw, 13.75rem); /* 80 -> 220: page titles (fitted when long) */
+  --fs-display: clamp(3.25rem, 0.975rem + 9.3333vw, 9.375rem); /* 52 -> 150: contact card title */
+  --lh-display: clamp(3.125rem, 1.0357rem + 8.5714vw, 8.75rem); /* 50 -> 140 */
+  --fs-statement: clamp(2.75rem, 0.2893rem + 10.0952vw, 9.375rem); /* 44 -> 150 */
+  --fs-menu: clamp(2.875rem, 1.7143rem + 4.7619vw, 6rem); /* 46 -> 96 */
+  --fs-art: clamp(2.25rem, 1.2286rem + 4.1905vw, 5rem); /* 36 -> 80: article title */
+  --lh-art: clamp(2.375rem, 1.4rem + 4vw, 5rem); /* 38 -> 80 */
+  --fs-number: clamp(4.5rem, 3.3857rem + 4.5714vw, 7.5rem); /* 72 -> 120: number tiles */
+  --fs-next: clamp(1.875rem, 0.9rem + 4vw, 4.5rem); /* 30 -> 72: next project */
+  --fs-price: clamp(3.5rem, 3.1286rem + 1.5238vw, 4.5rem); /* 56 -> 72 */
+  --fs-step: clamp(2.5rem, 1.9429rem + 2.2857vw, 4rem); /* 40 -> 64: step numbers */
+  --fs-h2: clamp(2.125rem, 1.6143rem + 2.0952vw, 3.5rem); /* 34 -> 56: section titles */
+  --fs-value: clamp(2rem, 1.4429rem + 2.2857vw, 3.5rem); /* 32 -> 56: key facts */
+  --fs-quote: clamp(1.5rem, 0.9429rem + 2.2857vw, 3rem); /* 24 -> 48: case quote */
+  --lh-quote: clamp(1.875rem, 1.2714rem + 2.4762vw, 3.5rem); /* 30 -> 56 */
+  --fs-news: clamp(1.75rem, 1.2857rem + 1.9048vw, 3rem); /* 28 -> 48: newsletter, 404 title */
+  --lh-news: clamp(2rem, 1.4893rem + 2.0952vw, 3.375rem); /* 32 -> 54 */
+  --fs-svc: clamp(1.875rem, 1.4571rem + 1.7143vw, 3rem); /* 30 -> 48: service rows on /services */
+  --fs-lead-xl: clamp(1.5rem, 1.1286rem + 1.5238vw, 2.5rem); /* 24 -> 40: home about lead */
+  --lh-lead-xl: clamp(1.8125rem, 1.4179rem + 1.619vw, 2.875rem); /* 29 -> 46 */
+  --fs-text-lg: clamp(1.25rem, 0.9714rem + 1.1429vw, 2rem); /* 20 -> 32: case and about text */
+  --lh-text-lg: clamp(1.625rem, 1.3rem + 1.3333vw, 2.5rem); /* 26 -> 40 */
+  --fs-card: clamp(1.625rem, 1.4393rem + 0.7619vw, 2.125rem); /* 26 -> 34: card titles */
+  --fs-slide: clamp(1.0625rem, 0.7607rem + 1.2381vw, 1.875rem); /* 17 -> 30: hero slide text */
+  --lh-slide: clamp(1.25rem, 0.925rem + 1.3333vw, 2.125rem); /* 20 -> 34 */
+  --fs-lead: clamp(1.125rem, 0.8929rem + 0.9524vw, 1.75rem); /* 18 -> 28: page head lead */
+  --lh-lead: clamp(1.5rem, 1.2679rem + 0.9524vw, 2.125rem); /* 24 -> 34 */
+  --fs-h3: clamp(1.375rem, 1.2357rem + 0.5714vw, 1.75rem); /* 22 -> 28: tile titles */
+  --fs-body: clamp(1rem, 0.9536rem + 0.1905vw, 1.125rem); /* 16 -> 18 */
+  --lh-body: clamp(1.5625rem, 1.4696rem + 0.381vw, 1.8125rem); /* 25 -> 29 */
+  --fs-small: 0.9375rem; /* 15 */
+  --fs-xs: 0.875rem; /* 14 */
+  --fs-label: 0.8125rem; /* 13: "( about )" labels */
+
+  /* Layout: tiles sit 12 px from the page edge, text 16 px (phone) to 24 px (desktop) */
+  --g: 12px;
+  --r: 10px;
+  --pad: 16px;
+  --header: 96px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1); /* soft overshoot: icons */
+  --t-ui: 240ms;
+  --t-hover: 450ms;
+  --t-reveal: 900ms;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --pad: 24px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --header: 108px;
+  }
+}

@@ -1,0 +1,375 @@
+---
+/**
+ * Home hero: the WISEONE wordmark fitted to the page width (the "DO" in soft grey), then the slider
+ * (Figma "Hero slide"). The slide copy and the controls sit in canvas-coloured cut-outs, so any image
+ * can go in a slide. Two slides, autoplay every 6 s with a thin progress line, paused on hover and
+ * focus; a clip-path wipe from the right on desktop, a swipe on phones (scripts/site.ts, "slider").
+ * Entrance: the letters rise from below while the tracking closes, "DO" arrives orange and settles.
+ */
+import Arrow from '../Arrow.astro';
+import Photo from '../Photo.astro';
+import { emWidth } from '../../lib/fit';
+import type { Content } from '../../lib/types';
+
+interface Props {
+  c: Content;
+}
+const { c } = Astro.props;
+const slides = c.home.slides;
+const word = c.site.name.toUpperCase();
+// The second half of the name ("DO" in WiseOne) is set in soft grey: the capitals after the first word.
+const split = c.site.name.search(/(?<=[a-z])[A-Z]/);
+const em = emWidth(word, 300, -0.03);
+const lines = c.site.descriptor.split(/\n+/);
+const two = (i: number) => String(i + 1).padStart(2, '0');
+---
+
+<section class="hero" aria-labelledby="wm">
+  <p class="hero__desc">{lines.map((l, i) => (i ? [<br />, l] : l))}</p>
+  <h1 class="wm" id="wm" style={`--em:${em}`} data-letters data-hero>
+    <span class="sr-only">{c.site.name}: {c.site.descriptor.replace(/\s*\n+\s*/g, ' ')}</span>
+    <span class="lts" aria-hidden="true">
+      {[...word].map((ch, i) => <span class:list={['lt', split > 0 && i >= split && 'wm__do']} style={`--i:${i}`}>{ch}</span>)}
+    </span>
+  </h1>
+
+  <div class="sl" aria-roledescription="carousel" aria-label={c.ui.slides} data-slider data-hero>
+    <div class="sl__view">
+      <div class="sl__track" data-track>
+        {
+          slides.map((s, i) => (
+            <div class:list={['sl__s', i === 0 && 'is-on']} role="group" aria-roledescription={c.ui.slide.toLowerCase()} aria-label={`${i + 1} / ${slides.length}`} data-slide>
+              <Photo
+                photo={s.image}
+                width={1416}
+                height={580}
+                sizes="(min-width: 768px) calc(100vw - 24px), calc(100vw - 52px)"
+                widths={[800, 1100, 1416, 1800]}
+                mobile={{ width: 338, height: 470, sizes: 'calc(100vw - 52px)', widths: [338, 520, 676] }}
+                priority={i === 0}
+              />
+            </div>
+          ))
+        }
+      </div>
+      <div class="notch sl__txt">
+        {
+          slides.map((s, i) => (
+            <a class:list={['sl__item', i === 0 && 'is-on']} href={s.href} tabindex={i === 0 ? undefined : '-1'} aria-hidden={i === 0 ? undefined : 'true'} data-slide-text>
+              <span class="sl__mask">
+                <span class="sl__line">{s.text}</span>
+              </span>
+              <Arrow />
+            </a>
+          ))
+        }
+      </div>
+      <div class="notch notch--tr sl__ctrl">
+        <p class="sl__count" aria-hidden="true">
+          <span class="sl__num">
+            <span class="sl__roll" data-roll>
+              {slides.map((_, i) => <span>{two(i)}</span>)}
+            </span>
+          </span>
+          <span> / {two(slides.length - 1)}</span>
+        </p>
+        <span class="sl__bar" aria-hidden="true"><span data-clock></span></span>
+        <button class="circ circ--ring circ--right sl__next" type="button" aria-label={c.ui.nextSlide} data-next>
+          <Arrow name="right" />
+        </button>
+      </div>
+    </div>
+    <div class="sl__dots" aria-hidden="true">
+      {slides.map((_, i) => <span class:list={['sl__dot', i === 0 && 'is-on']} data-dot />)}
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    container-type: inline-size;
+  }
+  .hero__desc {
+    padding: 15px 16px 0;
+    font-size: 0.75rem;
+    line-height: 15px;
+  }
+  .wm {
+    margin-top: 15px;
+    padding-left: var(--g);
+    font-size: calc((100cqw - 24px) / var(--em));
+    font-weight: 300;
+    line-height: 0.78;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+    transition: letter-spacing 1.3s var(--ease);
+  }
+  .wm .lts {
+    display: block;
+    margin-left: -0.02em;
+    padding-top: 0.06em;
+    margin-top: -0.06em;
+  }
+  .wm .wm__do {
+    color: var(--soft);
+    transition:
+      transform var(--t-reveal) var(--ease) calc(var(--i) * 40ms),
+      opacity 0.01ms linear calc(var(--i) * 40ms),
+      color 0.6s var(--ease) calc(var(--i) * 40ms + 1.1s);
+  }
+  :global(.js) .wm:not(:global(.is-in)) {
+    letter-spacing: 0.08em;
+  }
+  :global(.js) .wm:not(:global(.is-in)) .wm__do {
+    color: var(--orange);
+  }
+
+  /* Keep the entrance reveal, but respond immediately to title hover. */
+  .wm:global(.is-in) .wm__do {
+    transition:
+      transform var(--t-reveal) var(--ease) calc(var(--i) * 40ms),
+      opacity 0.01ms linear calc(var(--i) * 40ms),
+      color 0.6s var(--ease);
+  }
+  @media (hover: hover) {
+    .wm:hover .wm__do { color: var(--orange); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wm .wm__do { transition: none; }
+  }
+
+  /* ---------- slider ---------- */
+  .sl {
+    margin-top: 33px;
+  }
+  .sl__view {
+    position: relative;
+    margin: 0 var(--g);
+    overflow: hidden;
+  }
+  .sl__track {
+    display: flex;
+    gap: 8px;
+    touch-action: pan-y;
+    transition: transform 0.9s var(--ease);
+  }
+  .sl__s {
+    position: relative;
+    flex: none;
+    width: calc(100% - 28px);
+    aspect-ratio: 338 / 470;
+    border-radius: var(--r);
+    overflow: hidden;
+    background: var(--tile);
+  }
+  .sl__s :global(picture),
+  .sl__s :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .sl__s :global(img) {
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+
+  /* The copy cut-out (bottom-left). */
+  .sl__txt {
+    display: grid;
+    min-width: 262px;
+    padding: 16px 48px 2px 4px;
+  }
+  .sl__item {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    visibility: hidden;
+    transition: visibility 0s linear 0.9s;
+  }
+  .sl__item.is-on {
+    visibility: visible;
+    transition: none;
+  }
+  .sl__mask {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.1em;
+    margin-bottom: -0.1em;
+  }
+  .sl__line {
+    display: block;
+    max-width: 11em;
+    font-size: var(--fs-slide);
+    font-weight: 300;
+    line-height: var(--lh-slide);
+    transform: translateY(105%);
+    transition: transform 0.8s var(--ease);
+  }
+  .sl__item.is-on .sl__line {
+    transform: none;
+    transition-delay: 0.25s;
+  }
+  :global(.sl__item.is-leave) .sl__line {
+    transform: translateY(-105%);
+    transition-delay: 0s;
+  }
+  .sl__item :global(.arr) {
+    margin-left: 2px;
+    transition: transform var(--t-hover) var(--ease);
+  }
+  .sl__item:hover :global(.arr),
+  .sl__item:focus-visible :global(.arr) {
+    transform: translate(3px, -3px);
+  }
+  .sl__item:focus-visible {
+    outline-offset: 2px;
+  }
+  /* Phones: the controls cut-out is not shown (dots instead); the clock inside it still runs. */
+  .sl__ctrl {
+    visibility: hidden;
+  }
+  .sl__dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    height: 14px;
+    margin-top: 12px;
+  }
+  .sl__dot {
+    width: 6px;
+    height: 6px;
+    margin-top: 4px;
+    border-radius: 50%;
+    background: var(--soft);
+    transition: background-color var(--t-hover) var(--ease);
+  }
+  .sl__dot.is-on {
+    background: var(--orange);
+  }
+
+  @media (min-width: 768px) {
+    .wm {
+      margin-top: 29px;
+    }
+    .hero__desc {
+      display: none;
+    }
+    .sl {
+      margin-top: 44px;
+    }
+    .sl__view {
+      border-radius: var(--r);
+    }
+    .sl__track {
+      display: grid;
+      transition: none;
+    }
+    .sl__s {
+      grid-area: 1 / 1;
+      width: auto;
+      aspect-ratio: 1416 / 580;
+      clip-path: inset(0 0 0 100%);
+    }
+    .sl__s.is-on {
+      z-index: 2;
+      clip-path: inset(0 0 0 0);
+      transition: clip-path 0.9s var(--ease);
+    }
+    :global(.sl__s.was-on) {
+      z-index: 1;
+      clip-path: inset(0 0 0 0);
+    }
+    .sl__s :global(img) {
+      transition: transform 0.9s var(--ease);
+    }
+    :global(.sl__s.was-on) :global(img) {
+      transform: translateX(-4%);
+    }
+    .sl__txt {
+      z-index: 3;
+      min-width: 0;
+      padding: 24px 48px 4px 12px;
+    }
+    .sl__item {
+      gap: 20px;
+    }
+    .sl__line {
+      max-width: 14.7em;
+    }
+    .sl__item :global(.arr) {
+      width: 16px;
+      height: 16px;
+    }
+    .sl__ctrl {
+      z-index: 3;
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      height: 92px;
+      padding-left: 28px;
+      visibility: visible;
+    }
+    .sl__count {
+      display: flex;
+      margin-top: 27px;
+      font-size: var(--fs-label);
+      line-height: 18px;
+      color: var(--grey-text);
+      font-variant-numeric: tabular-nums;
+    }
+    .sl__num {
+      display: block;
+      height: 18px;
+      overflow: hidden;
+    }
+    .sl__roll {
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.7s var(--ease);
+    }
+    .sl__bar {
+      position: absolute;
+      left: 28px;
+      right: 112px;
+      top: 54px;
+      height: 1px;
+      background: var(--rule);
+      overflow: hidden;
+    }
+    .sl__next {
+      width: 72px;
+      height: 72px;
+      margin-left: auto;
+      background: transparent;
+      color: var(--ink);
+    }
+    .sl__next :global(.arr) {
+      color: var(--ink);
+    }
+    .sl__dots {
+      display: none;
+    }
+  }
+  .sl__bar span {
+    display: block;
+    height: 100%;
+    background: var(--ink);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  :global(.sl.is-auto) .sl__bar span {
+    animation: sl-clock 6s linear;
+  }
+  :global(.sl.is-auto:hover) .sl__bar span,
+  :global(.sl.is-auto:focus-within) .sl__bar span,
+  :global(.sl.is-held) .sl__bar span {
+    animation-play-state: paused;
+  }
+  @keyframes sl-clock {
+    to {
+      transform: scaleX(1);
+    }
+  }
+</style>

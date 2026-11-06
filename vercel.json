@@ -17,6 +17,15 @@
   ],
   "headers": [
     {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/garuda/:path*",
       "headers": [
         {
@@ -36,6 +45,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/wisetoken/tvl",
+      "destination": "https://wise.one/api/wisetoken/tvl"
+    },
     {
       "source": "/api/wise-price",
       "destination": "https://wise.one/api/wise-price"
@@ -59,18 +72,5 @@
   ],
   "regions": [
     "iad1"
-  ],
-  "redirects": [
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "garuda.wise.one"
-        }
-      ],
-      "destination": "/garuda/",
-      "permanent": false
-    }
   ]
 }

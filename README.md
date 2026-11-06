@@ -232,7 +232,7 @@ Adding `--publish` writes valid existing orders as v2 using the configured Rabdi
 
 ## Production on Vercel
 
-Open the live app at **[garuda.wise.one](https://garuda.wise.one)**. The domain opens the app at `/garuda/`; the [Vercel URL](https://garuda-vmarinchenkos-projects.vercel.app/garuda/) remains available. The **Garuda** project in the `vmarinchenkos-projects` team is connected to `wisetoken/garuda`: every push to `master` deploys production automatically; other branches receive previews. Production uses a dedicated Neon PostgreSQL database on the Free plan. The API and database run in `iad1` to keep database calls in the same region.
+The homepage is at **[garuda.wise.one](https://garuda.wise.one)**, with the [marketplace app at `/garuda/`](https://garuda.wise.one/garuda/); the [Vercel URL](https://garuda-vmarinchenkos-projects.vercel.app/garuda/) remains available. The **Garuda** project in the `vmarinchenkos-projects` team is connected to `wisetoken/garuda`: every push to `master` deploys production automatically; other branches receive previews. Production uses a dedicated Neon PostgreSQL database on the Free plan. The API and database run in `iad1` to keep database calls in the same region.
 
 [`vercel.json`](vercel.json) runs the test suite before building the Vite frontend and the [Hono API entry](server/vercel-entry.ts) together. A failed test or build prevents that deployment from replacing production. `/garuda/` serves the app and `/api/garuda/*` serves its market API. Price, subgraph and owl-avatar requests use the existing public WiseOne API through explicit same-origin rewrites. The standalone backup remains available at `/garuda-backup.html`.
 
@@ -244,7 +244,7 @@ Order publication uses Vercel's `waitUntil` to continue after returning the save
 
 ## Run locally
 
-Requirements: **Node.js 22.12+**, npm, PostgreSQL, an Ethereum RPC endpoint, and a public Thirdweb client ID configured for your app origin.
+Requirements: **Node.js 22.23.4+ (22.x)**, npm, PostgreSQL, an Ethereum RPC endpoint, and a public Thirdweb client ID configured for your app origin.
 
 ```sh
 npm ci
@@ -264,9 +264,9 @@ npm run server
 npm run dev
 ```
 
-Open [Market](http://127.0.0.1:3212/garuda/?screen=trade&collection=signature&view=market), [My stakes](http://127.0.0.1:3212/garuda/?screen=stakes), [The Problem](http://127.0.0.1:3212/garuda/?screen=problem), or [The Solution](http://127.0.0.1:3212/garuda/?screen=how).
+Open [the homepage](http://127.0.0.1:3212/), [Market](http://127.0.0.1:3212/garuda/?screen=trade&collection=signature&view=market), [My stakes](http://127.0.0.1:3212/garuda/?screen=stakes), [The Problem](http://127.0.0.1:3212/garuda/?screen=problem), or [The Solution](http://127.0.0.1:3212/garuda/?screen=how).
 
-The development server uses Vite hot module replacement and React Fast Refresh. Saving app components or CSS updates the open page automatically, preserving component state where possible; HTML changes reload the page. Keep `npm run dev` running while you work. No rebuild is needed for source edits.
+The development server uses Vite hot module replacement and React Fast Refresh. Saving app components or CSS updates the open page automatically, preserving component state where possible; HTML changes reload the page. Keep `npm run dev` running while you work. No rebuild is needed for app source edits. The Astro homepage lives in `marketing/` and is built automatically before development and production builds. After editing homepage files, run `npm run build:homepage` and refresh the local root page.
 
 | Configuration | Purpose |
 | --- | --- |
@@ -292,7 +292,7 @@ npm run build
 npm run preview
 ```
 
-Open [the build preview](http://127.0.0.1:3214/garuda/). This serves the last build and does not hot reload; use `npm run dev` on port `3212` while editing. Vite's proxy is local-only. The Vercel setup above packages the market API and production routes with the frontend.
+Open [the homepage build preview](http://127.0.0.1:3214/) or [the app preview](http://127.0.0.1:3214/garuda/). This serves the last build and does not hot reload; use `npm run dev` on port `3212` while editing. Vite's proxy is local-only. The Vercel setup above packages the market API and production routes with the frontend.
 
 ## Verification
 
@@ -526,6 +526,6 @@ The current app publishes orders under `wiseone.garuda.orders.v2` and uses `wise
 
 The existing foundation is WiseOne’s staking application; the hackathon contribution is the Garuda extension described here. Submission acceptance and supporting evidence are tracked separately. Measured user and volume data have not yet been supplied; see [reach](arkiv/reach.md).
 
-Released under the [MIT License](LICENSE).
+The marketplace application and integrations are released under the [MIT License](LICENSE). The adapted homepage retains its [theme license](marketing/LICENSE.md); the bundled Outfit font uses the [SIL Open Font License](public/homepage/fonts/OFL-Outfit.txt).
 
 OpenAI Codex assisted with implementation, refactoring, tests, documentation, and local verification. The project owner directs the work and reviews changes; AI-assisted commits include Codex co-authorship.

@@ -10,3 +10,5 @@ contracts/seaport/deployments/v2-standard-input.json
 .vercel
 
 .generated/
+
+marketing/.astro/

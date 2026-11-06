@@ -1,0 +1,139 @@
+---
+/**
+ * Contact card (Figma "Contact card"): the orange tile that closes most pages. The title lines rise in
+ * a mask on enter; the white circle button is magnetic on a mouse; the email keeps its white
+ * underline and gets a second sweep in ink on hover.
+ */
+import Arrow from './Arrow.astro';
+import { emWidest } from '../lib/fit';
+import type { Content } from '../lib/types';
+
+interface Props {
+  c: Content;
+}
+const { c } = Astro.props;
+const b = c.blocks.contact;
+const em = emWidest(b.title, 300, -0.03);
+---
+
+<section class="tile cta" style={`--em:${em}`} aria-labelledby="cta-title" data-rise>
+  <p class="cta__label">{b.label}</p>
+  <h2 class="cta__t is-split" id="cta-title" data-in>
+    {
+      b.title.map((l, i) => (
+        <span class="ln">
+          <span class="ln__i" style={`--i:${i}`}>
+            {l}
+          </span>
+        </span>
+      ))
+    }
+  </h2>
+  <a class="cta__go circ" href={c.site.cta.href} aria-label={b.button} data-magnet>
+    <Arrow stroke={1} />
+  </a>
+  <a class="cta__mail" href="/garuda/?screen=trade&collection=signature&view=market"><span>Open Garuda Extension ↗</span></a>
+</section>
+
+<style>
+  .cta {
+    container-type: inline-size;
+    position: relative;
+    min-height: 440px;
+    padding: 16px;
+    background: var(--orange);
+    color: var(--white);
+  }
+  .cta__label {
+    font-size: 0.75rem;
+    line-height: 16px;
+    color: var(--ink);
+  }
+  .cta__t {
+    position: absolute;
+    left: 14px;
+    top: 200px;
+    font-size: min(var(--fs-display), calc((100cqw - 28px) / var(--em)));
+    font-weight: 300;
+    line-height: 0.96;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+  }
+  .cta__go {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 72px;
+    height: 72px;
+    background: var(--white);
+    color: var(--orange);
+  }
+  .cta__go :global(.arr) {
+    width: 20px;
+    height: 20px;
+    color: var(--orange);
+  }
+  .cta__mail {
+    position: absolute;
+    left: 16px;
+    bottom: 14px;
+    font-size: 1.5rem;
+    font-weight: 300;
+    line-height: 30px;
+  }
+  /* A permanent white underline, and an ink one that sweeps in from the left over it. */
+  .cta__mail span {
+    padding-bottom: 2px;
+    background-image: linear-gradient(var(--ink), var(--ink)), linear-gradient(var(--white), var(--white));
+    background-repeat: no-repeat;
+    background-position:
+      100% 100%,
+      0 100%;
+    background-size:
+      0 1px,
+      100% 1px;
+    transition: background-size var(--t-hover) var(--ease);
+  }
+  .cta__mail:hover span,
+  .cta__mail:focus-visible span {
+    background-position:
+      0 100%,
+      0 100%;
+    background-size:
+      100% 1px,
+      100% 1px;
+  }
+  @media (min-width: 768px) {
+    .cta {
+      min-height: 620px;
+      padding: 32px;
+    }
+    .cta__label {
+      font-size: var(--fs-label);
+    }
+    .cta__t {
+      left: 26px;
+      top: auto;
+      bottom: 150px;
+      font-size: min(var(--fs-display), calc((100cqw - 58px) / var(--em)));
+      line-height: var(--lh-display);
+    }
+    .cta__go {
+      top: 32px;
+      right: 32px;
+      width: 120px;
+      height: 120px;
+    }
+    .cta__go :global(.arr) {
+      width: 28px;
+      height: 28px;
+    }
+    .cta__mail {
+      left: auto;
+      right: 32px;
+      bottom: 40px;
+      font-size: 1.875rem;
+      line-height: 38px;
+    }
+  }
+</style>

@@ -1,0 +1,197 @@
+---
+/**
+ * Footer (Figma "Footer", 1440 x 220 and 390 x 330): the mark and the name, three columns (pages,
+ * social, contacts), the copyright and the legal links. Columns fade up one after another; hovering
+ * the logo lifts the letters of the name in a wave.
+ */
+import Mark from './Mark.astro';
+import type { Content } from '../lib/types';
+
+interface Props {
+  c: Content;
+}
+const { c } = Astro.props;
+const s = c.site;
+const tel = s.phone.replace(/\s+/g, '');
+---
+
+<footer class="ft">
+  <a class="ft__logo" href="/" aria-label={`${s.name}, ${c.ui.home.toLowerCase()}`} data-fade>
+    <Mark />
+    <span class="ft__name" aria-hidden="true">{[...s.name].map((ch, i) => <span style={`--i:${i}`}>{ch}</span>)}</span>
+  </a>
+  <nav class="ft__col ft__pages" aria-label={c.ui.footerPages} data-fade style="--d:80ms">
+    <ul>
+      {
+        s.footerPages.map((l) => (
+          <li>
+            <a href={l.href}>
+              <span class="ul">{l.label}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+  <nav class="ft__col ft__social" aria-label={c.ui.footerSocial} data-fade style="--d:160ms">
+    <ul>
+      {
+        s.social.map((l) => (
+          <li>
+            <a href={l.href} rel="noopener">
+              <span class="ul">{l.label}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+  <div class="ft__col ft__contacts" data-fade style="--d:240ms">
+    <span>Garuda Extension by WiseOne</span>
+    <span>Trade NFT stakes on Ethereum.</span>
+    <span>Built around WiseOne Signature Stakes.</span>
+  </div>
+  <p class="ft__copy">{s.copyright}</p>
+  <ul class="ft__legal">
+    {
+      s.legal.map((l) => (
+        <li>
+          <a href={l.href}>
+            <span class="ul">{l.label}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</footer>
+
+<style>
+  .ft {
+    display: grid;
+    grid-template-columns: 184px 1fr;
+    grid-template-areas:
+      'logo logo'
+      'pages social'
+      'contacts contacts'
+      'copy copy'
+      'legal legal';
+    padding: 24px 16px 16px;
+    font-size: 16px;
+    line-height: 26px;
+  }
+  .ft__logo {
+    grid-area: logo;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    justify-self: start;
+    align-self: start;
+    min-height: 44px;
+    margin-top: -7px;
+    font-size: 2.25rem;
+    line-height: 1.1;
+  }
+  .ft__logo :global(.mark) {
+    width: 60px;
+    height: 60px;
+  }
+  .ft__name {
+    display: flex;
+  }
+  .ft__name span {
+    transition: transform 0.5s var(--ease) calc(var(--i) * 40ms);
+  }
+  .ft__logo:hover .ft__name span,
+  .ft__logo:focus-visible .ft__name span {
+    animation: wave 0.7s var(--ease) calc(var(--i) * 45ms);
+  }
+  @keyframes wave {
+    40% {
+      transform: translateY(-5px);
+    }
+  }
+  .ft__pages {
+    grid-area: pages;
+    margin-top: 13px;
+  }
+  .ft__social {
+    grid-area: social;
+    margin-top: 13px;
+  }
+  .ft__contacts {
+    grid-area: contacts;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 18px;
+    font-style: normal;
+    color: var(--grey-text);
+  }
+  .ft__col a {
+    display: inline-block;
+  }
+  .ft__contacts a:hover,
+  .ft__contacts a:focus-visible {
+    color: var(--ink);
+  }
+  .ft__copy {
+    grid-area: copy;
+    margin-top: 28px;
+    font-size: 14px;
+    color: var(--grey-text);
+  }
+  .ft__legal {
+    grid-area: legal;
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+    color: var(--grey-text);
+  }
+  .ft__legal a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+  }
+  .ft__legal a:hover,
+  .ft__legal a:focus-visible {
+    color: var(--ink);
+  }
+
+  /* Desktop: columns at x 578, 822 and 1066 of the 1440 frame. */
+  @media (min-width: 1100px) {
+    .ft {
+      grid-template-columns: 1fr 17.5% 17.5% 25.1%;
+      grid-template-rows: auto 1fr auto;
+      grid-template-areas:
+        'logo pages social contacts'
+        '. . . .'
+        'copy copy copy legal';
+      min-height: 220px;
+      padding: 40px 24px 24px;
+    }
+    .ft__logo {
+      margin-top: -7px;
+      font-size: 2.5rem;
+    }
+    .ft__pages,
+    .ft__social,
+    .ft__contacts {
+      margin-top: 0;
+    }
+    .ft__copy {
+      margin-top: 0;
+      align-self: end;
+      font-size: 14px;
+      line-height: 22px;
+    }
+    .ft__legal {
+      justify-self: end;
+      align-self: end;
+      font-size: 14px;
+      line-height: 22px;
+    }
+    .ft__legal a {
+      min-height: 16px;
+    }
+  }
+</style>

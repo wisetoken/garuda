@@ -1,0 +1,86 @@
+---
+/**
+ * Renders a photo from either content source, cropped to width x height, as a <picture> with
+ * responsive widths. Optional `mobile` gives phones (under 768px) their own crop.
+ * Local artwork is rendered as AVIF, WebP and JPEG at build time by Astro. Only an image marked `priority` loads eagerly with high fetch
+ * priority; all others are lazy. width/height attributes are always set, so nothing shifts.
+ */
+import { getImage } from 'astro:assets';
+import type { Photo } from '../lib/types';
+
+interface Crop {
+  width: number;
+  height: number;
+  sizes: string;
+  widths: number[];
+}
+interface Props {
+  photo: Photo;
+  width: number;
+  height: number;
+  /** `sizes` attribute: how wide the image shows at each viewport width. */
+  sizes: string;
+  widths?: number[];
+  /** A different crop for phones (viewports under 768px). */
+  mobile?: Crop;
+  priority?: boolean;
+  /** Crop focus for local photos (sharp position values: center, top, attention...). Sanity uses the hotspot. */
+  position?: string;
+  class?: string;
+  imgClass?: string;
+  /** Empty alt for purely decorative use. */
+  decorative?: boolean;
+  quality?: number;
+}
+
+const { photo, width, height, sizes, mobile, priority = false, position = 'center', class: cls = '', imgClass = '', decorative = false } = Astro.props;
+const desktop: Crop = { width, height, sizes, widths: Astro.props.widths ?? [400, 640, 800, 1000, 1280, 1600, 2000] };
+const QUALITY = Astro.props.quality ?? 58;
+const MOBILE = '(max-width: 767px)';
+
+type Source = { media?: string; type?: string; srcset: string; sizes: string; width: number; height: number };
+const sources: Source[] = [];
+let img: { src: string; srcset: string };
+
+// Never ask for widths wider than the source file; keep at least the source width itself.
+const fit = (widths: number[], max: number) => {
+  const ok = widths.filter((w) => w <= max);
+  return ok.length ? ok : [max];
+};
+
+if (photo.local) {
+  const src = photo.local;
+  const make = async (c: Crop, format: 'avif' | 'webp' | 'jpg') =>
+    getImage({ src, width: c.width, height: c.height, widths: fit(c.widths, src.width), fit: 'cover', position, format, quality: QUALITY });
+  for (const [crop, media] of mobile ? ([[mobile, MOBILE], [desktop, undefined]] as const) : ([[desktop, undefined]] as const)) {
+    for (const format of ['avif', 'webp'] as const) {
+      const r = await make(crop, format);
+      sources.push({ media, type: `image/${format}`, srcset: r.srcSet.attribute, sizes: crop.sizes, width: crop.width, height: crop.height });
+    }
+    if (media) {
+      const r = await make(crop, 'jpg');
+      sources.push({ media, srcset: r.srcSet.attribute, sizes: crop.sizes, width: crop.width, height: crop.height });
+    }
+  }
+  const fallback = await make(desktop, 'jpg');
+  img = { src: fallback.src, srcset: fallback.srcSet.attribute };
+} else {
+  throw new Error('Homepage images must be local assets.');
+}
+---
+
+<picture class={cls || undefined}>
+  {sources.map((s) => <source media={s.media} type={s.type} srcset={s.srcset} sizes={s.sizes} width={s.width} height={s.height} />)}
+  <img
+    class:list={['photo', imgClass]}
+    src={img.src}
+    srcset={img.srcset}
+    sizes={sizes}
+    width={width}
+    height={height}
+    alt={decorative ? '' : photo.alt}
+    loading={priority ? 'eager' : 'lazy'}
+    decoding={priority ? 'sync' : 'async'}
+    fetchpriority={priority ? 'high' : undefined}
+  />
+</picture>

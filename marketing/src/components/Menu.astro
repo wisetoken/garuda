@@ -1,0 +1,420 @@
+---
+/**
+ * The open menu (Figma "Menu" 1440 x 900 and 390 x 844): a full-screen <dialog> on the canvas.
+ * Section links with their index; on desktop a column with the latest case (its image swaps to a preview
+ * of the hovered link with a clip wipe) and the contacts; on phones the contacts and a full-width
+ * button. Esc closes it, focus stays inside (modal dialog), page scroll and Lenis stop while it is
+ * open, and every link closes it (scripts/site.ts, "menu").
+ */
+import Arrow from './Arrow.astro';
+import Mark from './Mark.astro';
+import Photo from './Photo.astro';
+import type { Content } from '../lib/types';
+
+interface Props {
+  c: Content;
+  path: string;
+}
+const { c, path } = Astro.props;
+const latest = { cover: c.home.slides[0].image };
+const menuLinks = c.site.nav.filter((link) => !['/garuda/?screen=trade&collection=signature&view=market', 'https://wise.one/'].includes(link.href));
+// One preview per link (links without one show the latest case), then the case itself as the default.
+const previews = menuLinks.map((l) => c.menu.previews[l.href] ?? latest?.cover).filter(Boolean);
+const caseIndex = previews.length;
+const current = (href: string) => path === href || (href !== '/' && path.startsWith(href + '/'));
+---
+
+<dialog id="menu" class="menu" aria-label={c.ui.menuLabel} data-menu>
+  <div class="menu__in">
+    <div class="menu__top">
+      <a class="menu__logo" href="/" aria-label={`${c.site.name}, ${c.ui.home.toLowerCase()}`}>
+        <Mark />
+        <span class="menu__name" aria-hidden="true">{c.site.name}</span>
+      </a>
+      <button class="menu__close" type="button" aria-label={c.ui.closeMenu} data-menu-close>
+        <span class="menu__cl" aria-hidden="true">{c.ui.close}</span>
+        <span class="xx" aria-hidden="true"><span></span><span></span></span>
+      </button>
+    </div>
+
+    <nav class="menu__nav" aria-label={c.ui.menuLabel}>
+      <ol>
+        {
+          menuLinks.map((l, i) => (
+            <li class="menu__li" style={`--i:${i}`}>
+              <a class="menu__a" href={l.href} data-prev={i} aria-current={current(l.href) ? 'page' : undefined}>
+                <span class="menu__i">{String(i + 1).padStart(2, '0')}</span>
+                <span class="menu__w">
+                  <span class="menu__t">{l.label}</span>
+                  <svg class="menu__arr" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.1" aria-hidden="true" focusable="false">
+                    <path d="M2 12 L12 2 M4.5 2 H12 V9.5" pathLength="1" />
+                  </svg>
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+    </nav>
+
+    <div class="menu__side">
+      {
+        latest && (
+          <div class="menu__case" data-prev={caseIndex}>
+            <span class="menu__imgs">
+              {[...previews, c.home.slides[0].image].map((p, i) => (
+                <span class:list={['menu__img', i === caseIndex && 'is-on']} data-prev-img={i}>
+                  <Photo photo={p!} width={832} height={800} sizes="(min-width: 1024px) 30vw, 1px" widths={[420, 832]} decorative={i !== caseIndex} />
+                </span>
+              ))}
+            </span>
+          </div>
+        )
+      }
+      <nav class="menu__apps" aria-label="WiseOne apps">
+        <a class="menu__app" href="/garuda/?screen=trade&collection=signature&view=market">
+          <span class="menu__app-title">Open Garuda Extension <Arrow /></span>
+          <span class="menu__app-description">List NFT stakes, place bids, or buy directly from another owner.</span>
+        </a>
+        <a class="menu__app" href="https://wise.one/">
+          <span class="menu__app-title">Open Main Website <Arrow /></span>
+          <span class="menu__app-description">Manage your WISE stakes and explore ecosystem analytics in the main WiseOne app.</span>
+        </a>
+      </nav>
+    </div>
+
+  </div>
+</dialog>
+
+<style>
+  .menu {
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--canvas);
+    color: var(--ink);
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path 0.7s var(--ease);
+  }
+  .menu::backdrop {
+    background: transparent;
+  }
+  :global(.menu.is-open) {
+    clip-path: inset(0 0 0 0);
+  }
+  .menu__in {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding-bottom: 16px;
+  }
+  .menu__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 63px;
+    padding: 0 10px 0 16px;
+    box-shadow: inset 0 -1px 0 var(--rule);
+  }
+  .menu__logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+  }
+  .menu__logo :global(.mark) {
+    width: 45px;
+    height: 45px;
+  }
+  .menu__name {
+    display: none;
+    font-size: 2.25rem;
+  }
+  .menu__close {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 6px;
+    font-size: calc(2 * var(--fs-label));
+  }
+  /* The burger's two lines turn into the cross as the menu opens. */
+  .xx {
+    position: relative;
+    width: 22px;
+    height: 22px;
+  }
+  .xx span {
+    position: absolute;
+    top: 50%;
+    left: -2px;
+    width: 26px;
+    height: 1.6px;
+    margin-top: -0.8px;
+    background: var(--orange);
+    transition: transform 0.5s var(--ease) 0.15s;
+  }
+  .xx span:first-child {
+    transform: translateY(-5px);
+  }
+  .xx span:last-child {
+    transform: translateY(5px);
+  }
+  :global(.menu.is-open) .xx span:first-child {
+    transform: rotate(45deg);
+  }
+  :global(.menu.is-open) .xx span:last-child {
+    transform: rotate(-45deg);
+  }
+  .menu__close:hover .xx span,
+  .menu__close:focus-visible .xx span {
+    transition-delay: 0s;
+  }
+  :global(.menu.is-open) .menu__close:hover .xx span:first-child {
+    transform: rotate(135deg);
+  }
+  :global(.menu.is-open) .menu__close:hover .xx span:last-child {
+    transform: rotate(45deg);
+  }
+
+  .menu__nav {
+    padding: 22px 0 0;
+  }
+  .menu__li {
+    overflow: hidden;
+  }
+  .menu__a {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 60px;
+    padding: 0 16px 0 14px;
+    font-size: var(--fs-menu);
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    transform: translateY(105%);
+    transition: transform 0.8s var(--ease) calc(0.15s + var(--i) * 60ms);
+  }
+  :global(.menu.is-open) .menu__a {
+    transform: none;
+  }
+  .menu__i {
+    flex: 0 0 1.4em;
+    font-size: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    line-height: inherit;
+    color: var(--grey-text);
+    transition: color var(--t-hover) var(--ease);
+  }
+  .menu__w {
+    display: inline-flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: 12px;
+    transition: transform var(--t-hover) var(--ease);
+  }
+  .menu__arr {
+    width: 20px;
+    height: 20px;
+    margin-top: 0.08em;
+    color: var(--orange);
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 0.6s var(--ease);
+  }
+  .menu__a:hover .menu__w,
+  .menu__a:focus-visible .menu__w {
+    transform: translateX(16px);
+  }
+  .menu__a:hover .menu__arr,
+  .menu__a:focus-visible .menu__arr {
+    stroke-dashoffset: 0;
+  }
+  .menu__a:hover .menu__i,
+  .menu__a:focus-visible .menu__i,
+  .menu__a[aria-current='page'] .menu__i {
+    color: var(--orange-ink);
+  }
+  .menu__a:hover .menu__t,
+  .menu__a:focus-visible .menu__t {
+    color: var(--orange-ink);
+    transition: color var(--t-hover) var(--ease);
+  }
+  .menu__side {
+    margin: 26px 16px 0;
+    padding-top: 22px;
+    box-shadow: inset 0 1px 0 var(--rule);
+    opacity: 0;
+    transition: opacity 0.6s var(--ease) 0.35s;
+  }
+  :global(.menu.is-open) .menu__side {
+    opacity: 1;
+  }
+  .menu__case {
+    display: none;
+  }
+  .menu__contact {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .menu__mail {
+    font-size: 1.25rem;
+    font-weight: 300;
+    line-height: 36px;
+  }
+  .menu__tel {
+    font-size: 1rem;
+    font-weight: 300;
+    line-height: 32px;
+  }
+  .menu__soc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 20px;
+    margin-top: 6px;
+    font-size: var(--fs-xs);
+    color: var(--grey-text);
+  }
+  .menu__soc a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .menu__soc a:hover,
+  .menu__soc a:focus-visible {
+    color: var(--ink);
+  }
+
+  @media (min-width: 1024px) {
+    .menu__in {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) min(29%, 416px);
+      grid-template-rows: auto 1fr auto;
+      column-gap: 24px;
+      min-height: max(100%, 640px);
+      padding: 0 24px 24px;
+    }
+    .menu__top {
+      grid-column: 1 / -1;
+      height: 78px;
+      margin: 0 -24px;
+      padding: 0 18px 0 24px;
+    }
+    .menu__name {
+      display: block;
+    }
+    .menu__nav {
+      padding-top: 50px;
+    }
+    .menu__a {
+      min-height: 104px;
+      padding: 0;
+    }
+    .menu__arr {
+      width: 34px;
+      height: 34px;
+      margin-top: 0.12em;
+    }
+    .menu__w {
+      gap: 20px;
+    }
+    .menu__side {
+      margin: 42px 0 0;
+      padding: 0;
+      box-shadow: none;
+    }
+    .menu__case {
+      display: block;
+    }
+    .menu__imgs {
+      position: relative;
+      display: block;
+      aspect-ratio: 416 / 400;
+      border-radius: var(--r);
+      overflow: hidden;
+      background: var(--tile);
+    }
+    .menu__img {
+      position: absolute;
+      inset: 0;
+      clip-path: inset(0 100% 0 0);
+      transition: clip-path 0.7s var(--ease);
+    }
+    .menu__img :global(img) {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    :global(.menu__img.was-on) {
+      z-index: 1;
+      clip-path: inset(0 0 0 0);
+    }
+    :global(.menu__img.is-on) {
+      z-index: 2;
+      clip-path: inset(0 0 0 0);
+    }
+    .menu__cap {
+      display: block;
+      margin-top: 16px;
+      transition: opacity var(--t-ui) var(--ease);
+    }
+    :global(.menu__cap.is-off) {
+      opacity: 0;
+    }
+    .menu__cap .label {
+      display: block;
+    }
+    .menu__cn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-size: 1.375rem;
+      line-height: 28px;
+    }
+    .menu__contact {
+      margin-top: 30px;
+      padding-top: 18px;
+      box-shadow: inset 0 1px 0 var(--rule);
+    }
+    .menu__mail {
+      font-size: 1.5rem;
+      line-height: 40px;
+    }
+    .menu__tel {
+      font-size: 1.125rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .menu,
+    .menu__a {
+      clip-path: none;
+      transform: none;
+    }
+    .menu__side {
+      opacity: 1;
+    }
+  }
+</style>
+
+<style>
+  .menu__apps { display:grid; margin-top:20px; }
+  .menu__app { display:block; padding:22px 0; }
+  .menu__app + .menu__app { border-top:1px solid var(--rule); }
+  .menu__app-title { display:flex; align-items:center; justify-content:space-between; gap:16px; font-size:clamp(20px,1.65vw,26px); line-height:1.3; font-weight:400; }
+  .menu__app-title :global(.arr) { flex-shrink:0; width:18px; height:18px; color:var(--orange-ink); }
+  .menu__app-description { display:block; margin-top:10px; font-size:16px; line-height:1.5; color:var(--grey-text); }
+  .menu__app:hover .menu__app-title { color:var(--orange-ink); }
+  .menu__app:focus-visible { outline:2px solid var(--orange); outline-offset:4px; }
+</style>
+<style>.menu__img :global(img) { filter:grayscale(1) sepia(1) hue-rotate(120deg) saturate(1.5); }</style>

@@ -1,0 +1,58 @@
+---
+import SectionBadge from '../SectionBadge.astro';
+import { stakeCards as appStakeCards, stakeHeading, stakeIntro } from '../../../../src/pages/guides/stake-content';
+import '../../../../src/pages/guides/stake-ecosystem.css';
+const stakeCards = appStakeCards.map(card => card.key !== 'garuda' ? card : { ...card, description: 'Buy, sell or bid on Signature stakes. Stake-backed lending and borrowing come next.', intro: 'A marketplace for Signature stakes, with stake-backed lending planned next.', rows: card.rows.map(([title, text]) => title === 'Borrow against a stake' ? ['Stake-backed lending · coming next', 'The next step is using a Signature stake as collateral for a loan, with terms covering the loan amount, repayment cost and due date.'] : [title, text]) });
+---
+<section class="signature" id="signature-stakes" aria-labelledby="signature-heading">
+  <div class="signature-intro">
+    <div class="signature-eyebrow"><SectionBadge>The Solution</SectionBadge></div>
+    <h2 id="signature-heading">{stakeHeading}</h2>
+    <p>{stakeIntro}</p>
+  </div>
+  <div class="stake-ecosystem">
+    <div class="stake-flow" aria-label="WISE Token, Signature Stakes and Garuda Extension">
+      {stakeCards.map((item, index) => <>
+        {index > 0 && <span class="flow-arrow" aria-hidden="true">→</span>}
+        <article class:list={['tile', 'stake-node', { 'stake-node--garuda': item.key === 'garuda' }]} data-rise>
+          <span class="wise-token-mark"><img class:list={{ 'wiseone-mark': item.key === 'signature' }} src={item.icon} width="52" height="52" alt="" /></span>
+          <p class="label">{item.label}</p>
+          <h3>{item.cardTitle}</h3>
+          <button class="stake-open" type="button" data-stake-open={item.key} aria-label={`Learn about ${item.cardTitle}`} aria-haspopup="dialog" aria-controls={`stake-dialog-${item.key}`} aria-expanded="false"><span>Learn more ↗</span></button>
+          <p>{item.description}</p>
+        </article>
+      </>)}
+    </div>
+  {stakeCards.map((item, index) => <dialog class="stake-dialog" id={`stake-dialog-${item.key}`} aria-labelledby={`stake-title-${item.key}`} aria-describedby={`stake-intro-${item.key}`} data-lenis-prevent>
+    <button type="button" class="stake-close" aria-label="Close details" autofocus>×</button>
+    <nav class="stake-modal-nav" aria-label="Component details">
+      <button type="button" data-stake-direction="-1" aria-label="Previous component"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M20 12H4m6-6-6 6 6 6" /></svg></button>
+      <span>{index + 1} / {stakeCards.length}</span>
+      <button type="button" data-stake-direction="1" aria-label="Next component"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6" /></svg></button>
+    </nav>
+    <div class="stake-dialog-header">
+      <div class="stake-dialog-icon">
+        <img class:list={{ 'wiseone-mark': item.key === 'signature' }} src={item.icon} width="96" height="96" alt="" />
+      </div>
+      <div>
+        <h2 id={`stake-title-${item.key}`}>{item.title}</h2>
+        <p class="stake-dialog-intro" id={`stake-intro-${item.key}`}>{item.intro}</p>
+      </div>
+    </div>
+    <div class="stake-explanations">{item.rows.map(([title, text]) => <div><h3>{title}</h3><p>{text}</p></div>)}</div>
+    <a class="stake-detail-link" href={item.href}>{item.link} ↗</a>
+  </dialog>)}
+  </div>
+</section>
+<style>
+.signature{padding-top:28px;scroll-margin-top:100px}
+.signature-intro{padding:10px 24px 32px}
+.signature-eyebrow{margin-bottom:18px}
+.signature-intro h2{font-size:clamp(30px,4vw,56px);font-weight:300;line-height:1.12;margin-bottom:20px}
+.signature-intro>p{max-width:78ch;font-size:20px;line-height:1.5;color:var(--grey-text)}
+@media(max-width:767px){.signature-intro{padding:8px 20px 24px}.signature-intro>p{font-size:18px}}
+</style>
+<script>
+  import { initializeStakeDialogs } from '../../../../src/pages/guides/stake-dialogs';
+  document.querySelectorAll<HTMLElement>('.stake-ecosystem').forEach(initializeStakeDialogs);
+</script>

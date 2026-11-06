@@ -1,0 +1,174 @@
+{
+  "site": {
+    "name": "WiseOne",
+    "legalName": "WiseOne",
+    "tagline": "Your stake. Your next move.",
+    "descriptor": "Your WISE stake.\nA new owner.\nMore possibilities.\nMeet Garuda.",
+    "description": "Garuda is the WiseOne extension for trading NFT stakes on Ethereum. List a stake, place a bid, or buy directly from a seller.",
+    "url": "https://garuda.wise.one",
+    "email": "",
+    "phone": "",
+    "city": "Garuda extension",
+    "hours": "",
+    "nav": [
+      {
+        "label": "Open Garuda Extension",
+        "href": "/garuda/?screen=trade&collection=signature&view=market"
+      },
+      {
+        "label": "Open Main Website",
+        "href": "https://wise.one/"
+      },
+      {
+        "label": "About WISE",
+        "href": "/#wise-token"
+      },
+      {
+        "label": "The Problem",
+        "href": "/garuda/?screen=problem"
+      },
+      {
+        "label": "The Solution",
+        "href": "/garuda/?screen=how"
+      },
+      {
+        "label": "Access & privacy",
+        "href": "/garuda/?screen=privacy"
+      }
+    ],
+    "cta": {
+      "label": "Open Garuda Extension",
+      "href": "/garuda/?screen=trade&collection=signature&view=market"
+    },
+    "social": [],
+    "footerPages": [
+      {
+        "label": "Open Main Website",
+        "href": "https://wise.one/"
+      },
+      {
+        "label": "About WISE",
+        "href": "/#wise-token"
+      },
+      {
+        "label": "The Solution",
+        "href": "/garuda/?screen=how"
+      }
+    ],
+    "copyright": "\u00a9 2026 WiseOne. All rights reserved.",
+    "legal": [
+      {
+        "label": "Access & privacy",
+        "href": "/garuda/?screen=privacy"
+      }
+    ]
+  },
+  "menu": {
+    "caseLabel": "Garuda extension",
+    "previews": {
+      "/garuda/?screen=trade&collection=signature&view=market": "hero-stake",
+      "/garuda/?screen=trade&view=market": "hero-market",
+      "/#wise-token": "hero-stake",
+      "/garuda/?screen=problem": "hero-market",
+      "/garuda/?screen=how": "hero-stake",
+      "/garuda/?screen=privacy": "hero-market",
+      "https://wise.one/": "hero-market"
+    }
+  },
+  "blocks": {
+    "contact": {
+      "label": "( Garuda extension )",
+      "title": [
+        "YOUR NEXT",
+        "MOVE STARTS HERE"
+      ],
+      "button": "Open Garuda Extension"
+    }
+  },
+  "home": {
+    "seo": {
+      "title": "WiseOne / Meet Garuda",
+      "description": "Meet WISE, the token behind the WiseOne ecosystem, and Garuda: an extension for listing, bidding on and buying NFT stakes on Ethereum."
+    },
+    "slides": [
+      {
+        "text": "Your stake. Your next move. Open Garuda.",
+        "href": "/garuda/?screen=trade&collection=signature&view=market",
+        "image": "hero-stake"
+      },
+      {
+        "text": "Find your next stake. Explore the marketplace.",
+        "href": "/garuda/?screen=trade&view=market",
+        "image": "hero-market"
+      }
+    ]
+  },
+  "ui": {
+    "skip": "Skip to content",
+    "menu": "menu",
+    "close": "close",
+    "home": "Home",
+    "openMenu": "Open the menu",
+    "closeMenu": "Close the menu",
+    "viewCase": "View case",
+    "readNote": "Read note",
+    "cursorView": "View",
+    "nextSlide": "Next slide",
+    "slides": "Featured",
+    "slide": "Slide",
+    "nextProject": "Next project",
+    "client": "Client",
+    "services": "Services",
+    "year": "Year",
+    "team": "Team",
+    "task": "( task )",
+    "solution": "( solution )",
+    "results": "Results",
+    "price": "Price",
+    "timeline": "Timeline",
+    "teamSize": "Team",
+    "getsTitle": "What you get",
+    "timelineTitle": "Timeline",
+    "week": "Week",
+    "weeks": "weeks",
+    "book": "Book an intro call",
+    "writtenBy": "Written by",
+    "share": "Share",
+    "copyLink": "Copy link",
+    "copied": "Link copied",
+    "minRead": "min read",
+    "onThisPage": "On this page",
+    "updated": "updated",
+    "since": "since",
+    "filter": "Filter",
+    "menuLabel": "Main menu",
+    "footerPages": "Pages",
+    "footerSocial": "Social",
+    "footerContacts": "Contacts",
+    "backHome": "Back to home",
+    "formSending": "Sending...",
+    "formError": "Something went wrong. Please write to us by email instead.",
+    "caseStudy": "( case study )",
+    "to": "to",
+    "shareLinkedIn": "LinkedIn",
+    "shareEmail": "Email"
+  },
+  "services": [
+    {
+      "n": "01",
+      "title": "List a stake"
+    },
+    {
+      "n": "02",
+      "title": "Buy directly"
+    },
+    {
+      "n": "03",
+      "title": "Place a bid"
+    },
+    {
+      "n": "04",
+      "title": "Accept a bid"
+    }
+  ]
+}

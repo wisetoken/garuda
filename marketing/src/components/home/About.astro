@@ -1,0 +1,219 @@
+---
+import Arrow from '../Arrow.astro';
+import SectionBadge from '../SectionBadge.astro';
+import type { Content } from '../../lib/types';
+interface Props { c: Content; }
+const pool = '0x21b8065d10f73ee2e260e5b47d3344d3ced7596e';
+const details: Record<string, { title: string; description: string; cta: string; rows: [string, string, string][] }> = {
+  price: { title: 'WISE market price', description: 'Live Uniswap spot price and modeled pool prices after selling outside WISE. These scenarios are estimates, not guaranteed price floors.', cta: 'Trade on Uniswap', rows: [
+    ['spot', 'Live market price', 'Spot price from the Uniswap WISE/ETH pool.'],
+    ['liquidFloor', 'Liquid-only floor scenario', 'Modeled spot after selling liquid, unstaked WISE into the pool.'],
+    ['absoluteFloor', 'Absolute floor scenario', 'Modeled spot if all liquid and staked WISE were sold into the pool.'],
+  ] },
+  backing: { title: 'Uniswap liquidity backing', description: 'The WISE and ETH held in the Uniswap pool, valued at current market prices.', cta: 'View Uniswap pool', rows: [
+    ['poolUsd', 'Total Uniswap backing', 'Combined USD value of WISE and ETH in the pool.'],
+    ['poolEth', 'ETH in the pool', 'ETH reserves paired against WISE.'],
+    ['poolWise', 'WISE in the pool', 'WISE reserves held in the pool.'],
+  ] },
+  staked: { title: 'Active WISE stakes', description: 'How much WISE is locked in staking versus liquid outside the pool.', cta: 'Open staking', rows: [
+    ['stakedUsd', 'Value staked', 'USD value of active WISE stakes at the current price.'],
+    ['stakedWise', 'WISE staked', 'Total WISE locked in stakes.'],
+    ['liquidWise', 'Liquid (unstaked) WISE', 'WISE outside the pool and not locked in stakes.'],
+  ] },
+  liquidity: { title: 'Ownerless pool liquidity', description: 'Burned LP tokens represent pool liquidity that cannot be withdrawn by a team or owner.', cta: 'Proof of burn', rows: [
+    ['wiseShare', 'Ownerless WISE share', 'Share of WISE reserves represented by burned LP tokens.'],
+    ['ethShare', 'Ownerless ETH share', 'Share of ETH reserves represented by burned LP tokens.'],
+    ['burned', 'Why it matters', 'The initial LP tokens were burned. This liquidity is not a custodial treasury.'],
+  ] },
+};
+const cards = [
+  { key: 'price', title: 'Price', description: 'Live market price across Uniswap', href: 'https://app.uniswap.org/explore/tokens/ethereum/0x66a0f676479cee1d7373f3dc2e2952778bff5bd6' },
+  { key: 'backing', title: 'Backing', description: 'ETH in Uniswap liquidity', href: `https://app.uniswap.org/explore/pools/ethereum/${pool}` },
+  { key: 'staked', title: 'Staked', description: 'Total WISE value currently staked', href: 'https://pro.wise.one/stake' },
+  { key: 'liquidity', title: 'Liquidity', description: 'Ownerless pool liquidity share', href: `https://etherscan.io/token/${pool}?a=0x0000000000000000000000000000000000000000#tokenAnalytics` },
+];
+---
+<section id="wise-token" class="token-details" aria-labelledby="token-details-title" data-token-details>
+  <div class="token-details__header">
+    <div>
+      <SectionBadge>WISE Token Details</SectionBadge>
+      <h2 id="token-details-title">Price, backing, staking, and ownerless liquidity — the core numbers behind the WISE token.</h2>
+    </div>
+    <div class="token-details__actions">
+    <a class="token-details__verify" href={`https://etherscan.io/address/${pool}#asset-tokens`} target="_blank" rel="noopener noreferrer">Verify WISE Liquidity <Arrow /></a>
+      <button type="button" class="token-details__verify token-details__secondary" data-token-open="about" aria-haspopup="dialog" aria-controls="token-dialog-about" aria-expanded="false">About Wise Token</button>
+    </div>
+  </div>
+  <div class="token-details__grid">
+    {cards.map(card => <button type="button" class:list={['token-stat', `token-stat--${card.key}`]} data-token-open={card.key} aria-haspopup="dialog" aria-controls={`token-dialog-${card.key}`} aria-expanded="false">
+      <span class="token-stat__badge">{card.title}</span>
+      <span class="token-stat__value" data-token-value={card.key} aria-label={`${card.title}: loading`}>…</span>
+      <span class="token-stat__description" data-token-description={card.key}>{card.description}</span>
+    </button>)}
+  </div>
+  <p class="token-details__status" data-token-status role="status">Loading WISE token data…</p>
+  <dialog class="token-dialog" id="token-dialog-about" aria-labelledby="token-dialog-title-about" aria-describedby="token-dialog-description-about" data-lenis-prevent>
+    <div class="token-dialog__body">
+      <button class="token-dialog__close" type="button" data-token-close aria-label="Close details" autofocus>×</button>
+      <div class="token-dialog__intro">
+        <span class="token-details__tag">All about WISE</span>
+        <h2 id="token-dialog-title-about">WISE at the centre.<br />More ways to use your stake.</h2>
+        <p id="token-dialog-description-about">WiseOne brings together tools for the WISE token ecosystem, from staking and analytics to apps that use WISE. Garuda extends Signature stakes with a marketplace: buy, sell or bid on an existing position. Stake-backed lending is the next step, bringing borrowing and lending around the stake as collateral.</p>
+      </div>
+      <div class="token-dialog__footer token-dialog__links">
+        <a class="token-details__verify" href="https://wise.one/" target="_blank" rel="noopener noreferrer">Explore WiseOne <Arrow /></a>
+        <a class="token-details__verify token-details__secondary" href="https://docs.wise.one/" target="_blank" rel="noopener noreferrer">Read the WISE ecosystem docs <Arrow /></a>
+      </div>
+    </div>
+  </dialog>
+  {cards.map((card, index) => <dialog class="token-dialog" id={`token-dialog-${card.key}`} aria-labelledby={`token-dialog-title-${card.key}`} aria-describedby={`token-dialog-description-${card.key}`} data-lenis-prevent>
+    <div class="token-dialog__body token-dialog__body--stat">
+      <nav class="token-dialog__nav" aria-label="Token details navigation">
+        <button type="button" data-token-step="-1" aria-label="Previous token detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M20 12H4m7-7-7 7 7 7" /></svg></button>
+        <span aria-label={`Detail ${index + 1} of ${cards.length}`}>{index + 1} / {cards.length}</span>
+        <button type="button" data-token-step="1" aria-label="Next token detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12h16m-7-7 7 7-7 7" /></svg></button>
+      </nav>
+      <button class="token-dialog__close" type="button" data-token-close aria-label="Close details" autofocus>×</button>
+      <div class="token-dialog__intro"><span class="token-details__tag">{card.title}</span>
+        <h2 id={`token-dialog-title-${card.key}`}>{details[card.key].title}</h2>
+        <p id={`token-dialog-description-${card.key}`}>{details[card.key].description}</p>
+      </div>
+      <dl class="token-dialog__rows">{details[card.key].rows.map(([key, title, hint]) => <div class="token-dialog__row"><dt><strong>{title}</strong><span>{hint}</span></dt><dd data-token-detail={key}>{key === 'burned' ? 'Burned LP' : 'Loading…'}</dd></div>)}</dl>
+      <div class="token-dialog__footer"><a class="token-details__verify" href={card.href} target="_blank" rel="noopener noreferrer">{details[card.key].cta} <Arrow /></a></div>
+    </div>
+  </dialog>)}
+</section>
+<script>
+  const section = document.querySelector<HTMLElement>('[data-token-details]');
+  if (section) {
+    const status = section.querySelector<HTMLElement>('[data-token-status]')!;
+    const currency = (n: number, compact = false, digits = 2) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: compact ? 'compact' : 'standard', minimumFractionDigits: compact ? 0 : digits, maximumFractionDigits: digits }).format(n);
+    const set = (key: string, value: string) => {
+      const element = section.querySelector<HTMLElement>(`[data-token-value="${key}"]`)!;
+      element.textContent = value;
+      element.removeAttribute('aria-label');
+    };
+    const detail = (key: string, value: string) => {
+      const element = section.querySelector<HTMLElement>(`[data-token-detail="${key}"]`);
+      if (element) element.textContent = value;
+    };
+    const amount = (n: number, unit: string) => Number.isFinite(n) ? `${new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n)} ${unit}` : 'Unavailable';
+    const percentage = (n: number) => Number.isFinite(n) ? `${n >= 99.995 && n < 100 ? '99.99' : Math.min(100, n).toFixed(2)}%` : 'Unavailable';
+    const statKeys = ['price', 'backing', 'staked', 'liquidity'];
+    let activeDialog: HTMLDialogElement | null = null;
+    let opener: HTMLButtonElement | null = null;
+    let previousOverflow = '';
+    const showDialog = (key: string) => {
+      const next = section.querySelector<HTMLDialogElement>(`#token-dialog-${key}`)!;
+      const previous = activeDialog;
+      activeDialog = next;
+      previous?.close();
+      next.showModal();
+      next.scrollTop = 0;
+    };
+    const stepDialog = (direction: number) => {
+      const index = statKeys.findIndex(key => activeDialog?.id === `token-dialog-${key}`);
+      if (index < 0) return;
+      showDialog(statKeys[(index + direction + statKeys.length) % statKeys.length]);
+    };
+    for (const trigger of section.querySelectorAll<HTMLButtonElement>('[data-token-open]')) {
+      trigger.addEventListener('click', () => {
+        previousOverflow = document.documentElement.style.overflow;
+        document.documentElement.style.overflow = 'hidden';
+        opener = trigger;
+        trigger.setAttribute('aria-expanded', 'true');
+        showDialog(trigger.dataset.tokenOpen!);
+      });
+    }
+    for (const dialog of section.querySelectorAll<HTMLDialogElement>('.token-dialog')) {
+      dialog.querySelector('[data-token-close]')!.addEventListener('click', () => dialog.close());
+      for (const button of dialog.querySelectorAll<HTMLButtonElement>('[data-token-step]')) {
+        button.addEventListener('click', () => stepDialog(Number(button.dataset.tokenStep)));
+      }
+      dialog.addEventListener('keydown', event => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        if (!statKeys.some(key => dialog.id === `token-dialog-${key}`)) return;
+        event.preventDefault();
+        stepDialog(event.key === 'ArrowLeft' ? -1 : 1);
+      });
+      dialog.addEventListener('click', event => {
+        const rect = dialog.getBoundingClientRect();
+        if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
+      });
+      dialog.addEventListener('close', () => {
+        if (activeDialog !== dialog || dialog.open) return;
+        activeDialog = null;
+        document.documentElement.style.overflow = previousOverflow;
+        opener?.setAttribute('aria-expanded', 'false');
+        opener?.focus({ preventScroll: true });
+        opener = null;
+      });
+    }
+    let loaded = false;
+    async function load() {
+      try {
+        const response = await fetch('/api/wisetoken/tvl', { signal: AbortSignal.timeout(20000) });
+        if (!response.ok) throw new Error('Token data unavailable');
+        const data = await response.json();
+        const fields = ['wiseUsd', 'tvlLiquidity', 'tvlStaked', 'uniswapEth', 'uniswapWise', 'uniswapOwnerlessWise'];
+        if (data.source === 'mock' || !fields.every(key => typeof data[key] === 'number' && Number.isFinite(data[key]) && data[key] >= 0) || data.uniswapWise <= 0 || data.wiseUsd <= 0) throw new Error('Token data unavailable');
+        set('price', currency(data.wiseUsd));
+        set('backing', currency(data.tvlLiquidity, true, 0));
+        set('staked', currency(data.tvlStaked, true));
+        const share = Math.min(100, data.uniswapOwnerlessWise / data.uniswapWise * 100);
+        set('liquidity', `${share >= 99.995 && share < 100 ? '99.99' : share.toFixed(2)}%`);
+        section!.querySelector<HTMLElement>('[data-token-description="backing"]')!.textContent = `${new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(data.uniswapEth)} ETH in Uniswap liquidity`;
+        const modeledSpot = (dump: number) => data.uniswapEth * data.uniswapWise / ((data.uniswapWise + dump) ** 2) * data.ethUsd;
+        const dollarDetail = (key: string, value: number, compact = false) => detail(key, Number.isFinite(value) ? currency(value, compact, compact ? 2 : 4) : 'Unavailable');
+        dollarDetail('spot', data.wiseUsd);
+        dollarDetail('liquidFloor', data.priceFloorUsd > 0 ? data.priceFloorUsd : modeledSpot(data.liquidWise));
+        dollarDetail('absoluteFloor', modeledSpot(data.liquidWise + data.stakedWise));
+        dollarDetail('poolUsd', data.tvlLiquidity, true);
+        detail('poolEth', amount(data.uniswapEth, 'ETH'));
+        detail('poolWise', amount(data.uniswapWise, 'WISE'));
+        dollarDetail('stakedUsd', data.tvlStaked, true);
+        detail('stakedWise', amount(data.stakedWise, 'WISE'));
+        detail('liquidWise', amount(data.liquidWise, 'WISE'));
+        detail('wiseShare', percentage(share));
+        detail('ethShare', percentage(data.uniswapEth > 0 ? data.uniswapOwnerlessEth / data.uniswapEth * 100 : NaN));
+        status.textContent = '';
+        loaded = true;
+      } catch {
+        if (!loaded) {
+          ['price', 'backing', 'staked', 'liquidity'].forEach(key => set(key, 'Unavailable'));
+          section!.querySelectorAll<HTMLElement>('[data-token-detail]').forEach(element => { if (element.dataset.tokenDetail !== 'burned') element.textContent = 'Unavailable'; });
+        }
+        status.textContent = loaded ? 'Showing the last loaded values. Updates will retry automatically.' : 'Token data is temporarily unavailable. You can still verify the pool on Ethereum.';
+      }
+    }
+    void load();
+    const interval = window.setInterval(() => { if (!document.hidden) void load(); }, 60000);
+    window.addEventListener('pagehide', () => window.clearInterval(interval), { once: true });
+  }
+</script>
+<style>
+.token-details{padding:72px 24px 40px}.token-details__header{display:flex;align-items:flex-end;justify-content:space-between;gap:40px}.token-details__header>div{max-width:850px}.token-details__tag{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--grey-text);padding:8px 14px;background:var(--tile);border:1px solid var(--rule);border-radius:999px}.token-details__tag i{width:7px;height:7px;border-radius:50%;background:var(--orange)}.token-details h2{font-size:clamp(30px,3.3vw,48px);line-height:1.25;letter-spacing:-.025em;font-weight:500;margin-top:22px}.token-details__verify{display:inline-flex;align-items:center;justify-content:center;gap:12px;flex-shrink:0;background:var(--orange-deep);color:white;padding:18px 24px;border-radius:12px;font-size:16px;line-height:1.2;transition:background .25s ease}.token-details__verify:hover{background:#006b67;color:white}.token-details__verify :global(.arr){width:16px;height:16px;color:inherit}.token-details__grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:32px;margin-top:60px}.token-stat{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:28px;min-width:0;background:var(--tile);border-radius:8px;padding:36px 28px;transition:transform .3s ease,box-shadow .3s ease}.token-stat:hover{transform:translateY(-5px);box-shadow:0 15px 32px #007c7810}.token-stat__badge{position:absolute;right:20px;top:18px;padding:3px 7px;border-radius:2px;background:#bfeee9;font-size:14px;line-height:1.2}.token-stat--backing .token-stat__badge{background:#ded7fa}.token-stat--staked .token-stat__badge{background:#c0e4fa}.token-stat__value{font-size:clamp(32px,4vw,64px);line-height:1.15;letter-spacing:-.045em;font-weight:500;padding-top:12px;overflow-wrap:anywhere}.token-stat__description{font-size:16px;line-height:1.5;color:var(--grey-text)}.token-details__status{font-size:12px;color:var(--grey-text);margin-top:16px}.token-details__status:empty{display:none}.token-stat:focus-visible,.token-details__verify:focus-visible{outline:2px solid var(--orange);outline-offset:4px}@media(max-width:1100px){.token-details__header{align-items:flex-start;flex-direction:column;gap:24px}.token-details__grid{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:36px}.token-stat__value{font-size:48px}}@media(max-width:540px){.token-details{padding:48px 16px 24px}.token-details__grid{grid-template-columns:1fr}.token-stat{padding:30px 24px;gap:20px}.token-details__verify{width:100%}}@media(prefers-reduced-motion:reduce){.token-stat,.token-details__verify{transition:none}}
+</style>
+
+<style>
+.token-stat{text-align:left;cursor:pointer;color:var(--ink);font-family:inherit}.token-dialog{border:1px solid var(--rule);border-radius:20px;background:var(--canvas);color:var(--ink);width:min(850px,calc(100vw - 32px));max-height:90dvh;margin:auto;padding:0;overflow:auto;overscroll-behavior:contain}.token-dialog::backdrop{background:#08112288;backdrop-filter:blur(3px)}.token-dialog__body{padding:44px;position:relative}.token-dialog__close{position:absolute;right:16px;top:16px;display:grid;place-items:center;width:36px;height:36px;background:#007c780b;border:1px solid var(--rule);border-radius:50%;font-size:26px;line-height:1;cursor:pointer}.token-dialog__intro{text-align:center;max-width:650px;margin:auto}.token-dialog__intro h2{font-size:clamp(28px,3vw,40px);margin-top:20px}.token-dialog__intro p{font-size:16px;line-height:1.6;color:var(--grey-text);margin-top:16px}.token-dialog__rows{background:var(--tile);border-radius:14px;padding:8px 24px;margin-top:32px}.token-dialog__row{display:flex;justify-content:space-between;gap:28px;align-items:center;padding:22px 0}.token-dialog__row+.token-dialog__row{border-top:1px solid var(--rule)}.token-dialog__row dt strong{display:block;font-size:19px;font-weight:500}.token-dialog__row dt span{display:block;margin-top:3px;font-size:15px;line-height:1.5;color:var(--grey-text)}.token-dialog__row dd{font-size:24px;white-space:nowrap;font-weight:500}.token-dialog__footer{display:flex;justify-content:center;margin-top:28px}.token-dialog__close:focus-visible{outline:2px solid var(--orange);outline-offset:3px}@media(max-width:600px){.token-dialog__body{padding:52px 20px 24px}.token-dialog__rows{padding:4px 16px}.token-dialog__row{align-items:flex-start;flex-direction:column;gap:12px}}
+</style>
+
+<style>
+.token-details{scroll-margin-top:120px}
+.token-details__actions{display:flex;flex-direction:column;gap:12px;flex-shrink:0}
+.token-details__secondary{background:transparent;color:var(--orange-ink);border:1px solid var(--orange-ink);font-family:inherit;cursor:pointer}
+.token-details__secondary:hover{background:#007c780d;color:var(--orange-ink)}
+.token-dialog__links{gap:12px;flex-wrap:wrap}
+@media(max-width:540px){.token-details__actions{width:100%}}
+</style>
+
+<style>
+.token-dialog__nav{position:absolute;top:16px;right:64px;display:flex;align-items:center;gap:12px;color:var(--orange-ink)}
+.token-dialog__nav button{display:grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid var(--rule);border-radius:50%;background:#007c780b;color:inherit;cursor:pointer;transition:background .25s ease}
+.token-dialog__nav svg{display:block;width:22px;height:22px}
+.token-dialog__nav span{font-size:14px;line-height:1;white-space:nowrap}
+.token-dialog__nav button:hover,.token-dialog__close:hover{background:var(--tile)}
+.token-dialog__nav button:focus-visible{outline:2px solid var(--orange);outline-offset:3px}
+@media(max-width:600px){.token-dialog__body--stat{padding-top:68px}}
+</style>
