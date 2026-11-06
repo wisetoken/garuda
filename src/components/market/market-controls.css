@@ -1,8 +1,17 @@
 .market-page-heading {
   margin-bottom: 28px;
 }
-.market-page-heading h1 {
+.market-page-heading .stakes-title-row {
   margin-top: 14px;
+}
+.market-page-heading .stake-view-switch {
+  flex-shrink: 0;
+}
+.market-page-heading .stake-view-switch button {
+  white-space: nowrap;
+}
+.market-page-heading .stakes-title-row h1 {
+  margin: 0;
   font-size: clamp(32px, 3.3vw, 44px);
   font-weight: 450;
   letter-spacing: -2px;
@@ -164,7 +173,7 @@
 }
 
 @media (max-width:620px) {
-  .market-page-heading h1 { font-size: 34px; letter-spacing: -1.2px; }
+  .market-page-heading .stakes-title-row h1 { font-size: 34px; letter-spacing: -1.2px; }
 }
 
 .market-toolbar-start { flex-wrap: wrap; }

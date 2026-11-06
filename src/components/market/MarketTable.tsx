@@ -46,11 +46,9 @@ function OrderRow({
     status: (
       <>
         <StakeStatusCell position={p} />
-        {!orderAvailable(row) && (
+        {!orderAvailable(row) && row.status !== "checking" && (
           <small>
-            {row.status === "checking"
-              ? "Verifying order…"
-              : row.status.replaceAll("-", " ")}
+            {row.status.replaceAll("-", " ")}
           </small>
         )}
       </>

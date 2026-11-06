@@ -16,11 +16,11 @@ Garuda builds on an existing pool of capital and staking positions. **Ethereum s
 
 | Metric | Snapshot |
 | --- | ---: |
-| WISE/ETH Uniswap liquidity, both assets | **$126.45 million** |
-| LP supply burned to the zero address | **99.9973%** — about **$126.45 million** in ownerless liquidity |
-| Total WISE staked across the token protocol | **68.21 million WISE** · ≈ **$8.24 million** |
-| WiseOne Protocol — Signature stakes | **21.38 million WISE** · **31.34%** of all WISE staked |
-| Signature + legacy Advanced NFT stakes | **28.58 million WISE** · **41.90%** of all WISE staked |
+| WISE/ETH Uniswap liquidity, both assets ([pool contract](https://etherscan.io/address/0x21b8065d10f73ee2e260e5b47d3344d3ced7596e), [Uniswap pool](https://app.uniswap.org/explore/pools/ethereum/0x21b8065d10f73ee2e260e5b47d3344d3ced7596e)) | **$126.45 million** |
+| LP supply burned to the [zero address](https://etherscan.io/token/0x21b8065d10f73ee2e260e5b47d3344d3ced7596e?a=0x0000000000000000000000000000000000000000) | **99.9973%** — about **$126.45 million** in ownerless liquidity |
+| Total WISE staked across the [token protocol](https://etherscan.io/address/0x66a0f676479cee1d7373f3dc2e2952778bff5bd6#readContract) | **68.21 million WISE** · ≈ **$8.24 million** |
+| WiseOne Protocol — [Signature stakes](https://etherscan.io/address/0x48791dbdfb38baa58e48329148c321bf33b3c1e1#readContract) | **21.38 million WISE** · **31.34%** of all WISE staked |
+| [Signature](https://etherscan.io/address/0x48791dbdfb38baa58e48329148c321bf33b3c1e1#readContract) + legacy [Advanced NFT stakes](https://etherscan.io/address/0xf863a603501fcd30f56dffcb6700a25effefbe94#readContract) | **28.58 million WISE** · **41.90%** of all WISE staked |
 
 The pool held **28,412.91 WETH and 523.19 million WISE**. Burned LP shares cannot be redeemed by an owner; pool reserves still change with swaps. “WiseOne Protocol” refers to the Signature contract; the combined figure also includes Advanced stakes. These figures describe the underlying ecosystem, with USD estimates at the snapshot price. [Sources, exact values and reproducible queries](docs/wise-metrics.md).
 

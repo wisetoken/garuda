@@ -1,7 +1,7 @@
 import { isAddress, parseEther } from "viem";
 import type { MarketFilters } from "./presentation";
 export type MarketRangeFilters = { minPrice?: string; maxPrice?: string; maturesFrom?: string; maturesTo?: string };
-export type MarketQueryFilters = { tokenId?: string; participant?: string; stakeType?: string;
+export type MarketQueryFilters = { tokenId?: string; participant?: string; stakeOwner?: string; stakeType?: string;
   minPrice?: string; maxPrice?: string; maturesAfter?: string; maturesBefore?: string };
 const maxUint256 = (1n << 256n) - 1n;
 export function priceUnits(value?: string): bigint | undefined {

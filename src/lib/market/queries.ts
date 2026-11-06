@@ -17,7 +17,7 @@ import { ethereumClient } from "../portfolio";
 
 export function useBook(id: StakeCollectionId, deployment?: SalesDeployment, source: "arkiv" | "catalog" = "catalog", kind?: "listing" | "bid", sort?: "price" | "principal" | "shares" | "expires" | "stakeStartAt", direction: "asc" | "desc" = "asc", filters: MarketQueryFilters = {}) {
   return useInfiniteQuery({
-    queryKey: ["market-book", id, deployment?.adapter, source, kind, sort, direction, source === "arkiv" ? filters : null],
+    queryKey: ["market-book", id, deployment?.adapter, source, source === "arkiv" ? kind : null, sort, direction, source === "arkiv" ? filters : null],
     enabled: !!deployment,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {

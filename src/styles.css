@@ -104,6 +104,14 @@ h1 { max-width: 900px; margin: 0; font-size: clamp(36px, 4vw, 54px); font-weight
 .header-content { display: grid; grid-template-columns: auto 1fr auto; gap: 28px; }
 .header-content nav { justify-content: flex-end; flex-wrap: nowrap; }
 .header-controls { display: flex; align-items: center; gap: 12px; }
+.bid-alert { position: relative; }
+.bid-alert-live { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.bid-alert-badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--accent); color: var(--panel); font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.bid-alert-panel { position: absolute; right: 0; top: calc(100% + 12px); z-index: 30; display: grid; gap: 12px; width: 280px; padding: 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 12px 50px #0005; }
+.bid-alert-panel strong { font-size: 14px; font-weight: 600; }
+.bid-alert-panel ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.bid-alert-panel a { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: inherit; text-decoration: none; font-size: 13px; }
+.bid-alert-panel a span { color: var(--muted); white-space: nowrap; }
 .wallet-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid var(--border-strong); border-radius: 100px; background: transparent; padding: 10px 18px; color: var(--text-primary); font: inherit; font-size: 13px; white-space: nowrap; }
 .wallet-button:disabled { cursor: not-allowed; }
 .footer-content { width: auto; margin: 0; padding: 22px 52px 35px; font-size: 12px; }

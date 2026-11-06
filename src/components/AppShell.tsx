@@ -1,5 +1,6 @@
 import { Sun, Moon } from 'lucide-react';
 import { type ReactNode } from 'react';
+import { BidAlerts } from './BidAlerts';
 import { useTheme } from '../lib/theme';
 import { WalletButton } from '../lib/wallet';
 import { Link } from 'react-router-dom';
@@ -22,6 +23,7 @@ export function AppShell({ activeScreen, children }: { activeScreen: Screen; chi
             ))}
           </nav>
           <div className="header-controls">
+          <BidAlerts />
           <button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
             {theme === 'dark' ? <Sun size={20} aria-hidden="true" /> : <Moon size={20} aria-hidden="true" />}
           </button>

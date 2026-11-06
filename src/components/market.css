@@ -85,32 +85,6 @@ select:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
-.market-tabs {
-  display: flex;
-  gap: 24px;
-  padding: 0 24px;
-  border-block: 1px solid var(--border);
-}
-.market-tabs button {
-  background: none;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
-  padding: 18px 0;
-  font: inherit;
-  font-size: 15px;
-  cursor: pointer;
-}
-.market-tabs > span {
-  margin-left: auto;
-  align-self: center;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-.market-tabs button[aria-pressed="true"] {
-  border-color: var(--accent);
-  color: var(--accent);
-}
 .market-empty {
   padding: 64px 24px;
   text-align: center;
@@ -240,13 +214,6 @@ select:focus-visible {
   .market-heading > .market-primary {
     font-size: 12px;
     padding: 10px;
-  }
-  .market-tabs {
-    padding-inline: 20px;
-    gap: 20px;
-  }
-  .market-tabs > span {
-    display: none;
   }
   .market-grid {
     padding: 16px;
