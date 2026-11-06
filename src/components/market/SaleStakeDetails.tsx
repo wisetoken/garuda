@@ -13,6 +13,13 @@ export function SaleStakeDetails({ name, tokenId, position, usd, fallback }: {
 }) {
   const timeline = position ? stakeTimeline(position) : undefined;
   const yieldValue = position ? stakeYield(position) : null;
+  const observedAt = position?.observedAt ?? Date.now() / 1000;
+  const elapsedDays = position ? Math.max(0, Math.floor((Math.min(observedAt, position.maturesAt) - position.startAt) / 86400)) : 0;
+  const remainingDays = position ? Math.max(0, Math.ceil((position.maturesAt - observedAt) / 86400)) : 0;
+  const days = (value: number) => `${value.toLocaleString()} ${value === 1 ? "day" : "days"}`;
+  const duration = !timeline ? undefined : timeline.status === "Active"
+    ? `${days(elapsedDays)} elapsed · ${days(remainingDays)} remaining`
+    : timeline.status === "Mature" ? `${days(elapsedDays)} elapsed · Matured` : timeline.caption;
   return (
     <section className="sale-position" aria-label={`${name} stake details`}>
       <div className="sale-identity">
@@ -24,10 +31,6 @@ export function SaleStakeDetails({ name, tokenId, position, usd, fallback }: {
       </div>
       <div className="sale-position-details">
         {!position && fallback ? fallback : <>
-          <div className="sale-status">
-            <span>{timeline?.status ?? "—"}</span>
-            <span>{timeline?.caption ?? "—"}</span>
-          </div>
           <dl className="sale-facts">
             <div>
               <dt>Staked principal</dt>
@@ -45,7 +48,10 @@ export function SaleStakeDetails({ name, tokenId, position, usd, fallback }: {
             </div>
             <div>
               <dt>Annualized yield</dt>
-              <dd>{yieldValue === null ? "—" : `${yieldValue.toFixed(2)}%`}</dd>
+              <dd>
+                {yieldValue === null ? "—" : `${yieldValue.toFixed(2)}%`}
+                {duration && <small>{duration}</small>}
+              </dd>
             </div>
           </dl>
           <div className="sale-dates">

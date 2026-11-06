@@ -419,6 +419,12 @@
 .sale-amount-usd { display: flex; justify-content: space-between; gap: 12px; margin: 0 2px 24px; color: var(--muted); font-size: 13px; }
 .sale-currency { display: flex; align-items: center; flex-shrink: 0; gap: 8px; padding-left: 12px; border-left: 1px solid var(--border); }
 .sale-currency img { object-fit: contain; }
+.app-shell[data-theme="light"] .sale-currency img {
+  box-sizing: border-box;
+  padding: 3px;
+  background: #101c24;
+  border-radius: 7px;
+}
 .sale-dialog .stake-primary { min-height: 56px; padding: 16px 24px; font-size: 16px; }
 @media (max-width: 480px) {
   .sale-amount { padding: 12px; gap: 8px; font-size: 24px; }
