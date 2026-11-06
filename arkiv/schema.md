@@ -37,7 +37,7 @@ The dedicated publisher wallet owns the Arkiv entities. `maker` and `stakeOwner`
 
 Principal, shares, ownership and maturity describe the observed block. A later transfer, interest scrape, cancellation or sale can invalidate the order. There is no permanently indexed claim that an order is available, and cached earnings are not settlement authority.
 
-Entity expiration uses `ExpirationTime.atDate` at the original signed deadline. Rabdi expresses expiry in blocks, so the independent `expires > now` query enforces the exact wall-clock cutoff. Orders can become invalid before their entities expire. The supported order lifetime is at most 30 days; republication does not extend it.
+Initial entity expiration uses `ExpirationTime.atDate` at the original signed deadline. The storage-extension flow may retain the record longer, without changing its signed trading deadline. Rabdi expresses expiry in blocks, so the independent `expires > now` query enforces the exact wall-clock cutoff. Orders can become invalid before their entities expire. The supported order lifetime is at most 30 days; republication does not extend it.
 
 ### Compatibility
 
@@ -47,7 +47,7 @@ Entity expiration uses `ExpirationTime.atDate` at the original signed deadline. 
 
 Indexed `str` fields: `scope`, `collection`, `owner`, `tokenId`. Indexed `u64`: `observedAt` (Unix seconds). Non-indexed `bytes`: `snapshot` (JSON principal, shares, accrued interest, term, status and Ethereum block number/hash).
 
-The same publisher owns these entities. They expire after 900 seconds. Readers accept observations no older than 300 seconds, validate stake identity and check the canonical Ethereum block hash. A cache miss or Arkiv failure falls back to Ethereum. Neither cached ownership nor interest is used as settlement authority. Writes are capped at 24 refreshes/hour/deployment and deduplicated while a fresh snapshot exists.
+The same publisher owns these disposable display-cache entities. They are not the stake NFT and do not contain the signed listing or bid. Their expiry neither ends the Ethereum stake nor cancels its offers. Each cached observation expires from Arkiv after 900 seconds. Readers accept observations no older than 300 seconds, validate stake identity and check the canonical Ethereum block hash. A cache miss or Arkiv failure falls back to Ethereum. Neither cached ownership nor interest is used as settlement authority. Writes are capped at 24 refreshes/hour/deployment and deduplicated while a fresh snapshot exists.
 
 ## Query
 

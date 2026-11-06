@@ -1,14 +1,16 @@
 # WiseOne: Garuda
 
-**Unlock the potential of your WISE stake.**
+**Unlock the value of your WISE stake. Keep the stake alive.**
 
-Your WISE stake has a life of its own: shares, rewards, and a maturity date. Garuda gives that position somewhere to go when your plans change.
+WISE rewards long-term commitment, but needing your capital back early comes at a steep cost. Ending an active stake [penalizes its principal and destroys its shares](https://teal.wise.one/#sec-2-3-5-4), ending its future earnings. Withdrawing accrued interest does not release the principal. A valuable position can leave its owner waiting for maturity or paying to exit.
 
-Built as an extension of **WiseOne**, Garuda brings a market to existing NFT stakes. List your position, make a purchase bid, or acquire a stake with its current shares and remaining reward rights. Ownership changes. The underlying stake keeps its original timeline.
+**Garuda gives that position a market.** Built as a WiseOne extension for transferable Signature NFT stakes, it lets owners list a stake or accept a purchase bid. Buyers take over the existing position: its current shares, remaining reward rights, and original maturity. The seller receives payment; the stake continues. The sale itself triggers no WISE early-end penalty.
 
-**Arkiv makes the offers discoverable. Ethereum settles the trade.** Sellers choose their asking price; buyers can inspect the position behind it. A completed sale lets an owner access value before maturity without closing the underlying stake.
+**Built around what makes a WISE stake valuable.** Garuda brings principal, remaining shares, unclaimed interest, and time to maturity into the trading decision. Its settlement validator checks the underlying stake against the signed terms, so a buyer’s offer is tied to the position they reviewed. These WISE-specific details are central to both pricing a stake and assessing it as collateral.
 
-**Next comes stake-backed lending:** borrowing against a position or funding another owner's loan. The ambition is to give stake owners more ways to use the value they have already committed. Trading is implemented today; lending is the next step.
+**Next: borrow against the stake you want to keep.** Planned lending will let lenders propose loans against individual stakes and owners accept suitable terms. The NFT will secure the loan; repayment will return it to the borrower, while default will give the lender a claim on the collateral. Trading works today; collateralized lending is the next stage.
+
+Arkiv makes signed offers discoverable. Ethereum enforces trade settlement. Together, they give WISE stake owners a way to find counterparties and access capital while preserving the underlying position.
 
 ## The stake economy behind Garuda
 
@@ -24,11 +26,9 @@ Garuda builds on an existing pool of capital and staking positions. **Ethereum s
 
 The pool held **28,412.91 WETH and 523.19 million WISE**. Burned LP shares cannot be redeemed by an owner; pool reserves still change with swaps. “WiseOne Protocol” refers to the Signature contract; the combined figure also includes Advanced stakes. These figures describe the underlying ecosystem, with USD estimates at the snapshot price. [Sources, exact values and reproducible queries](docs/wise-metrics.md).
 
-## Why Garuda exists
+## Why the existing stake matters
 
-Long-term staking meets short-notice life. You may commit WISE for years, then need access to capital sooner. Ending an active stake early costs principal and stops its future earnings. It also destroys the stake's shares. The [WISE teal paper](https://teal.wise.one/#sec-2-3-5) specifies staking, including [how a stake closes](https://teal.wise.one/#sec-2-3-5-4).
-
-Those shares matter. If WISE's share price has risen, recreating an equivalent position with the same principal, term and bonuses buys fewer shares. An existing stake can hold earning weight that a new stake would cost more to recreate. Buyers can compare that position's remaining shares, rewards, time to maturity and asking price. [How WISE shares work](https://github.com/wise-foundation/wise-token-contracts/blob/master/contracts/StakingToken.sol).
+A stake’s current shares determine its weight in WISE’s reward pool. If WISE's share price has risen, recreating an equivalent position with the same principal, term and bonuses buys fewer shares. An existing stake can hold earning weight that a new stake would cost more to recreate. Buyers can compare that position's remaining shares, rewards, time to maturity and asking price. [How WISE shares work](https://github.com/wise-foundation/wise-token-contracts/blob/master/contracts/StakingToken.sol).
 
 **Signature NFTs make the position transferable. Garuda brings the counterparties together.** The seller can move on, and the buyer takes over the existing stake without restarting its term. This applies to supported NFT stakes; ordinary wallet-bound WISE stakes remain non-transferable. Signature stakes are opened at [stake.wise.one](https://stake.wise.one). [Supported stake contracts](https://github.com/wisetoken/signature-stakes).
 
@@ -136,8 +136,12 @@ The integration uses **Rabdi testnet, chain ID `7794095`**:
 
 | Schema | Contents | Lifetime |
 | --- | --- | --- |
-| `wiseone.garuda.orders.v2` | Signed listings and bids with indexed price, currency, principal, shares, stake type, maturity, parties and Ethereum block provenance | Follows the original signed order deadline |
-| `wiseone.garuda.stakes.v1` | Stake display data with Ethereum block provenance | 15-minute entity lifetime; cache reads accepted for at most five minutes after canonical block checks |
+| `wiseone.garuda.orders.v2` | Signed listings and bids with indexed price, currency, principal, shares, stake type, maturity, parties and Ethereum block provenance | Initial storage follows the signed trading deadline (1, 3, 7 or 30 days); storage can be extended separately |
+| `wiseone.garuda.stakes.v1` | Temporary display cache of stake data, not the stake or its offer | Refreshed from Ethereum as needed: observations usable for five minutes; stored cache copy expires after 15 minutes |
+
+**These are separate timelines.** A stake keeps its Ethereum maturity date, potentially years away. A listing or bid has the maker's chosen trading deadline. Only the disposable display-cache record has a 15-minute storage lifetime; its expiry does not cancel an offer or end a stake. Fresh Ethereum reads replace stale cache data.
+
+The current **Extend offer** modal extends Arkiv storage only. Keeping a listing or bid open for trading longer requires a new deadline signed by its maker (seller for a listing, bidder for a bid). The stake owner cannot extend another person's bid commitment. A dedicated renew/relist flow is not implemented yet; unexpired previous orders must be handled explicitly so users do not accidentally leave multiple valid offers.
 
 Entity writer: **`0x8d5b491D2c843F6B996De1EC66269809138cA60A`**.
 
