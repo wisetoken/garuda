@@ -14,10 +14,10 @@ export function AppShell({ activeScreen, children }: { activeScreen: Screen; chi
       <a className="skip-link" href="#main">Skip to content</a>
       <header className="app-header">
         <div className="container header-content">
-          <Link className="brand" to={screenHref('trade')} aria-label="WiseOne Garuda market">
+          <a className="brand" href="/" aria-label="WiseOne Garuda home">
             <img src="/wiseone-logo.png" alt="" width="44" height="44" />
             <strong>WiseOne</strong><span>Garuda extension</span>
-          </Link>
+          </a>
           <nav aria-label="Garuda navigation">
             {navigation.map(({ screen, label }) => (
               <Link key={screen} to={screenHref(screen)} aria-current={screen === activeScreen ? 'page' : undefined}>{label}</Link>
