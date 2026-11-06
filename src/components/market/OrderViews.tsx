@@ -95,23 +95,23 @@ export function OrderCard({ row }: { row: SaleRow }) {
             </p>
           )}
           <div className="market-card-summary">
-          <div className="market-card-price">
-            <span>{row.order.kind === 0 ? "Asking price" : "Bid price"}</span>
-            <strong>{formatAmount(BigInt(row.order.amount), 6)} WISE</strong>
-            <small>{usdAmount(BigInt(row.order.amount), usd)}</small>
-          </div>
-          <div className="market-card-parties">
-          <div className="market-card-owner">
-            <span>Owner</span>
-            <AddressIdentity address={row.order.owner} />
-          </div>
-          {row.order.kind === 1 && (
-            <div className="market-card-owner">
-              <span>Bidder</span>
-              <AddressIdentity address={row.order.maker} />
+            <div className="market-card-price">
+              <span>{row.order.kind === 0 ? "Asking price" : "Bid price"}</span>
+              <strong>{formatAmount(BigInt(row.order.amount), 6)} WISE</strong>
+              <small>{usdAmount(BigInt(row.order.amount), usd)}</small>
             </div>
-          )}
-          </div>
+            <div className="market-card-parties">
+              <div className="market-card-owner">
+                <span>Owner</span>
+                <AddressIdentity address={row.order.owner} />
+              </div>
+              {row.order.kind === 1 && (
+                <div className="market-card-owner">
+                  <span>Bidder</span>
+                  <AddressIdentity address={row.order.maker} />
+                </div>
+              )}
+            </div>
           </div>
           <RowActions row={row} position={position.data} />
           {!(row.arkivEntity ?? row.arkiv?.entityKey) && <ArkivPublication row={row} />}
