@@ -27,6 +27,7 @@
     "@dnd-kit/utilities": "3.2.2",
     "@hono/node-server": "1.19.11",
     "@tanstack/react-query": "5.81.5",
+    "canvas-confetti": "1.9.3",
     "hono": "4.11.9",
     "lucide-react": "1.6.0",
     "pg": "8.20.0",
@@ -37,6 +38,7 @@
     "viem": "2.53.1"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "1.9.0",
     "@types/node": "25.5.0",
     "@types/pg": "8.20.0",
     "@types/react": "19.2.14",

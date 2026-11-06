@@ -40,6 +40,18 @@ export function registerMarketRoutes(
     const runtime = arkivRuntime();
     return c.json({enabled:Boolean(runtime),canPublish:Boolean(runtime?.writer),publisher:runtime?.publisher,chainId:7794095});
   });
+  app.get(`${prefix}/arkiv/status/:hash`, async c => {
+    const hash = c.req.param("hash").toLowerCase();
+    if (!/^0x[0-9a-f]{64}$/.test(hash)) return c.json({error:"Invalid order hash."},400);
+    try {
+      const service = await resolve();
+      if (!service) return c.json({error:"Market unavailable."},503);
+      if (!(await service.store.limit("publication-status",120))) return c.json({error:"Please retry shortly."},429);
+      if (!(await service.store.get(hash))) return c.json({error:"Order not found."},404);
+      const states = await publicationStates(service.store,[hash]);
+      return c.json({orderHash:hash,publication:states.get(hash) ?? null});
+    } catch { return c.json({error:"Publication status unavailable."},503); }
+  });
   app.post(`${prefix}/arkiv/:hash`, async c => {
     const hash = c.req.param("hash").toLowerCase();
     if (!/^0x[0-9a-f]{64}$/.test(hash)) return c.json({error:"Invalid order hash."},400);

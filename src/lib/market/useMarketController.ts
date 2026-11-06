@@ -35,6 +35,7 @@ import {
   rememberOrder,
   forgetCancelledOrder,
 } from "./recovery";
+import { orderSuccess, type OrderSuccess } from "./success";
 import type { MarketIntent, PendingTx } from "./types";
 import { refreshTradeData, tradeDestination } from "./workflow";
 import { useAppToast } from "../../components/AppToast";
@@ -52,6 +53,7 @@ export function useMarketController() {
     [step, setStep] = useState<SalesStep>("checking");
   const [revision, setRevision] = useState(0),
     [pending, setPending] = useState<PendingTx | null>(null);
+  const [success, setSuccess] = useState<OrderSuccess | null>(null);
   const [unsaved, setUnsaved] = useState<SignedSale | null>(null);
   const dialog = useRef<HTMLDialogElement>(null),
     lock = useRef(false),
@@ -107,6 +109,7 @@ export function useMarketController() {
   }, [busy]);
   function open(next: MarketIntent) {
     if (lock.current) return;
+    setSuccess(null);
     setIntent(next);
   }
   async function connectForTrade() {
@@ -238,7 +241,7 @@ export function useMarketController() {
       if (activeIntent.kind === "list" || activeIntent.kind === "bid") {
         prepareRecovery(localStorage, d, address); // Verify storage before asking for a signature.
         const amount = parseAmount(price);
-        await publishSale(
+        const signed = await publishSale(
           session,
           {
             kind: activeIntent.kind === "list" ? 0 : 1,
@@ -249,11 +252,7 @@ export function useMarketController() {
           },
           (signed) => marketApi(id, "sales", signed),
         );
-        showToast(
-          activeIntent.kind === "list"
-            ? "Your stake is listed for sale."
-            : "Your purchase bid is published.",
-        );
+        setSuccess(orderSuccess(signed, d, tradeDestination(activeIntent, id)));
       } else if (activeIntent.kind === "fill") {
         const result = await fillSale(session, activeIntent.row);
         showToast(
@@ -276,9 +275,11 @@ export function useMarketController() {
           sameAddress(unsaved.order.maker, activeIntent.row.order.maker))
       )
         setUnsaved(null);
-      setIntent(null);
       refresh();
-      navigate(tradeDestination(activeIntent, id));
+      if (activeIntent.kind !== "list" && activeIntent.kind !== "bid") {
+        setIntent(null);
+        navigate(tradeDestination(activeIntent, id));
+      }
     } catch (e) {
       showToast(salesFailure(e, phase.current), { tone: "error" });
       refresh();
@@ -324,6 +325,12 @@ export function useMarketController() {
   return {
     intent,
     setIntent,
+    success,
+    viewSuccess: () => {
+      if (!success || lock.current) return;
+      setIntent(null);
+      navigate(success.destination);
+    },
     busy,
     step,
     revision,

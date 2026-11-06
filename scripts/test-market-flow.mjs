@@ -428,3 +428,25 @@ test("an order becoming unavailable during approval prevents settlement", async 
   assert.equal(f.state.writes[0].functionName, "approve");
   assert.equal(f.state.writes[0].address, d.currency);
 });
+
+
+test("success receipts use the accepted signed terms without exposing the signature", async () => {
+  const {orderSuccess} = await import('../src/lib/market/success.ts');
+  for(const kind of [0,1]) {
+    const f=fixture(kind===0?seller:buyer);
+    const signed=await publishSale(f.session,{...input,kind},async()=>{});
+    const receipt=orderSuccess(signed,d,'/garuda/?screen=trade');
+    assert.equal(receipt.hash,parseSignedSale(signed,d).hash);
+    assert.equal(receipt.order.amount,String(input.amount));
+    assert.equal(receipt.order.kind,kind);assert.equal(receipt.order.deadline,signed.order.deadline);
+    assert.equal(receipt.signature,undefined);
+  }
+});
+test("a failed publication keeps the recoverable signature and never produces a success result", async () => {
+  const f=fixture();let succeeded=false;
+  await assert.rejects(async()=>{
+    await publishSale(f.session,input,async()=>{throw Error('publication offline')});
+    succeeded=true;
+  },/publication offline/);
+  assert.equal(succeeded,false);assert.ok(f.state.events.includes('saved'));
+});

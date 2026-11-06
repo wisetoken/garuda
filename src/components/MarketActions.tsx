@@ -4,6 +4,7 @@ import { ethereum } from "thirdweb/chains";
 import type { SalesStep } from "../lib/blend/sales-wallet";
 import type { MarketIntent } from "../lib/market/types";
 import { useMarketController } from "../lib/market/useMarketController";
+import { OrderSuccess } from "./market/OrderSuccess";
 import { SaleForm } from "./market/SaleForm";
 import "./market.css";
 import "./market/sale-dialog.css";
@@ -35,6 +36,8 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
   const {
     intent,
     setIntent,
+    success,
+    viewSuccess,
     busy,
     step,
     revision,
@@ -76,7 +79,7 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
       {intent && (
         <dialog
           ref={dialog}
-          className="sale-dialog"
+          className={`sale-dialog${success ? " sale-dialog-success" : ""}`}
           aria-labelledby="sale-title"
           onCancel={(e) => {
             e.preventDefault();
@@ -91,6 +94,7 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
           >
             <X size={20} />
           </button>
+          {success ? <OrderSuccess receipt={success} onClose={() => setIntent(null)} onView={viewSuccess} /> : <>
           <SaleForm
             key={
               "position" in intent
@@ -147,6 +151,7 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
               </button>
             </div>
           )}
+          </>}
         </dialog>
       )}
     </MarketContext.Provider>
