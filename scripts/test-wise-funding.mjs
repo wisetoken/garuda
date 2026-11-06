@@ -35,10 +35,21 @@ test('shortfall quote uses router getAmountsIn and rejects a different chain',as
 
 test('native swap opens the wallet without balance checks or duplicate simulation',async()=>{
  const writes=[];
- const client={waitForTransactionReceipt:async()=>({status:'success'})};
+ const client={waitForTransactionReceipt:async({confirmations})=>{assert.equal(confirmations,1);return {status:'success'}}};
  for(const method of ['getChainId','getBalance','readContract','simulateContract'])client[method]=async()=>{throw Error('Unexpected preflight')};
  const q={token:zeroAddress,amount:1000n,output:2000n,minimum:1990n,path:[FUNDING_WETH,FUNDING_WISE],block:1n,expires:Date.now()+120000,slippage:50};
  await executeWiseFunding({client,wallet:{account:{address:zeroAddress},chain:{id:1},getChainId:async()=>1,writeContract:async call=>{writes.push(call);return `0x${'11'.repeat(32)}`}},address:zeroAddress,guard:async()=>{},onStep:()=>{},onHash:()=>{}},q);
  assert.equal(writes.length,1);assert.equal(writes[0].functionName,'swapExactETHForTokens');
  assert.equal(writes[0].args[0],1990n);assert.equal(writes[0].value,1000n);
+});
+
+
+test('ERC20 funding confirms approval and swap after one block each',async()=>{
+ const writes=[],waits=[];
+ const client={readContract:async()=>0n,waitForTransactionReceipt:async args=>{waits.push(args);return {status:'success'}}};
+ const q={token:FUNDING_WETH,amount:1000n,output:2000n,minimum:1990n,path:[FUNDING_WETH,FUNDING_WISE],block:1n,expires:Date.now()+120000,slippage:50};
+ await executeWiseFunding({client,wallet:{account:{address:zeroAddress},chain:{id:1},getChainId:async()=>1,writeContract:async call=>{writes.push(call);return `0x${String(writes.length).padStart(64,'0')}`}},address:zeroAddress,guard:async()=>{},onStep:()=>{},onHash:()=>{}},q);
+ assert.deepEqual(writes.map(call=>call.functionName),['approve','swapExactTokensForTokens']);
+ assert.deepEqual(waits.map(wait=>wait.confirmations),[1,1]);
+ assert.deepEqual(waits.map(wait=>wait.hash),[`0x${'1'.padStart(64,'0')}`,`0x${'2'.padStart(64,'0')}`]);
 });

@@ -43,7 +43,7 @@ Status as of **6 November 2026**:
 | Area | Available now | Next step or boundary |
 | --- | --- | --- |
 | Wallet and portfolio | External wallet connection; live Signature and Advanced NFT positions; cards and table; principal, interest, maturity, historical yield, and indexed creation links | Creation links depend on indexer coverage |
-| Signature marketplace | Listings, purchase bids, buying, accepting bids, and onchain cancellation in WISE; owner/bidder identities; filters, sorting, cards and table | Ethereum mainnet contracts are configured; settlement has been verified on disposable mainnet forks and in [one recorded mainnet purchase](#example-a-completed-ownership-change) |
+| Signature marketplace | Listings, purchase bids, buying, accepting bids, and onchain cancellation; WISE, WETH and USDC offer currencies; atomic Uniswap payments; owner/bidder identities; filters, sorting, cards and table | The marketplace is deployed, source-verified and active; settlement has been verified on disposable mainnet forks and in [one recorded mainnet purchase](#example-a-completed-ownership-change) |
 | Order publication | Signed-order validation, PostgreSQL persistence, automatic Arkiv publication, retries, and entity links | A funded Rabdi publisher is needed for Arkiv writes |
 | Market discovery | Arkiv is the default source; an explicit **All orders** catalog shows the service's order book | Ethereum checks determine whether a discovered order can still execute |
 | Advanced stakes | Portfolio display and collection-aware infrastructure | Trading stays disabled until a verified Advanced validator deployment is configured |
@@ -59,17 +59,17 @@ The marketplace is under active development. Local integration evidence and fork
 
 ### List and buy
 
-1. The owner chooses a stake, sets an asking price and expiration, approves the NFT if needed, and signs a Seaport listing. The asking-price input starts from the stake's principal and remains editable.
+1. The owner chooses a stake, sets an asking price in WISE, WETH or USDC and an expiration, approves the NFT if needed, and signs a Seaport listing. The asking-price input starts from the stake's principal and remains editable.
 2. The API validates and stores the signed order, then queues its publication to Arkiv. Signing a listing does not transfer the NFT.
-3. A buyer reviews the stake, asking price, and fee breakdown. The current market settles in WISE. The V2 payment flow adds **Pay with**: choose ETH, WETH, USDC or WISE and confirm one atomic swap-and-purchase, with a token approval first if needed. It becomes available for new listings after deployment and activation.
-4. Seaport and the stake validator settle the exchange on Ethereum: the buyer receives the NFT, the seller receives WISE less the configured fee, and the stake continues with its existing terms.
+3. A buyer reviews the stake, asking price, and fee breakdown. **Pay with** lets them choose ETH, WETH, USDC or WISE. When conversion is needed, the Uniswap swap and stake purchase happen together in one transaction, with a token approval first if needed.
+4. Seaport and the stake validator settle the exchange on Ethereum: the buyer receives the NFT, the seller receives their chosen currency less the configured fee, and the stake continues with its existing terms.
 
 ### Place and accept a bid
 
-1. A prospective buyer chooses a WISE bid amount and expiration, approves WISE if needed, and signs a purchase bid.
+1. A prospective buyer chooses a bid amount in WISE, WETH or USDC and an expiration, approves that token if needed, and signs a purchase bid.
 2. The bid appears in **Purchase bids**, with the bidder's identity and expiration.
-3. The stake owner reviews the proceeds, approves the NFT if needed, and accepts the bid. The owner does not need a WISE balance to accept.
-4. Settlement transfers the bidder's WISE and the owner's NFT in one transaction.
+3. The stake owner reviews the proceeds, approves the NFT if needed, and accepts the bid. The owner does not need a balance of the payment token to accept.
+4. Settlement transfers the bidder's payment token and the owner's NFT in one transaction.
 
 Bids do not escrow or reserve funds. Execution still requires the bidder's balance and allowance, the correct NFT owner and stake state, and an unexpired, uncancelled order. Expiration stops an order being filled; removing it from a discovery service is not an onchain cancellation.
 
@@ -128,9 +128,38 @@ flowchart LR
 
 Ethereum remains the authority for ownership, approvals, cancellation, and settlement. PostgreSQL retains the original publication block used to reject signatures after an NFT is transferred away and back. Arkiv makes signed offers publicly queryable with a lifetime that fits the offer; it does not hold funds or replace settlement checks.
 
-The [Signature deployment manifest](scripts/fixtures/signature-market.json) records Ethereum chain ID **1**, contract addresses and code hashes, fee settings, and confirmation policy. Browsing or connecting a wallet does not execute a trade. Signed orders are saved locally before publication so an API failure does not lose access to cancellation.
+The [active deployment manifest](contracts/seaport/deployments/ethereum-mainnet-v2-with-router.json) records Ethereum chain ID **1**, contract addresses and code hashes, fee settings, and confirmation policy. Browsing or connecting a wallet does not execute a trade. Signed orders are saved locally before publication so an API failure does not lose access to cancellation.
 
-The [deployed Signature validator source](contracts/deployed-signature-v1/README.md) includes the Solidity contracts, tests, original compiler input, deployment records, and a read-only script to verify the build against Ethereum bytecode.
+### Ethereum contracts
+
+**The stake validator and Uniswap payment router are deployed on Ethereum mainnet.** Both contracts below have **exact-match source verification on Etherscan and Sourcify**. The [verification record](contracts/seaport/deployments/source-verification.json) links to each result. On 6 November 2026 at block **26,356,378**, [the marketplace was confirmed active](contracts/seaport/deployments/activation-verification.json).
+
+| Garuda contract | Ethereum address / verified source | Role and repository source |
+| --- | --- | --- |
+| Stake validator | [`0xb87Cf2cB81Fa97433213d2928c7b3A1424b05317`](https://etherscan.io/address/0xb87Cf2cB81Fa97433213d2928c7b3A1424b05317#code) · [Sourcify](https://repo.sourcify.dev/1/0xb87Cf2cB81Fa97433213d2928c7b3A1424b05317) | [GarudaSignatureSeaportZoneV2](contracts/seaport/src/GarudaSignatureSeaportZoneV2.sol): validates the stake, signed currency, ownership, price and 0.5% fee for Seaport settlements |
+| Uniswap payment router | [`0xf040eB4a12cB15585b777dD7Cf26cb9F736aAb1c`](https://etherscan.io/address/0xf040eB4a12cB15585b777dD7Cf26cb9F736aAb1c#code) · [Sourcify](https://repo.sourcify.dev/1/0xf040eB4a12cB15585b777dD7Cf26cb9F736aAb1c) | [GarudaPurchaseRouter](contracts/seaport/src/GarudaPurchaseRouter.sol): swaps the buyer's input, fulfills the listing, delivers the NFT and refunds unused input atomically |
+
+The validator includes the [WiseSignatureAdapter](contracts/seaport/src/WiseSignatureAdapter.sol) at the same address. It reads the stake's identity, principal, shares and maturity and checks the snapshot against the signed offer; Seaport handles payment and NFT transfers. The guardian is [`0x22079A848266A7D2E40CF0fF71a6573D78adcF37`](https://etherscan.io/address/0x22079A848266A7D2E40CF0fF71a6573D78adcF37); the immutable fee recipient is [`0xB8d92F2E8D1A98c18cDe85e49a0F11e3c64D0a68`](https://etherscan.io/address/0xB8d92F2E8D1A98c18cDe85e49a0F11e3c64D0a68). These are wallet addresses, not additional Garuda deployments.
+
+The marketplace, portfolio, swap and price-display dependencies are listed below. Their [Etherscan source pages were checked](contracts/seaport/deployments/dependency-verification.json) on **6 November 2026**: exact matches except the WISE/WETH pair and ETH/USD feed proxy, which Etherscan identifies as verified **Similar Matches** to the corresponding Uniswap and Chainlink contracts.
+
+| Dependency | Ethereum address / verified source | Used for |
+| --- | --- | --- |
+| Signature NFT | [`0x48791DbDFB38bAA58e48329148C321bF33B3c1e1`](https://etherscan.io/address/0x48791DbDFB38bAA58e48329148C321bF33B3c1e1#code) | Tradable WISE stake positions |
+| Advanced NFT | [`0xf863a603501fcd30f56dffcb6700a25effefbe94`](https://etherscan.io/address/0xf863a603501fcd30f56dffcb6700a25effefbe94#code) | Portfolio display; trading disabled |
+| Seaport 1.6 | [`0x0000000000000068F116a894984e2DB1123eB395`](https://etherscan.io/address/0x0000000000000068F116a894984e2DB1123eB395#code) | Signed-order settlement and cancellation |
+| Uniswap v2 Router02 | [`0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D`](https://etherscan.io/address/0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D#code) | Quotes and swaps |
+| Uniswap v2 factory | [`0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f`](https://etherscan.io/address/0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f#code) | Canonical pool discovery and router checks |
+| WISE/WETH pool | [`0x21b8065d10f73ee2e260e5b47d3344d3ced7596e`](https://etherscan.io/address/0x21b8065d10f73ee2e260e5b47d3344d3ced7596e#code) | WISE liquidity; verified Similar Match |
+| WISE | [`0x66a0f676479Cee1d7373f3DC2e2952778BfF5bd6`](https://etherscan.io/address/0x66a0f676479Cee1d7373f3DC2e2952778BfF5bd6#code) | Underlying staking protocol and payment currency |
+| WETH | [`0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2`](https://etherscan.io/address/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2#code) | Payment currency, ETH wrapping and swap routing |
+| USDC | [`0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`](https://etherscan.io/address/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48#code) | Payment currency; proxy and its [current implementation](https://etherscan.io/address/0x43506849D7C04F9138D1A2050bbF3A0c054402dd#code) both verified |
+| DAI | [`0x6B175474E89094C44Da98b954EedeAC495271d0F`](https://etherscan.io/address/0x6B175474E89094C44Da98b954EedeAC495271d0F#code) | Standalone Get WISE funding only |
+| Chainlink ETH/USD | [`0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419`](https://etherscan.io/address/0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419#code) | USD display estimates; verified Similar Match |
+| Chainlink USDC/USD | [`0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6`](https://etherscan.io/address/0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6#code) | USD display estimates |
+
+**One Ethereum confirmation across the app.** Approvals, purchases, accepted bids, cancellations, swaps, deployment, activation and the standalone recovery tool advance after the transaction is included in one block. Reload recovery follows the same rule, including older cached configurations. Successful receipts and the required settlement/NFT-delivery checks still run. The shared policy is in [confirmation-policy.ts](src/lib/confirmation-policy.ts).
+
 
 ## Sponsors and ecosystem integrations
 
@@ -139,6 +168,7 @@ The implemented Arkiv integration targets the [ETHGlobal Mumbai Build on Arkiv t
 | Integration | Current role | Status |
 | --- | --- | --- |
 | [Arkiv](https://docs.arkiv.network/) | Expiring order discovery and reusable stake snapshots | Implemented; Rabdi writes and user-facing reads verified |
+| [Uniswap v2](https://docs.uniswap.org/contracts/v2/overview) | Atomic multi-token stake purchases and standalone Get WISE swaps | Mainnet router deployed and source-verified; [integration code and fork evidence](#uniswap-integration) |
 | [EF CROPS](https://ethglobal.com/events/mumbai/prizes) | Independent Signature recovery, cancellation, permission revocation and matured redemption | Implemented; live read and fork execution evidence recorded; submission video and eligibility not yet established |
 | [Nym / Anon-RPC](https://ethereum.github.io/anon-rpc/) | Optional Nym routing for app Ethereum reads | Experimental and off by default; automated checks pass, but live Nym requests timed out in Garuda and the official demo. [Scope and validation](docs/anon-rpc.md) |
 | [Swarm](https://docs.ethswarm.org/) | Artwork snapshots on Swarm, discoverable through separate Arkiv references | Integration prepared and tested with fixtures; disabled pending Bee, funded postage and a live retrieval demonstration. [Setup and limits](docs/swarm-artwork.md) |
@@ -163,7 +193,7 @@ Entity writer: **`0x8d5b491D2c843F6B996De1EC66269809138cA60A`**.
 
 This is a dedicated server publisher. It owns the Arkiv entities; the Ethereum maker and stake owner are separate indexed fields. Users authenticate their orders with Ethereum signatures. The app trusts its configured publisher and deployment scope, and switching publisher addresses changes the entity set it reads.
 
-V2 uses exact `u256` values for price, principal and shares, typed addresses for parties and currency, and `u64` timestamps for maturity and expiry. The Market sends price, principal and expiry sorting to Arkiv; the API and CLI also support numeric ranges. Stake metadata records the observed Ethereum block, while current Ethereum checks determine whether the order can execute. V1 records remain readable with duplicate suppression.
+V2 uses exact `u256` values for price, principal and shares, typed addresses for parties and currency, and `u64` timestamps for maturity and expiry. The Market sends price, principal and expiry sorting to Arkiv; the API and CLI also support numeric ranges. Stake metadata records the observed Ethereum block, while current Ethereum checks determine whether the order can execute. Older schema records remain readable with duplicate suppression.
 
 Accepted orders and publication requests are stored together. A worker retries temporary failures, tracks the schema version, deduplicates by deployment and order hash, and reads the entity back before marking it published. Pending publication is visible in the catalog. An Arkiv outage is shown explicitly, with an option to use **All orders**.
 
@@ -290,7 +320,7 @@ Local checks still bind the account, network, signed terms, spender, amount, sli
 
 ## Uniswap integration
 
-The [multi-currency V2 validator and app integration](contracts/seaport/README.md) are implemented and fork-tested. **Mainnet still uses V1 and settles in WISE until V2 is deployed and activated.** With the V2 manifest, makers can price Signature listings and bids in WISE, WETH or USDC.
+The [multi-currency stake validator and Uniswap payment router](#ethereum-contracts) are deployed, source-verified and active on Ethereum. Makers can price Signature listings and bids in **WISE, WETH or USDC**. Buyers can pay in a different supported token without leaving the purchase dialog.
 
 **Pay with the token you hold.** Beside the asking price, buyers select ETH, WETH, USDC or WISE and see an automatic quote and maximum payment. **Buy with [token]** uses an exact-output Uniswap swap and Seaport settlement in one transaction. The seller receives the currency in their signed listing; the buyer receives the NFT. Unused input is refunded, existing settlement-token balances are kept, and a failed purchase reverts the swap too. ERC-20 inputs may require a separate, bounded approval before the purchase.
 
@@ -302,9 +332,9 @@ The integration calls Uniswap v2 Router02 directly on Ethereum; no hosted API ke
 | WISE/WETH v2 pool | [`0x21b8065d10f73ee2e260e5b47d3344d3ced7596e`](https://etherscan.io/address/0x21b8065d10f73ee2e260e5b47d3344d3ced7596e) |
 | Atomic purchase and refund | [`GarudaPurchaseRouter.buy`](contracts/seaport/src/GarudaPurchaseRouter.sol#L63) |
 | Exact-output swaps and ETH wrapping | [`GarudaPurchaseRouter._swap`](contracts/seaport/src/GarudaPurchaseRouter.sol#L94) |
-| Payment quote and maximum spend | [`quotePurchasePayment`](src/lib/market/purchase-payment.ts#L39) |
-| Approval, payment limits and receipt verification | [`buyWithPayment`](src/lib/market/purchase-payment.ts#L56) |
-| Currency selector and review | [`PurchaseFunding`](src/components/market/PurchaseFunding.tsx#L22) |
+| Payment quote and maximum spend | [`quotePurchasePayment`](src/lib/market/purchase-payment.ts#L38) |
+| Approval, payment limits and receipt verification | [`buyWithPayment`](src/lib/market/purchase-payment.ts#L55) |
+| Currency selector and review | [`PurchaseFunding`](src/components/market/PurchaseFunding.tsx#L21) |
 | Regression and fork checks | [Payment tests](scripts/test-purchase-payment.mjs), [router tests](contracts/seaport/test/GarudaPurchaseRouter.t.sol), [fork runner](scripts/verify-seaport-v2-fork.mjs) |
 
 Quotes expire after two minutes. The router accepts only WISE, WETH and USDC plus native ETH input; it cannot execute arbitrary calls. It temporarily receives the purchased NFT so the existing zone can validate its fulfiller, then transfers that NFT to the buyer before the transaction completes. The client verifies both the zone settlement and router delivery events. The router has no administrator, retains no purchase funds, and clears its Uniswap and Seaport allowances after each purchase.
@@ -320,7 +350,7 @@ node --import tsx scripts/verify-seaport-v2-fork.mjs
 
 The runner only writes to the fixed loopback endpoint, verifies Anvil and the fork chain ID, uses temporary test accounts, and rolls back the scenarios. Results vary with the fork block.
 
-For wallet deployment, run the app locally and open `/garuda/?screen=deploy`. Review the validator and payment-router deployments, sign them with your wallet, and wait for bytecode/configuration checks and automatic Sourcify source verification. The screen also supplies compiler inputs and Etherscan verification links. Both [V2 contracts are now deployed and source-verified](contracts/seaport/README.md); the local API uses their verified manifest, with trading paused until activation. The third card guides the guardian through **Pause V1 trading** and **Activate V2 market**, requiring 12 confirmations between steps. These operator endpoints exist only on the local Vite development server; deployment alone does not activate the market.
+For wallet deployment, run the app locally and open `/garuda/?screen=deploy`. Review the validator and payment-router deployments, sign them with your wallet, and wait for bytecode/configuration checks and automatic Sourcify source verification. The screen also supplies compiler inputs and Etherscan verification links. Both [contracts are deployed and verified on Etherscan and Sourcify](contracts/seaport/README.md), and the marketplace is active. The third card confirms contract verification, API configuration and market activation, with one confirmation required for wallet transactions. These operator endpoints exist only on the local Vite development server; deployment alone does not activate the market.
 
 See [FEEDBACK.md](FEEDBACK.md) for integration feedback. The [Uniswap Developer Feedback Form](https://developers.uniswap.org/hackathon-feedback) still needs to be completed by the project owner with the public feedback-file link.
 
@@ -351,7 +381,7 @@ CROPS now provides independent backup access for Signature stakes and optional N
 | User situation | Application-dependent path | Garuda independent access |
 | --- | --- | --- |
 | Garuda's domain or API disappears | The full application used its hosted frontend and service; cached configuration supported some API-outage cancellation | A saved HTML file includes the interface, code and pinned contracts, and runs from a fresh local origin without Garuda configuration or login |
-| An order is missing from the current browser | Orders were saved locally; ordinary Arkiv discovery went through the market service | The tool reads live published v1/v2 orders directly from Arkiv, verifies signatures and Ethereum status, and exports the maker's orders |
+| An order is missing from the current browser | Orders were saved locally; ordinary Arkiv discovery went through the market service | The tool reads published orders directly from Arkiv, verifies signatures and Ethereum status, and exports the maker's orders |
 | The user needs to withdraw market authority | Managing Seaport and token permissions depends on an available interface | Individual order cancellation, WISE/NFT permission removal, and counter invalidation share the independent interface and verification flow |
 | A Signature stake has matured | The deployed contracts already supported redemption | The saved tool reads the stake from Ethereum, rejects early ending, and verifies NFT burn and WISE receipt without the application services |
 
@@ -407,7 +437,7 @@ Open [the local backup tool](http://127.0.0.1:8080/garuda-backup.html) in a brow
 
 The tool supports individual cancellation from direct Arkiv discovery or an imported order backup, broad Seaport 1.6 counter invalidation without a backup, WISE allowance removal, Signature collection/token permission removal, and redemption of matured Signature NFTs. It does not provide new trades, early stake ending, Advanced redemption, loans, or ordinary WISE stake redemption. Revoking permission does not cancel a signature; broad counter invalidation affects other apps using the same Seaport deployment. Order backups contain signatures and should be kept private while executable.
 
-**Find my published orders** queries Rabdi directly under the pinned publisher and deployment, supports v1/v2 records, verifies maker signatures (EOA or ERC-1271), and checks Ethereum order hashes, counters, cancellation/fills and signed deadlines. It separates your listings/bids from incoming bids and exports only your verified orders. A custom Rabdi endpoint is available; no publisher key is shipped. Search is explicit, capped at 50 records per schema, and reports malformed records, verification failures, truncation and partial outages.
+**Find my published orders** queries Rabdi directly under the pinned publisher and deployment, verifies maker signatures (EOA or ERC-1271), and checks Ethereum order hashes, counters, cancellation/fills and signed deadlines. It separates your listings/bids from incoming bids and exports only your verified orders. A custom Rabdi endpoint is available; no publisher key is shipped. Search is explicit, capped at 50 records per schema, and reports malformed records, verification failures, truncation and partial outages.
 
 Discovery only finds live, published records. The publisher can omit or delete records, and expiry removes them from queries; the RPC can also omit results. A missing result never proves that no order exists. Exported files and current-counter cancellation preserve an exit without Arkiv. A verified signature and uncancelled status do not establish trade eligibility: the normal market's original publication anchors, transfer history, ownership and asset checks still apply. The standalone tool does not execute new trades.
 
@@ -454,7 +484,7 @@ The [implementation plan](history/PLAN.md) explains sequencing and design decisi
 
 Garuda was developed during ETHGlobal Mumbai as a new extension of WiseOne. It reuses existing WiseOne staking code, portfolio-reading logic and UI foundations from `vitenix`. The Garuda marketplace, Arkiv publication and discovery, and independent access workflows were built during the hackathon, including work developed in parallel and brought together in `garuda-full`.
 
-The current app publishes orders under `wiseone.garuda.orders.v2`, reads `wiseone.garuda.orders.v1` for compatibility, and uses `wiseone.garuda.stakes.v1` for display snapshots. It implements automatic durable publication for listings and bids, retries and deduplication, default Arkiv discovery, entity links, validation tests, and reproducible evidence. Existing public signed orders were used for Rabdi verification; those checks did not create new mainnet orders or transfers.
+The current app publishes orders under `wiseone.garuda.orders.v2` and uses `wiseone.garuda.stakes.v1` for display snapshots. It implements automatic durable publication for listings and bids, retries and deduplication, default Arkiv discovery, entity links, validation tests, and reproducible evidence. Existing public signed orders were used for Rabdi verification; those checks did not create new mainnet orders or transfers.
 
 The existing foundation is WiseOne’s staking application; the hackathon contribution is the Garuda extension described here. Submission acceptance and supporting evidence are tracked separately. Measured user and volume data have not yet been supplied; see [reach](arkiv/reach.md).
 

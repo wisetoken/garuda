@@ -1,3 +1,4 @@
+import {ETHEREUM_CONFIRMATIONS} from "../confirmation-policy";
 import { allowanceOptions, nftApprovalOptions, signingOptions } from "./transaction-preparation";
 import { paymentToken, paymentTokens, parsePaymentAmount } from "../blend/payment-tokens";
 import { useEffect, useRef, useState } from "react";
@@ -219,6 +220,7 @@ export function useMarketController() {
           setPending(lastTx);
           showToast(`${kind} submitted`, {
             id: `trade-tx:${hash}`,
+            persist: true,
             link: { label: "View on Etherscan", href: `https://etherscan.io/tx/${hash}` },
           });
           try {
@@ -311,9 +313,9 @@ export function useMarketController() {
       const receipt = await ethereumClient.getTransactionReceipt({
         hash: pending.hash,
       });
-      const block = await ethereumClient.getBlockNumber();
-      if (block - receipt.blockNumber + 1n < 12n) {
-        showToast("Transaction included; waiting for 12 confirmations.", { link });
+      const block = await ethereumClient.getBlockNumber({cacheTime:0});
+      if (block - receipt.blockNumber + 1n < BigInt(ETHEREUM_CONFIRMATIONS)) {
+        showToast("Waiting for transaction confirmation.", { link });
         return;
       }
       if (!sameAddress(context.current.account?.address ?? "", pendingAddress))

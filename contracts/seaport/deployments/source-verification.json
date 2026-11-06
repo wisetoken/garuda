@@ -1,0 +1,32 @@
+{
+  "checkedAt": "2026-11-06T14:22:47.269Z",
+  "chainId": 1,
+  "contracts": [
+    {
+      "name": "GarudaSignatureSeaportZoneV2",
+      "address": "0xb87Cf2cB81Fa97433213d2928c7b3A1424b05317",
+      "etherscan": {
+        "url": "https://etherscan.io/address/0xb87Cf2cB81Fa97433213d2928c7b3A1424b05317#code",
+        "match": "exact"
+      },
+      "sourcify": {
+        "url": "https://repo.sourcify.dev/1/0xb87Cf2cB81Fa97433213d2928c7b3A1424b05317",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match"
+      }
+    },
+    {
+      "name": "GarudaPurchaseRouter",
+      "address": "0xf040eB4a12cB15585b777dD7Cf26cb9F736aAb1c",
+      "etherscan": {
+        "url": "https://etherscan.io/address/0xf040eB4a12cB15585b777dD7Cf26cb9F736aAb1c#code",
+        "match": "exact"
+      },
+      "sourcify": {
+        "url": "https://repo.sourcify.dev/1/0xf040eB4a12cB15585b777dD7Cf26cb9F736aAb1c",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match"
+      }
+    }
+  ]
+}

@@ -62,7 +62,6 @@ export function BidAlerts() {
     const [tracked, setTracked] = useState(address);
     const [seen, setSeen] = useState<Set<string>>(() => address ? readSeen(address) : new Set());
     const [open, setOpen] = useState(false);
-    const [shown, setShown] = useState<AlertItem[]>([]);
     const root = useRef<HTMLDivElement>(null);
     useEffect(() => {
         const refresh = () => setNoticeRevision((current) => current + 1);
@@ -77,7 +76,6 @@ export function BidAlerts() {
         setTracked(address);
         setSeen(address ? readSeen(address) : new Set());
         setOpen(false);
-        setShown([]);
     }
     const sales = (address && noticeRevision >= 0) ? mergeSaleNotices(
         storedSaleNotices(address),
@@ -85,12 +83,12 @@ export function BidAlerts() {
             const notice = saleNoticeFromActivity(event);
             return notice && sameAddress(notice.seller, address) ? [notice] : [];
         }),
-    ).filter((notice) => !seen.has(notice.id)) : [];
-    const unseenBids = incoming.filter((row) => !seen.has(row.hash));
-    const unseen: AlertItem[] = [
+    ) : [];
+    const alerts: AlertItem[] = [
         ...sales.map((notice) => ({ type: "sale" as const, notice })),
-        ...unseenBids.map((row) => ({ type: "bid" as const, row })),
+        ...incoming.map((row) => ({ type: "bid" as const, row })),
     ];
+    const unseen = alerts.filter((item) => !seen.has(item.type === "sale" ? item.notice.id : item.row.hash));
     useEffect(() => {
         if (!open) return;
         function onPointer(event: PointerEvent) {
@@ -106,9 +104,9 @@ export function BidAlerts() {
             document.removeEventListener("keydown", onKey);
         };
     }, [open]);
-    if (!address || (!unseen.length && !open)) return null;
-    const saleCount = sales.length;
-    const bidCount = unseenBids.length;
+    if (!address || (!alerts.length && !open)) return null;
+    const saleCount = unseen.filter((item) => item.type === "sale").length;
+    const bidCount = unseen.filter((item) => item.type === "bid").length;
     const parts = [
         saleCount === 1 ? "1 stake sold" : saleCount ? `${saleCount} stakes sold` : "",
         bidCount === 1 ? "1 new purchase bid" : bidCount ? `${bidCount} new purchase bids` : "",
@@ -119,7 +117,6 @@ export function BidAlerts() {
             setOpen(false);
             return;
         }
-        setShown(unseen);
         if (address && unseen.length) setSeen(rememberSeen(address, unseen.map((item) => item.type === "sale" ? item.notice.id : item.row.hash)));
         setOpen(true);
     }
@@ -131,9 +128,9 @@ export function BidAlerts() {
                 {(saleCount + bidCount) > 0 && <span className="bid-alert-badge">{saleCount + bidCount > 9 ? "9+" : saleCount + bidCount}</span>}
             </button>
             {open && <div className="bid-alert-panel" role="dialog" aria-label="Stake updates">
-                <strong>{shown.some((item) => item.type === "sale") ? "Your stakes" : "New bids on your stakes"}</strong>
+                <strong>{alerts.some((item) => item.type === "sale") ? "Your stakes" : "New bids on your stakes"}</strong>
                 <ul>
-                    {shown.map((item) => item.type === "sale" ? <li key={item.notice.id}>
+                    {alerts.map((item) => item.type === "sale" ? <li key={item.notice.id}>
                         <a href={`https://etherscan.io/tx/${item.notice.transactionHash}`} target="_blank" rel="noopener noreferrer">
                             {stakeLabel(item.notice.collection, item.notice.tokenId)} sold
                             <span>{formatPaymentAmount(BigInt(item.notice.net),item.notice.currency ?? paymentTokens[0].address,6)} {paymentToken(item.notice.currency ?? paymentTokens[0].address).symbol}</span>

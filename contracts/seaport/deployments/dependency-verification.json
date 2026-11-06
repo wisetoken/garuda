@@ -1,0 +1,110 @@
+{
+  "checkedAt": "2026-11-06T14:27:48.555761+00:00",
+  "contracts": [
+    {
+      "name": "Signature NFT",
+      "address": "0x48791DbDFB38bAA58e48329148C321bF33B3c1e1",
+      "sourceUrl": "https://etherscan.io/address/0x48791DbDFB38bAA58e48329148C321bF33B3c1e1#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "exact"
+    },
+    {
+      "name": "Advanced NFT",
+      "address": "0xf863a603501fcd30f56dffcb6700a25effefbe94",
+      "sourceUrl": "https://etherscan.io/address/0xf863a603501fcd30f56dffcb6700a25effefbe94#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "exact"
+    },
+    {
+      "name": "Seaport 1.6",
+      "address": "0x0000000000000068F116a894984e2DB1123eB395",
+      "sourceUrl": "https://etherscan.io/address/0x0000000000000068F116a894984e2DB1123eB395#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "exact"
+    },
+    {
+      "name": "Uniswap v2 Router02",
+      "address": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+      "sourceUrl": "https://etherscan.io/address/0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "exact"
+    },
+    {
+      "name": "Uniswap v2 factory",
+      "address": "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+      "sourceUrl": "https://etherscan.io/address/0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "exact"
+    },
+    {
+      "name": "WISE/WETH pool",
+      "address": "0x21b8065d10f73ee2e260e5b47d3344d3ced7596e",
+      "sourceUrl": "https://etherscan.io/address/0x21b8065d10f73ee2e260e5b47d3344d3ced7596e#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "similar"
+    },
+    {
+      "name": "WISE",
+      "address": "0x66a0f676479Cee1d7373f3DC2e2952778BfF5bd6",
+      "sourceUrl": "https://etherscan.io/address/0x66a0f676479Cee1d7373f3DC2e2952778BfF5bd6#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "exact"
+    },
+    {
+      "name": "WETH",
+      "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      "sourceUrl": "https://etherscan.io/address/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "exact"
+    },
+    {
+      "name": "USDC proxy",
+      "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "sourceUrl": "https://etherscan.io/address/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "exact"
+    },
+    {
+      "name": "DAI",
+      "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      "sourceUrl": "https://etherscan.io/address/0x6B175474E89094C44Da98b954EedeAC495271d0F#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "exact"
+    },
+    {
+      "name": "USDC implementation",
+      "address": "0x43506849D7C04F9138D1A2050bbF3A0c054402dd",
+      "sourceUrl": "https://etherscan.io/address/0x43506849D7C04F9138D1A2050bbF3A0c054402dd#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "exact"
+    },
+    {
+      "name": "Chainlink ETH/USD",
+      "address": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
+      "sourceUrl": "https://etherscan.io/address/0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "similar"
+    },
+    {
+      "name": "Chainlink USDC/USD",
+      "address": "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6",
+      "sourceUrl": "https://etherscan.io/address/0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6#code",
+      "httpStatus": 200,
+      "sourceVerified": true,
+      "match": "exact"
+    }
+  ],
+  "chainId": 1
+}

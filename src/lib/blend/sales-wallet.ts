@@ -1,3 +1,4 @@
+import { ETHEREUM_CONFIRMATIONS } from "../confirmation-policy";
 import { assertLegacyTradingRetired } from "./sales-migration";
 import { acceptsPayment, paymentSchema, paymentToken } from "./payment-tokens";
 import {
@@ -100,10 +101,9 @@ export async function send(
   s.onStep?.("confirming");
   const receipt = await s.client.waitForTransactionReceipt({
     hash,
-    confirmations: s.deployment.confirmations,
-    // Twelve Ethereum confirmations normally exceed two minutes, even before
-    // inclusion. Allow inclusion time plus headroom for each required block.
-    timeout: Math.max(120_000, 120_000 + s.deployment.confirmations * 30_000),
+    confirmations: ETHEREUM_CONFIRMATIONS,
+    // Keep one-confirmation UX even when recovering an older cached deployment.
+    timeout: Math.max(120_000, 120_000 + ETHEREUM_CONFIRMATIONS * 30_000),
     onReplaced: ({ transaction }) => s.onTransaction?.(transaction.hash, kind),
   });
   if (receipt.status !== "success")

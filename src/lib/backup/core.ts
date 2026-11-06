@@ -1,3 +1,4 @@
+import {ETHEREUM_CONFIRMATIONS} from "../confirmation-policy";
 // SPDX-License-Identifier: MIT
 // This module has no API, storage, wallet SDK, or application-origin dependency.
 import {
@@ -160,7 +161,7 @@ export async function executeBackupAction(session: BackupSession, action: Backup
   await guard(session);
   const hash = await session.wallet.sendTransaction({ account, chain: session.wallet.chain ?? null, to, data, value: 0n });
   session.onSubmitted?.(hash);
-  const receipt = await client.waitForTransactionReceipt({ hash, confirmations: session.chainId === 1 ? 2 : 1, timeout: 180_000,
+  const receipt = await client.waitForTransactionReceipt({ hash, confirmations: ETHEREUM_CONFIRMATIONS, timeout: 180_000,
     onReplaced: replacement => session.onSubmitted?.(replacement.transaction.hash) });
   if (receipt.status !== 'success') throw new Error('The transaction reverted. No action was completed.');
   const blockNumber = receipt.blockNumber;

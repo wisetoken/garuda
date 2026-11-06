@@ -1,3 +1,4 @@
+import {ETHEREUM_CONFIRMATIONS} from "../lib/confirmation-policy";
 import {useRef,useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {useActiveAccount,useActiveWallet,useActiveWalletChain} from "thirdweb/react";
@@ -35,19 +36,19 @@ export function ActivationCard({zoneHash,routerHash}:{zoneHash?:Hex;routerHash?:
     }catch(e){setError(e instanceof Error?e.message:"Wallet action was not completed.");}
     finally{setBusy("");lock.current=false;}
   }
-  return <section className="deployment-card deployment-activation" aria-label="Activate V2 market">
-    <div className="deployment-card-title"><span>03</span><h2>Activate the new market</h2>{complete&&<CheckCircle2 aria-label="Market active"/>}</div>
-    <p>Pause V1 trading, then open V2 with the guardian wallet. Existing V1 offers need new signatures. Their cancellation remains available in the backup tool.</p>
+  return <section className="deployment-card deployment-activation" aria-label="Activate market">
+    <div className="deployment-card-title"><span>03</span><h2>Activate the market</h2>{complete&&<CheckCircle2 aria-label="Market active"/>}</div>
+    <p>{complete?"The stake validator and payment router are ready for trading.":"Verify both contracts and complete market activation with the guardian wallet."}</p>
     {!ready?<p>Verify both deployed contracts to continue.</p>:<>
       {state&&<dl className="deployment-details">
         <div><dt>Contract sources</dt><dd>{state.sourcesVerified?"Both verified":"Verification required"}</dd></div>
-        <div><dt>Local market API</dt><dd>{state.apiReady?"V2 + payment router configured":"Configuration required"}</dd></div>
-        <div><dt>Previous market (V1)</dt><dd>{state.legacyPauseConfirmed?"Paused · confirmed":state.legacyPaused?"Pause awaiting confirmations":"Active"}</dd></div>
-        <div><dt>New market (V2)</dt><dd>{state.validatorPaused?"Paused":pending?"Activation confirming…":"Active"}</dd></div>
+        <div><dt>Local market API</dt><dd>{state.apiReady?"Validator + payment router configured":"Configuration required"}</dd></div>
+        {!state.legacyPauseConfirmed&&<div><dt>Deployment prerequisite</dt><dd>{state.legacyPaused?"Waiting for confirmation":"Pause test deployment"}</dd></div>}
+        <div><dt>Marketplace</dt><dd>{state.validatorPaused?"Paused":pending?"Activation confirming…":"Active"}</dd></div>
       </dl>}
       {(error||status.isError)&&<p className="deployment-error" role="alert">{error||status.error?.message}</p>}
-      {saved.hash&&<div className="deployment-result"><a href={`https://etherscan.io/tx/${saved.hash}`} target="_blank" rel="noreferrer">Activation step transaction <ExternalLink size={14}/></a><p role="status">{state?.transaction?.state==="reverted"?"Transaction reverted. Check the current state before retrying.":state?.transaction?.state==="confirmed"?"Transaction confirmed":`${state?.transaction?.confirmations??0} / 12 confirmations`}</p></div>}
-      {complete&&!pending?<a className="stake-primary" href="/garuda/?screen=trade&collection=signature&view=market">Open V2 market</a>:!account?<button className="stake-primary" disabled={connecting} onClick={()=>void connect()}>Connect guardian wallet</button>:chain?.id!==1?<button className="stake-primary" onClick={()=>void wallet?.switchChain(ethereum)}>Switch to Ethereum</button>:<button className="stake-primary" disabled={!state||!guardian||pending||!!busy||!activationAllowed(state,action)} onClick={()=>void submit()}>{(busy||pending||status.isLoading)&&<LoaderCircle className="sale-loading" size={16}/>} {busy||(pending?"Waiting for confirmation…":!guardian?"Connect the guardian wallet":action==="retire-v1"?"Pause V1 trading":"Activate V2 market")}</button>}
+      {saved.hash&&<div className="deployment-result"><a href={`https://etherscan.io/tx/${saved.hash}`} target="_blank" rel="noreferrer">Activation step transaction <ExternalLink size={14}/></a><p role="status">{state?.transaction?.state==="reverted"?"Transaction reverted. Check the current state before retrying.":state?.transaction?.state==="confirmed"?"Transaction confirmed":`${state?.transaction?.confirmations??0} / ${ETHEREUM_CONFIRMATIONS} confirmation`}</p></div>}
+      {complete&&!pending?<a className="stake-primary" href="/garuda/?screen=trade&collection=signature&view=market">Open market</a>:!account?<button className="stake-primary" disabled={connecting} onClick={()=>void connect()}>Connect guardian wallet</button>:chain?.id!==1?<button className="stake-primary" onClick={()=>void wallet?.switchChain(ethereum)}>Switch to Ethereum</button>:<button className="stake-primary" disabled={!state||!guardian||pending||!!busy||!activationAllowed(state,action)} onClick={()=>void submit()}>{(busy||pending||status.isLoading)&&<LoaderCircle className="sale-loading" size={16}/>} {busy||(pending?"Waiting for confirmation…":!guardian?"Connect the guardian wallet":action==="retire-v1"?"Pause test deployment":"Activate market")}</button>}
       <button className="deployment-refresh" disabled={status.isFetching||!!busy} onClick={()=>void status.refetch()}><RefreshCw size={13}/> {status.isFetching?"Checking contracts…":"Refresh activation status"}</button>
       <details className="deployment-resume"><summary>Resume with a transaction hash</summary><label>Guardian transaction hash<input value={hashInput} onChange={e=>setHashInput(e.target.value)} placeholder="0x…" spellCheck={false}/></label><button className="market-secondary" disabled={!!busy||!/^0x[0-9a-f]{64}$/i.test(hashInput.trim())} onClick={()=>{save({hash:hashInput.trim() as Hex});setError("");}}>Check transaction</button></details>
       {saved.awaitingWallet&&!busy&&<button className="market-secondary" onClick={()=>{save({});setError("");void status.refetch();}}>Wallet request dismissed · check again</button>}

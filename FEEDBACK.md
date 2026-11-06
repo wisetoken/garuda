@@ -1,6 +1,6 @@
 # Uniswap integration feedback
 
-Garuda lets buyers acquire existing WiseOne NFT stakes. The live V1 market settles in WISE; our V2 integration supports WISE, WETH and USDC offers once the replacement validator is deployed. We integrated Uniswap v2 into a single purchase action: choose a payment token and buy the stake, while the seller receives the currency in their signed listing. The atomic router is implemented and fork-tested; mainnet activation is pending.
+Garuda lets buyers acquire existing WiseOne NFT stakes, with offers priced in WISE, WETH or USDC. We integrated Uniswap v2 into a single purchase action: choose ETH, WETH, USDC or WISE and buy the stake, while the seller receives the currency in their signed listing. The [stake validator and atomic payment router](README.md#ethereum-contracts) are deployed on Ethereum mainnet, verified on Etherscan and Sourcify, and the marketplace is active.
 
 ## What worked
 

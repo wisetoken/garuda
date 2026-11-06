@@ -1,3 +1,4 @@
+import { ETHEREUM_CONFIRMATIONS } from "../confirmation-policy";
 import { paymentToken, paymentTokens } from "./payment-tokens";
 import { getAddress, parseAbi, zeroAddress, type Address, type PublicClient, type WalletClient, type Hex } from "viem";
 export const FUNDING_WISE = getAddress('0x66a0f676479Cee1d7373f3DC2e2952778BfF5bd6');
@@ -58,7 +59,7 @@ export async function executeWiseFunding(s:{client:PublicClient;wallet:Pick<Wall
  await check();s.onPhase?.('approving');s.onStep('Approve the exact input amount in your wallet.');
  const request={address:q.token,abi:fundingTokenAbi,functionName:'approve',args:[FUNDING_ROUTER,q.amount]};
  await check();const hash=await s.wallet.writeContract({...request,account:s.wallet.account!,chain:s.wallet.chain} as Parameters<WalletClient["writeContract"]>[0]);s.onHash(hash,'Token approval');s.onPhase?.('confirming');
- const receipt=await s.client.waitForTransactionReceipt({hash,timeout:180000});s.onConfirmed?.(hash);if(receipt.status!=='success') throw new Error('Approval reverted.');
+ const receipt=await s.client.waitForTransactionReceipt({hash,confirmations:ETHEREUM_CONFIRMATIONS,timeout:180000});s.onConfirmed?.(hash);if(receipt.status!=='success') throw new Error('Approval reverted.');
  }
  }
  await s.beforeSwap?.();await check();s.onPhase?.('swapping');s.onStep('Review and confirm the swap in your wallet.');
@@ -69,7 +70,7 @@ export async function executeWiseFunding(s:{client:PublicClient;wallet:Pick<Wall
  ? {address:FUNDING_ROUTER,abi:fundingRouterAbi,functionName:'swapExactETHForTokens',args:[q.minimum,q.path,s.address,deadline],value:q.amount}
  : {address:FUNDING_ROUTER,abi:fundingRouterAbi,functionName:'swapExactTokensForTokens',args:[q.amount,q.minimum,q.path,s.address,deadline]};
  await check();const hash=await s.wallet.writeContract({...request,account:s.wallet.account!,chain:s.wallet.chain} as Parameters<WalletClient["writeContract"]>[0]);s.onHash(hash,wrap?'WETH wrap':'Uniswap swap');s.onPhase?.('confirming');s.onStep('Swap submitted. Waiting for Ethereum confirmation.');
- const receipt=await s.client.waitForTransactionReceipt({hash,timeout:180000});s.onConfirmed?.(hash);if(receipt.status!=='success') throw new Error('Swap reverted.');return hash;
+ const receipt=await s.client.waitForTransactionReceipt({hash,confirmations:ETHEREUM_CONFIRMATIONS,timeout:180000});s.onConfirmed?.(hash);if(receipt.status!=='success') throw new Error('Swap reverted.');return hash;
 }
 
 // Round up the target so an exact-input swap's slippage floor covers the shortfall.

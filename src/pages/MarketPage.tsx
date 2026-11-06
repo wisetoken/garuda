@@ -239,7 +239,6 @@ export function MarketPage() {
           </div>
         </div>
       </div>
-      {deployments.some(d => d && paymentSchema(d) === 2) && <p className="market-migration-note">Earlier WISE offers use the previous market. Cancel them in the <Link to={screenHref("privacy")}>backup tool</Link> and create a new offer here.</p>}
       <section className="market-panel" aria-label="WiseOne NFT stake market">
         <header className="market-heading">
           <div>

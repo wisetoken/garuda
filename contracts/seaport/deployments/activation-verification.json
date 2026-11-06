@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-11-06T14:22:45.561Z",
+  "chainId": 1,
+  "block": "26356378",
+  "contracts": [
+    {
+      "name": "validator",
+      "address": "0xb87Cf2cB81Fa97433213d2928c7b3A1424b05317",
+      "paused": false
+    }
+  ]
+}

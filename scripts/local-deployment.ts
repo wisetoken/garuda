@@ -1,3 +1,4 @@
+import {ETHEREUM_CONFIRMATIONS} from "../src/lib/confirmation-policy";
 // Local Vite operator tooling. No private keys, signing clients, or activation calls.
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
@@ -45,13 +46,13 @@ export async function verifyLocalDeployment(kind:DeployKind,hash:Hex,zoneHash?:H
   if(kind==="router") {const status=await verifyLocalDeployment("zone",zoneHash!,undefined,rpc);assert.equal(status.state,"verified","Wait for the zone deployment to be verified.");zone=status.address;}
   const pack=await deploymentPackage(kind,zone);
   let receipt;
-  try {receipt=await rpc.getTransactionReceipt({hash});} catch(error){if(error instanceof Error && /not.*found|could not be found/i.test(error.message))return {state:"pending",hash,confirmations:0,required:12};throw error;}
-  if(receipt.status!=="success")return {state:"reverted",hash,confirmations:0,required:12};
+  try {receipt=await rpc.getTransactionReceipt({hash});} catch(error){if(error instanceof Error && /not.*found|could not be found/i.test(error.message))return {state:"pending",hash,confirmations:0,required:ETHEREUM_CONFIRMATIONS};throw error;}
+  if(receipt.status!=="success")return {state:"reverted",hash,confirmations:0,required:ETHEREUM_CONFIRMATIONS};
   assert.ok(receipt.contractAddress);
   const tx=await rpc.getTransaction({hash});assert.equal(tx.to,null);assert.equal(tx.value,0n);assert.equal(tx.input.toLowerCase(),pack.data.toLowerCase(),"Transaction is not the reviewed deployment.");
   const address=getAddress(receipt.contractAddress),code=await rpc.getCode({address});assert.ok(code&&code!=="0x");assertRuntime(code,pack.artifact);
-  const confirmations=Number((await rpc.getBlockNumber())-receipt.blockNumber+1n);
-  if(confirmations<12)return {state:"confirming",hash,address,confirmations,required:12};
+  const confirmations=Number((await rpc.getBlockNumber({cacheTime:0}))-receipt.blockNumber+1n);
+  if(confirmations<ETHEREUM_CONFIRMATIONS)return {state:"confirming",hash,address,confirmations,required:ETHEREUM_CONFIRMATIONS};
   let deployment;
   if(kind==="zone") {
     deployment=parseSalesDeployment({...pack.original,paymentSchemaVersion:2,adapter:address,adapterCodeHash:keccak256(code),deploymentBlock:String(receipt.blockNumber),deploymentBlockHash:receipt.blockHash});
@@ -63,7 +64,7 @@ export async function verifyLocalDeployment(kind:DeployKind,hash:Hex,zoneHash?:H
   }
   const manifest=kind==="zone"?"ethereum-mainnet-v2.json":"ethereum-mainnet-v2-with-router.json";
   await writeFile(resolve(base,`deployments/${manifest}`),JSON.stringify(deployment,null,2)+"\n");
-  return {state:"verified",hash,address,confirmations,required:12,manifest:`contracts/seaport/deployments/${manifest}`};
+  return {state:"verified",hash,address,confirmations,required:ETHEREUM_CONFIRMATIONS,manifest:`contracts/seaport/deployments/${manifest}`};
 }
 export async function prepareLocalDeployment(kind:DeployKind,from:Address,zoneHash?:Hex):Promise<DeploymentReview> {
   assert.equal(await client.getChainId(),1);from=getAddress(from);
@@ -106,7 +107,7 @@ export async function activationStatus(hash:Hex,zoneHash:Hex,apiOrigin:string,tx
   const [legacyCode,legacyPaused,legacyPauseConfirmed,validatorPaused,zoneSource,routerSource]=await Promise.all([
     client.getCode({address:old.adapter}),
     client.readContract({address:old.adapter,abi:pauseAbi,functionName:"newActivityPaused"}),
-    client.readContract({address:old.adapter,abi:pauseAbi,functionName:"newActivityPaused",blockNumber:head-11n}),
+    client.readContract({address:old.adapter,abi:pauseAbi,functionName:"newActivityPaused",blockNumber:head-BigInt(ETHEREUM_CONFIRMATIONS-1)}),
     client.readContract({address:d.adapter,abi:pauseAbi,functionName:"newActivityPaused"}),
     sourceFetch(`/v2/contract/1/${d.adapter}`),sourceFetch(`/v2/contract/1/${d.purchaseRouter.address}`),
   ]);
@@ -123,7 +124,7 @@ export async function activationStatus(hash:Hex,zoneHash:Hex,apiOrigin:string,tx
       assert.equal(tx.to?.toLowerCase(),(retirement?old.adapter:d.adapter).toLowerCase());
       assert.equal(tx.input,encodeFunctionData({abi:pauseAbi,functionName:"setNewActivityPaused",args:[retirement]}));
       const receipt=await client.getTransactionReceipt({hash:txHash}),confirmations=Math.max(0,Number(head-receipt.blockNumber+1n));
-      transaction={hash:txHash,state:receipt.status!=="success"?"reverted":confirmations>=12?"confirmed":"confirming",confirmations};
+      transaction={hash:txHash,state:receipt.status!=="success"?"reverted":confirmations>=ETHEREUM_CONFIRMATIONS?"confirmed":"confirming",confirmations};
     }catch(error){if(error instanceof Error&&/not.*found|could not be found/i.test(error.message))transaction={hash:txHash,state:"pending",confirmations:0};else throw error;}
   }
   return {guardian:d.guardian,legacy:old.adapter,validator:d.adapter,router:d.purchaseRouter.address,legacyPaused,legacyPauseConfirmed,validatorPaused,sourcesVerified:sourceOutcome(zoneSource.result)&&sourceOutcome(routerSource.result),apiReady,checkedAt:Date.now(),transaction};

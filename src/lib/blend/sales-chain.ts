@@ -1,3 +1,4 @@
+import { ETHEREUM_CONFIRMATIONS } from "../confirmation-policy";
 import { legacyTradingRetired } from "./sales-migration";
 import { paymentSchema } from "./payment-tokens";
 import {
@@ -120,7 +121,7 @@ export async function verifySalesDeployment(
     if (d.environment === "ethereum-mainnet") {
         if (
             block.number <
-            BigInt(d.deploymentBlock) + BigInt(d.confirmations - 1)
+            BigInt(d.deploymentBlock) + BigInt(ETHEREUM_CONFIRMATIONS - 1)
         )
             throw new SalesError(
                 "deployment-pending",

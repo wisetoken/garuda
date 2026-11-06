@@ -1,3 +1,4 @@
+import {ETHEREUM_CONFIRMATIONS} from "../lib/confirmation-policy";
 // SPDX-License-Identifier: MIT
 import { createPublicClient, createWalletClient, custom, formatUnits, getAddress, http, zeroAddress,
   type Address, type EIP1193Provider, type Hex } from 'viem';
@@ -306,7 +307,7 @@ button('confirm').onclick = async () => {
   try {
     const result = await executeBackupAction({ ...clients(), account: expected, chainId: 1,
       assertCurrent: () => { if (current !== generation || account !== expected) throw new Error('Wallet or connection changed. Review again.'); },
-      onSubmitted: hash => { rememberPending({ hash, account: expected }); message(`Submitted ${hash}. Waiting for two confirmations. Do not resubmit.`); },
+      onSubmitted: hash => { rememberPending({ hash, account: expected }); message(`Submitted ${hash}. Waiting for one confirmation. Do not resubmit.`); },
     }, selected);
     rememberPending(undefined); state = undefined; renderState(); clearRecovered();
     message(selected.kind === 'redeem' ? `Confirmed: Signature NFT redeemed. ${amount(result.received)} WISE received by ${expected}. Load from Ethereum to refresh.` : 'Confirmed on Ethereum and the resulting state was verified. Load from Ethereum to refresh.');
@@ -324,7 +325,7 @@ button('check-pending').onclick = async () => {
     if (await client.getChainId() !== 1) throw new Error('Select an Ethereum mainnet read connection.');
     const receipt = await client.getTransactionReceipt({ hash: pending.hash });
     const block = await client.getBlockNumber({ cacheTime: 0 });
-    if (block < receipt.blockNumber + 1n) throw new Error('Waiting for a second confirmation. Check again shortly.');
+    if (block - receipt.blockNumber + 1n < BigInt(ETHEREUM_CONFIRMATIONS)) throw new Error('Waiting for transaction confirmation. Check again shortly.');
     message(receipt.status === 'success' ? 'The tracked transaction succeeded. Load from Ethereum and verify your positions and permissions before another action.' : 'The tracked transaction reverted. You can review and retry after loading current state.');
     rememberPending(undefined); state = undefined; renderState();
   } catch { message('The transaction is not yet confirmed through this RPC. Check your wallet for replacement or cancellation and keep the transaction hash.', true); }

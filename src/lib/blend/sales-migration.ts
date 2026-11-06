@@ -19,5 +19,5 @@ export async function legacyTradingRetired(client: PublicClient, d: SalesDeploym
 }
 export async function assertLegacyTradingRetired(client: PublicClient, d: SalesDeployment) {
   if (!await legacyTradingRetired(client, d))
-    throw new SalesError("paused", "The previous WISE market must be paused before V2 trading opens.");
+    throw new SalesError("paused", "Complete the deployment setup before opening the marketplace.");
 }

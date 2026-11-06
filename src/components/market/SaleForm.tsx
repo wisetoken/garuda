@@ -12,7 +12,7 @@ import { useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useActiveAccount } from "thirdweb/react";
 import { getAddress, type Address } from "viem";
-import { ArrowUpRight, ExternalLink, LoaderCircle } from "lucide-react";
+import { ArrowUpRight, LoaderCircle } from "lucide-react";
 import {
   ethereumClient,
   useWiseUsd,
@@ -45,7 +45,6 @@ export function SaleForm({
   busy,
   busyLabel,
   blocked,
-  transactionHash,
   execute,
   connect,
   switchChain,
@@ -56,7 +55,6 @@ export function SaleForm({
   busy: boolean;
   busyLabel: string;
   blocked: boolean;
-  transactionHash?: string;
   execute: (price: string, days: number, approvalOnly?: boolean, fundingQuote?: PurchasePaymentQuote, currency?: Address) => Promise<boolean | void>;
   connect: () => Promise<void>;
   switchChain: () => Promise<void>;
@@ -241,7 +239,7 @@ export function SaleForm({
               ? "Choose your price for full stake ownership."
               : intent.kind === "cancel"
                 ? "Cancel the signed order so it can no longer be filled."
-                : `Review the position and the exact ${token.symbol} payment.`}
+                : buy ? "Review the stake and choose how to pay." : `Review the position and the exact ${token.symbol} payment.`}
         </p>
       </header>
       <div className={`sale-layout${"row" in intent ? " sale-layout--review" : ""}`}>
@@ -311,7 +309,7 @@ export function SaleForm({
             {amounts && (
               <dl className="sale-breakdown">
                 <div>
-                  <dt>Buyer pays</dt>
+                  <dt>{converting ? "Listing price" : "Buyer pays"}</dt>
                   <dd>{tokenAmount(amounts.gross)} {token.symbol}</dd>
                 </div>
                 <div>
@@ -382,11 +380,6 @@ export function SaleForm({
                 converting ? paymentReview.loading ? "Getting payment quote…" : !config.data?.enabled || !config.data.deployment.purchaseRouter ? "Payment option unavailable" : !paymentReview.quote ? "Refresh payment quote" : `Buy with ${purchaseFundingTokens.find(t => t.address === payWith)?.symbol ?? "tokens"}` : action
             }</span>
           </button>
-        )}
-        {transactionHash && (
-          <a className="market-secondary sale-view-tx" href={`https://etherscan.io/tx/${transactionHash}`} target="_blank" rel="noopener noreferrer">
-            View transaction <ExternalLink size={16} aria-hidden="true" />
-          </a>
         )}
       </footer>
     </form>

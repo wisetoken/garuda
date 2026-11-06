@@ -8,6 +8,7 @@ import {useWalletAccess} from "../lib/wallet";
 import {assertDeploymentReview,type DeploymentReview,type DeploymentStatus,type SourceStatus,type DeployKind} from "../lib/deployment-review";
 import {ActivationCard} from "./ActivationCard";
 import {deploymentApi} from "../lib/deployment-review";
+import sourceVerification from "../../contracts/seaport/deployments/source-verification.json";
 import "./deployment.css";
 
 type SavedDeployment={hash?:Hex;awaitingWallet?:boolean};
@@ -60,7 +61,8 @@ function DeploymentCard({kind,zoneHash,onVerified}:{kind:DeployKind;zoneHash?:He
     finally{setBusy("");lock.current=false;}
   }
   const address=status.data?.address;
-  const number=kind==="zone"?"01":"02",title=kind==="zone"?"Stake validator V2":"Uniswap payment router";
+  const etherscanSource=sourceVerification.contracts.find(contract=>contract.address.toLowerCase()===address?.toLowerCase()&&contract.etherscan.match==="exact")?.etherscan.url;
+  const number=kind==="zone"?"01":"02",title=kind==="zone"?"Stake validator":"Uniswap payment router";
   return <section className="deployment-card" aria-label={title}>
     <div className="deployment-card-title"><span>{number}</span><h2>{title}</h2>{status.data?.state==="verified"&&<CheckCircle2 aria-label="Deployment verified"/>}</div>
     <p>{kind==="zone"?"Listings and bids in WISE, WETH and USDC. Retains the existing guardian and 0.5% marketplace fee.":"Buy a stake using ETH, WETH, USDC or WISE. The swap and purchase succeed together, with unused input returned."}</p>
@@ -76,13 +78,13 @@ function DeploymentCard({kind,zoneHash,onVerified}:{kind:DeployKind;zoneHash?:He
     {hash?<div className="deployment-result">
       <a href={`https://etherscan.io/tx/${hash}`} target="_blank" rel="noreferrer">Deployment transaction <ExternalLink size={14}/></a>
       {address&&<a href={`https://etherscan.io/address/${address}`} target="_blank" rel="noreferrer">{address} <ExternalLink size={14}/></a>}
-      <p role="status">{status.data?.state==="verified"?"Deployed · bytecode and configuration verified":status.data?.state==="reverted"?"Deployment reverted. No contract was created.":status.data?.state==="confirming"?`${status.data.confirmations} / ${status.data.required} confirmations`:"Waiting for deployment confirmation…"}</p>
+      <p role="status">{status.data?.state==="verified"?"Deployed · bytecode and configuration verified":status.data?.state==="reverted"?"Deployment reverted. No contract was created.":status.data?.state==="confirming"?`${status.data.confirmations} / ${status.data.required} confirmation${status.data.required===1?"":"s"}`:"Waiting for deployment confirmation…"}</p>
       {status.data?.state!=="verified"&&<button type="button" className="market-secondary" disabled={status.isFetching} onClick={()=>void status.refetch()}><RefreshCw size={15}/>{status.isFetching?"Checking…":"Check transaction"}</button>}
       {status.data?.state==="verified"&&<><p role="status">{source.data?.state==="verified"?"Source verified on Sourcify":source.data?.state==="failed"?source.data.message:source.isError?"Source verification needs a retry.":"Verifying source on Sourcify…"}</p>
         {source.data?.url&&<a href={source.data.url} target="_blank" rel="noreferrer">View source verification <ExternalLink size={14}/></a>}
         {(source.isError||source.data?.state==="failed")&&<button type="button" className="market-secondary" disabled={source.isFetching} onClick={()=>void source.refetch()}>Retry source verification</button>}
-        <a href={`https://etherscan.io/verifyContract?a=${address}`} target="_blank" rel="noreferrer">Verify on Etherscan <ExternalLink size={14}/></a>
-        <small>Use Solidity Standard JSON Input, compiler v0.8.30+commit.73712a01, MIT license. Etherscan verification is separate from the Sourcify result above.</small>
+        <a href={etherscanSource??`https://etherscan.io/verifyContract?a=${address}`} target="_blank" rel="noreferrer">{etherscanSource?"Source verified on Etherscan":"Verify on Etherscan"} <ExternalLink size={14}/></a>
+        {!etherscanSource&&<small>Use Solidity Standard JSON Input, compiler v0.8.30+commit.73712a01, MIT license. Etherscan verification is separate from the Sourcify result above.</small>}
       </>}
     </div>:<div className="deployment-actions">
       {!ready?<button className="stake-primary" disabled>Verify the validator first</button>:!account?<button type="button" className="stake-primary" disabled={connecting} onClick={()=>void connect()}><Wallet size={16}/>{connecting?"Connecting…":"Connect wallet to deploy"}</button>:chain?.id!==1?<button type="button" className="stake-primary" onClick={()=>void wallet?.switchChain(ethereum)}>Switch to Ethereum</button>:saved.awaitingWallet?<p>Check the pending request in your wallet. Paste its transaction hash below if it was sent.</p>:!activeReview?<button type="button" className="stake-primary" disabled={!!busy} onClick={()=>void prepare()}>{busy&&<LoaderCircle className="sale-loading" size={16}/>} {busy||"Review deployment & gas"}</button>:<>

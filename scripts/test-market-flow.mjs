@@ -1,3 +1,4 @@
+import { verifySalesDeployment } from "../src/lib/blend/sales-chain.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -15,7 +16,7 @@ import {
   cancelSale,
   readSaleSigningContext,
 } from "../src/lib/blend/sales-wallet.ts";
-import { parseSignedSale } from "../src/lib/blend/sales.ts";
+import { parseSalesDeployment, parseSignedSale } from "../src/lib/blend/sales.ts";
 import { settlementSuccess } from "../src/lib/market/success.ts";
 import {
   SEAPORT,
@@ -48,7 +49,7 @@ const d = {
   feeBps: 50,
   feeRecipient: SALES_TREASURY,
   guardian: seller.address,
-  confirmations: 12,
+  confirmations: 1,
   deploymentBlock: "1",
   deploymentBlockHash: blockHash,
   ...Object.fromEntries(
@@ -147,7 +148,7 @@ function fixture(account = seller) {
       return { request };
     },
     waitForTransactionReceipt: async ({ confirmations }) => {
-      assert.equal(confirmations, 12);
+      assert.equal(confirmations, 1);
       return { status: "success", transactionHash: blockHash, logs: state.logs };
     },
   };
@@ -546,4 +547,21 @@ test("native-token purchase uses the reviewed quote without another RPC prefligh
   await assert.rejects(buyWithPayment(f.session,signed,q),/No matching sale event/);
   assert.equal(f.state.writes.length,1);assert.equal(f.state.writes[0].functionName,'buy');
   assert.equal(f.state.writes[0].value,q.maxInput);
+});
+
+test('mainnet permits one confirmation and validates a deployment in its inclusion block', async () => {
+ const f=fixture(),included={...d,deploymentBlock:'100',confirmations:1};
+ assert.equal(parseSalesDeployment(included).confirmations,1);
+ assert.equal((await verifySalesDeployment(f.session.client,included)).number,100n);
+ assert.equal((await verifySalesDeployment(f.session.client,{...included,confirmations:12})).number,100n);
+ for(const confirmations of [0,-1,1.5,NaN])assert.throws(()=>parseSalesDeployment({...included,confirmations}));
+ await assert.rejects(()=>verifySalesDeployment(f.session.client,{...included,deploymentBlock:'101'}),/awaiting confirmations/);
+});
+
+
+test('cancelling an order from an older cached manifest still waits for only one confirmation', async () => {
+ const f=fixture(),signed=await publish(f);
+ f.session.deployment={...f.session.deployment,confirmations:12};
+ await cancelSale(f.session,signed);
+ assert.equal(f.state.cancelled,true);
 });

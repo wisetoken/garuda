@@ -131,8 +131,6 @@ export function parseSalesDeployment(raw: unknown): SalesDeployment {
       /^0x0{40}$/i.test(d.guardian)
     )
       throw new Error("A mainnet guardian address is required.");
-    if (d.confirmations < 2)
-      throw new Error("Mainnet requires at least two confirmations.");
   } else {
     throw new Error("Unsupported market network.");
   }

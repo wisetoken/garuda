@@ -6,6 +6,7 @@ import "./app-toast.css";
 type ToastOptions = {
   id?: string;
   tone?: "info" | "error";
+  persist?: boolean;
   action?: { label: string; run: () => void };
   link?: { label: string; href: string };
 };
@@ -21,27 +22,30 @@ function ToastItem({ toast, dismiss }: { toast: Toast; dismiss: () => void }) {
   const [hovered, setHovered] = useState(false);
   const remaining = useRef(6000);
   useEffect(() => {
-    if (paused || hovered) return;
+    if (toast.persist || paused || hovered) return;
     const started = Date.now();
     const timer = window.setTimeout(dismiss, remaining.current);
     return () => {
       window.clearTimeout(timer);
       remaining.current = Math.max(0, remaining.current - (Date.now() - started));
     };
-  }, [dismiss, paused, hovered]);
+  }, [dismiss, paused, hovered, toast.persist]);
+  const icon = toast.tone === "error" ? <CircleAlert className="app-toast-icon" size={20} aria-hidden="true" /> : <Info className="app-toast-icon" size={20} aria-hidden="true" />;
   return <div className="app-toast" data-tone={toast.tone ?? "info"}
     role={toast.tone === "error" ? "alert" : "status"}
     onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
     onFocusCapture={() => setPaused(true)}
     onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false); }}>
-    {toast.tone === "error" ? <CircleAlert size={20} aria-hidden="true" /> : <Info size={20} aria-hidden="true" />}
-    <div className="app-toast-content">
-      {toast.link ? <a className="app-toast-link" href={toast.link.href} target="_blank" rel="noopener noreferrer"
-        aria-label={`${toast.message}. ${toast.link.label} (opens in a new tab)`}>
-        {toast.message} <ArrowUpRight size={16} aria-hidden="true" />
-      </a> : <span>{toast.message}</span>}
-      {toast.action && <button type="button" className="app-toast-action" onClick={() => { dismiss(); toast.action?.run(); }}>{toast.action.label}</button>}
-    </div>
+    {toast.link ? <a className="app-toast-link" href={toast.link.href} target="_blank" rel="noopener noreferrer"
+      aria-label={`${toast.message}. ${toast.link.label} (opens in a new tab)`}>
+      {icon}<span>{toast.message}</span><ArrowUpRight size={16} aria-hidden="true" />
+    </a> : <>
+      {icon}
+      <div className="app-toast-content">
+        <span>{toast.message}</span>
+        {toast.action && <button type="button" className="app-toast-action" onClick={() => { dismiss(); toast.action?.run(); }}>{toast.action.label}</button>}
+      </div>
+    </>}
     <button type="button" className="app-toast-close" aria-label="Dismiss notification" onClick={dismiss}><X size={16} aria-hidden="true" /></button>
   </div>;
 }
