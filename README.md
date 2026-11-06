@@ -1,24 +1,26 @@
 # WiseOne: Garuda
 
-**Let the stake continue. Let its owner move on.**
+**Unlock the potential of your WISE stake.**
 
-Your plans can change. Your stake’s maturity doesn’t. Garuda gives WiseOne NFT stakes a market: sell your position, accept a bid, or buy an existing stake without ending it or restarting the clock.
+Your WISE stake has a life of its own: shares, rewards, and a maturity date. Garuda gives that position somewhere to go when your plans change.
 
-Owners get another route to liquidity. Buyers acquire the stake’s current shares, remaining reward rights, and original maturity. Listings and bids are discoverable through **Arkiv**; payment and ownership settle on **Ethereum**.
+Built as an extension of **WiseOne**, Garuda brings a market to existing NFT stakes. List your position, make a purchase bid, or acquire a stake with its current shares and remaining reward rights. Ownership changes. The underlying stake keeps its original timeline.
 
-**Next: stake-backed borrowing and lending.** Access capital while keeping a stake as collateral, or offer funding against a specific position.
+**Arkiv makes the offers discoverable. Ethereum settles the trade.** Sellers choose their asking price; buyers can inspect the position behind it. A completed sale lets an owner access value before maturity without closing the underlying stake.
 
-For the proposed Ethereum Foundation Continuity submission, see [CROPS: independent access when Garuda is unavailable](#crops), including the before/after scope, runnable tool, and verification evidence.
+**Next comes stake-backed lending:** borrowing against a position or funding another owner's loan. The ambition is to give stake owners more ways to use the value they have already committed. Trading is implemented today; lending is the next step.
 
 ## Why Garuda exists
 
-A WISE stake commits principal for a chosen term. Ending an active stake early deducts a principal penalty and stops its future earnings. Waiting until maturity avoids that early-end penalty. A standard WISE stake belongs to the wallet that created it and cannot simply be transferred to another person.
+Long-term staking meets short-notice life. You may commit WISE for years, then need access to capital sooner. Ending an active stake early costs principal and stops its future earnings. It also destroys the stake's shares.
 
-Shares determine a stake's weight in the daily WISE reward pool. If the protocol's share price rises, equal principal with equal term and referral bonuses buys fewer new shares. An earlier stake can therefore retain more earning weight than an otherwise equivalent new stake. Age alone is not the advantage: remaining shares, remaining earning days, previous interest scraping, and the price paid all matter. Historical annualized yield is not a fixed future rate. See the [WISE staking contract](https://github.com/wise-foundation/wise-token-contracts/blob/master/contracts/StakingToken.sol).
+Those shares matter. If WISE's share price has risen, recreating an equivalent position with the same principal, term and bonuses buys fewer shares. An existing stake can hold earning weight that a new stake would cost more to recreate. Buyers can compare that position's remaining shares, rewards, time to maturity and asking price. [How WISE shares work](https://github.com/wise-foundation/wise-token-contracts/blob/master/contracts/StakingToken.sol).
 
-Garuda trades **supported NFT stakes**. A Signature Stake represents ownership of an underlying staking position; selling that NFT changes its owner without ending the stake. Garuda does not retroactively turn ordinary wallet-bound stakes into transferable NFTs. The [Signature stake contracts](https://github.com/wisetoken/signature-stakes) describe the supported collections and rights.
+**Signature NFTs make the position transferable. Garuda brings the counterparties together.** The seller can move on, and the buyer takes over the existing stake without restarting its term. This applies to supported NFT stakes; ordinary wallet-bound WISE stakes remain non-transferable. [Supported stake contracts](https://github.com/wisetoken/signature-stakes).
 
-For an owner, this creates another way to access value before maturity. For a buyer, it creates a way to acquire an existing position. A sale still needs a willing buyer, and its proceeds can be below principal. The app explains these trade-offs on its **The Problem** and **The Solution** pages.
+A market creates choices, not guaranteed liquidity: a sale needs a buyer, proceeds may be below principal, and future rewards vary. Garuda puts the stake's details in view so both sides can judge the trade.
+
+For the proposed Ethereum Foundation Continuity submission, see [CROPS: independent access when Garuda is unavailable](#crops), including the access paths, runnable tool, and verification evidence.
 
 ## Where the project stands
 
