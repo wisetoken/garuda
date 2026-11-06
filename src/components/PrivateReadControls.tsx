@@ -25,6 +25,7 @@ export function PrivateReadControls() {
   return <section id="private-reads" className="ba-private" aria-labelledby="ba-private-title">
     <div className="ba-section-heading"><span className="ba-kicker">PRIVATE ETHEREUM READS · EXPERIMENTAL</span><h2 id="ba-private-title">Look up your stakes without sharing your IP with the RPC.</h2></div>
     <p>Anon-RPC routes supported app reads through the Nym mixnet. The destination RPC still sees the requested addresses and data, but receives the connection from a Nym exit router.</p>
+    <p><a href="#public-orders">See how Arkiv helps you recover published orders without Garuda’s database.</a></p>
     <div className="ba-private-controls">
       <button type="button" role="switch" aria-checked={enabled} aria-describedby="ba-private-reload" className="ba-private-toggle" onClick={changeMode} disabled={busy || testing}>
         <span className="ba-private-track" aria-hidden="true"><span /></span>Use private app reads

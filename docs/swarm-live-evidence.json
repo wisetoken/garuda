@@ -1,0 +1,87 @@
+{
+  "checkedAt": "2026-11-06T21:58:18.206Z",
+  "environment": "local Garuda API; live Swarm public gateway and Arkiv Rabdi",
+  "gateway": "https://api.gateway.ethswarm.org",
+  "arkivPublisher": "0x8d5b491D2c843F6B996De1EC66269809138cA60A",
+  "arkivChainId": 7794095,
+  "backups": [
+    {
+      "receipt": {
+        "image": {
+          "sha256": "725d2b46b366b7aa898aef0b8704f700e36e9ad828b98fc6e2cb85dc972bf75c",
+          "reference": "7b38bf6f2497909a0eb67d73e80eed04c9f729b63a7e846df20b59f7fa5eb9b1"
+        },
+        "chainId": 1,
+        "tokenId": "53",
+        "version": 1,
+        "metadata": {
+          "sha256": "c2b746b1b8d3988e82074babd85ef96c6e110fbb072e8f87a506491731475b7a",
+          "reference": "ed9dbaa741588c32391aeb41ca10dd793c5ccf7b58a58c856d3842b87e0f390e"
+        },
+        "renderer": "wiseone-yoda-live-v2",
+        "orderHash": "0x54ad68637e3781e0fd8ff1a177911a4348ca32c6f1285eb42fda7b74cd9d5294",
+        "collection": "0x48791DbDFB38bAA58e48329148C321bF33B3c1e1",
+        "observedAt": 1794001463,
+        "verifiedAt": 1794001479,
+        "arkivEntity": "0xdb4995a90ca41235939cac4f14a54e89be1d97244ece56965f50202ef9c4f439",
+        "observedBlock": "26358579",
+        "observedBlockHash": "0x04ef51ead6cb18d3a0ad48cea3ba05af37d071e6b4d72468b17cb839a51dc051"
+      },
+      "arkivScope": "0x7c7aa9055097c4aa001bfe30eba4c7b908d4e7ae1fadadbd43231c4f548a9ab3",
+      "filesVerified": true,
+      "arkivManifestVerified": true
+    },
+    {
+      "receipt": {
+        "image": {
+          "sha256": "e8d2877e60560ea92eaf5115ab04130393de03f2dd977cb8085c0a4dcd003853",
+          "reference": "7f957769c258823a95ca1cc507dc97e7e403a0dd30e75257f6649097ee6be474"
+        },
+        "chainId": 1,
+        "tokenId": "61",
+        "version": 1,
+        "metadata": {
+          "sha256": "663b37fe8b5343d0c98e7bc3a804db6750675ef97c54416e357c57e4f026a399",
+          "reference": "00bc499f4ae1a890208e3cd6d3e91f720aed446def5b3956473fe53a41fd580e"
+        },
+        "renderer": "wiseone-yoda-live-v2",
+        "orderHash": "0xfe8b9704717ee883ad824b771b081ec43607e34d696e1eff7fef185b10ceed60",
+        "collection": "0x48791DbDFB38bAA58e48329148C321bF33B3c1e1",
+        "observedAt": 1794001523,
+        "verifiedAt": 1794001537,
+        "arkivEntity": "0x0254a5de65f939a873574ac1480a13d8230d7750e78bb0334ab4ed8782825f69",
+        "observedBlock": "26358584",
+        "observedBlockHash": "0x1b5a8dac7853cb7e79ca37ef89c7364e4bcdaf202958c94b597fef9e0a755058"
+      },
+      "arkivScope": "0x7c7aa9055097c4aa001bfe30eba4c7b908d4e7ae1fadadbd43231c4f548a9ab3",
+      "filesVerified": true,
+      "arkivManifestVerified": true
+    },
+    {
+      "receipt": {
+        "image": {
+          "sha256": "e8d2877e60560ea92eaf5115ab04130393de03f2dd977cb8085c0a4dcd003853",
+          "reference": "7f957769c258823a95ca1cc507dc97e7e403a0dd30e75257f6649097ee6be474"
+        },
+        "chainId": 1,
+        "tokenId": "61",
+        "version": 1,
+        "metadata": {
+          "sha256": "fe1a2b5ba518a1889c0659445005ab17e420259d4eb6ae4820a0710d4e13f098",
+          "reference": "2022b831ed56635ff51b167505515a77ca85fba8b19386b832ec13fa37870d28"
+        },
+        "renderer": "wiseone-yoda-live-v2",
+        "orderHash": "0x25297ca44765785f6a3ff23427d127aeeeeac109a7f3b5e5444aa3f4ed059681",
+        "collection": "0x48791DbDFB38bAA58e48329148C321bF33B3c1e1",
+        "observedAt": 1794001559,
+        "verifiedAt": 1794001571,
+        "arkivEntity": "0x53d1d8f73bd6b91cfe484e83e716276d6715b96d1151bcd27b4c3d0683e93176",
+        "observedBlock": "26358587",
+        "observedBlockHash": "0xca5b1ec591cbe6bb357971114d034e54e477c3aab8a4fa9bc4ddd6c98179a38a"
+      },
+      "arkivScope": "0x7c7aa9055097c4aa001bfe30eba4c7b908d4e7ae1fadadbd43231c4f548a9ab3",
+      "filesVerified": true,
+      "arkivManifestVerified": true
+    }
+  ]
+}

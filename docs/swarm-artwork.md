@@ -1,6 +1,6 @@
 # Swarm artwork backups
 
-Status: integration prepared, disabled by default. No live Swarm upload or retrieval is claimed yet. A Bee node, funded usable postage batch, read gateway and live verification are still required. Automated tests use local fixtures and mocked network responses.
+Status: live uploads, checksum-verified retrieval and Arkiv publication verified on 7 November 2026 from the local Garuda deployment. Signature listings #53 and #61 and a bid for #61 have completed backups. The #61 artwork viewer was checked in the browser. See [live receipts and verification evidence](swarm-live-evidence.json). Uploads remain opt-in for each deployment; local configuration does not enable the production worker.
 
 Garuda can generate an artwork snapshot when a listing or bid is accepted, upload the SVG and JSON metadata to Swarm, and publish a separate reference entity on Arkiv. Users open **Artwork backup** from an order's menu to view it, change the read gateway or download its references. The same artwork renderer already exists in WiseOne/yoda; the new work is the storage, verification and reference path.
 
@@ -8,31 +8,48 @@ This preserves a generated snapshot independently of the original image service.
 
 ## Operator configuration
 
-Use an existing Bee node and a funded postage batch that is usable on that node. This integration does not buy stamps, fund wallets or top up postage. See the official [Bee upload API](https://docs.ethswarm.org/api/), [upload prerequisites](https://bee-js.ethswarm.org/docs/upload-download/) and [postage model](https://docs.ethswarm.org/docs/learn/technology/contracts/postage-stamp/).
+Choose an upload provider. The [official public Swarm gateway](https://www.ethswarm.org/access/) accepts small files without operating your own node or buying a postage batch. This is the mode used for the live examples below. It is a shared service: availability, rate limits and retention depend on its operator, and Garuda makes no permanence guarantee.
+
+For the public gateway, set:
+
+```dotenv
+SWARM_MEDIA_ENABLED=true
+SWARM_UPLOAD_MODE=public-gateway
+SWARM_GATEWAY_URL=https://api.gateway.ethswarm.org
+```
+
+Leave `SWARM_BEE_URL`, `SWARM_POSTAGE_BATCH_ID` and `SWARM_BEE_API_TOKEN` empty in this mode. Configuration rejects private Bee settings instead of forwarding them to the public gateway. The transport uses the gateway's zero batch placeholder; this is not a funded batch owned by Garuda. Use the API host above, not the gateway's browsing website.
+
+Alternatively, set `SWARM_UPLOAD_MODE=bee` and use your own Bee node and a funded postage batch usable on that node. This integration does not buy stamps, fund wallets or top up postage. See the official [Bee upload API](https://docs.ethswarm.org/api/), [upload prerequisites](https://bee-js.ethswarm.org/docs/upload-download/) and [postage model](https://docs.ethswarm.org/docs/learn/technology/contracts/postage-stamp/).
 
 Set these server-only variables in the deployment environment or local `.env.local`. Never prefix them with `VITE_` or commit credentials:
 
 | Variable | Value |
 | --- | --- |
 | `SWARM_MEDIA_ENABLED` | `false` by default; `true` enables the worker |
-| `SWARM_BEE_URL` | Bee API base URL; HTTPS, or loopback HTTP for a local node |
-| `SWARM_POSTAGE_BATCH_ID` | Existing usable batch ID, 64 hex characters without `0x` |
-| `SWARM_BEE_API_TOKEN` | Optional Bearer token if the node's reverse proxy requires it |
-| `SWARM_GATEWAY_URL` | Public HTTPS read gateway base URL, without `/bzz`, credentials, query parameters or fragment; loopback HTTP is allowed for development |
+| `SWARM_UPLOAD_MODE` | `public-gateway` or `bee`; omitted mode preserves the original `bee` behavior |
+| `SWARM_BEE_URL` | Required only in `bee` mode; HTTPS, or loopback HTTP for a local node |
+| `SWARM_POSTAGE_BATCH_ID` | Required only in `bee` mode; existing usable batch ID, 64 hex characters without `0x` |
+| `SWARM_BEE_API_TOKEN` | Optional in `bee` mode if the node's reverse proxy requires a Bearer token |
+| `SWARM_GATEWAY_URL` | Defaults to `https://api.gateway.ethswarm.org`; public HTTPS read gateway base URL without `/bzz`, credentials, query parameters or fragment; loopback HTTP is allowed for development |
 
 The read gateway must serve `/bzz/{reference}/` without authentication or redirects, and allow browser CORS reads from the Garuda origin. Prefer a separate gateway from the upload node: retrieving only from the same node does not demonstrate replication. Only the public gateway URL reaches the browser; the Bee URL, batch ID and upload token remain on the server. Protect the Bee upload API separately from the public read path.
 
 The existing market PostgreSQL, Ethereum RPC and funded Rabdi publisher configuration are also required. After setting configuration, restart the market API (`npm run server` locally). Startup adds the media queue table and queues unexpired catalog orders; new listings and bids enqueue in the order-save transaction. **Enabling the worker authorizes uploads for these existing eligible orders as well as new ones.** It does not require another user signature and does not spend the user's Ethereum funds.
 
-Each collection deployment processes at most four attempts per hour. This bounds background activity but is not a currency-denominated spending limit. The operator pays Swarm storage and Arkiv publication costs. With `SWARM_MEDIA_ENABLED=false`, the worker makes no Swarm uploads or Arkiv media writes; previously completed receipts remain available.
+Each collection deployment permits at most four upload attempts per hour, each potentially uploading an artwork file and its metadata. Unavailable orders and retries that only verify existing files or publish their references do not consume this upload budget. This bounds upload activity but is not a currency-denominated spending limit. The operator pays Arkiv publication costs and, in Bee mode, Swarm postage; the public gateway supplies its own postage. With `SWARM_MEDIA_ENABLED=false`, the worker makes no Swarm uploads or Arkiv media writes; previously completed receipts remain available.
+
+For production, apply these variables to the market API deployment and redeploy it. The protected maintenance cron must also be configured and running; see [hosting configuration](../README.md). Changing only the browser build or local `.env.local` does not enable production uploads.
 
 ## Publication and verification
 
 The worker first verifies that the order is available on Ethereum. It reads a fresh stake snapshot, checks identity and block provenance, and renders the SVG. JSON metadata includes chain, collection, token/stake ID, principal, start/maturity dates, observed block/hash/time, order hash and renderer version. It excludes private keys and the order signature.
 
-Both files upload through Bee's `/bzz` API with non-deferred upload and local pinning requested. Their returned references and SHA-256 digests are saved. A configured read gateway must return both exact files before the worker publishes the reference to Arkiv. The media job becomes `ready` only after that Arkiv entity has been read back successfully.
+Both files upload through the provider's `/bzz` API with non-deferred upload requested. Bee mode also requests local pinning; public-gateway mode sends neither pinning nor authentication headers. Their returned references and SHA-256 digests are saved. A configured read gateway must return both exact files before the worker publishes the reference to Arkiv. The media job becomes `ready` only after that Arkiv entity has been read back successfully.
 
 Retries retain the generated bytes and any saved upload references, so a gateway or Arkiv outage does not regenerate the artwork or re-upload files with recorded receipts. A lost upload response can require another upload attempt; this is not an exactly-once billing guarantee. A PostgreSQL lease coordinates jobs and the shared publisher lock serializes Arkiv writes. Expired, cancelled or otherwise terminally unavailable orders stop pending work. Completed backups remain snapshots after an order changes state.
+
+A fresh deployment first looks for an existing media manifest from the expected Arkiv publisher and deployment scope. It validates the order/NFT identity, original Ethereum block and both file checksums before restoring the completed receipt to its database. This preserves the original snapshot and avoids uploading conflicting metadata for an order already backed up by another deployment. An unavailable Arkiv read or failed verification retries without replacing the published copy.
 
 The browser fetches artwork without credentials or referrer, rejects redirects and responses over 1 MB, and checks its SHA-256 before displaying it in an isolated image element. It never inserts the SVG as inline HTML. A failed fetch or checksum shows an error and lets the user change gateways. The saved receipt provides integrity relative to the recorded copy; it does not eliminate trust in the publisher, original Ethereum RPC observation or contracts.
 
@@ -86,10 +103,20 @@ JS
 
 On 6 November 2026, all 140 repository tests and the production build passed. The disabled state was checked against the local market API. The completed-backup viewer was browser-checked with labelled sample data and a temporary local read server, including artwork display, gateway failure/recovery and portable-reference display. These are implementation checks, not evidence of live Swarm storage.
 
-After infrastructure is configured, demonstrate a real eligible order's path from pending to verified. Save its receipt and both references, then block the original NFT metadata host and load the artwork through another gateway. Use the independent command with Garuda's API stopped to show that the stored copy remains retrievable. Record the actual gateway, references, block observation and verification time as evidence. Until that demonstration succeeds, describe this feature as prepared rather than a live CROPS or Swarm bonus result.
+On 7 November 2026, the local worker completed real uploads through `https://api.gateway.ethswarm.org`. Both files for each of the following orders were independently fetched again and matched their saved SHA-256 digests. Their Arkiv manifests were read back and matched the saved receipts and expected publisher. The browser displayed Stake #61 from Swarm, replacing the earlier disabled state.
+
+| Signature order | Ethereum observation | Arkiv manifest |
+| --- | --- | --- |
+| Listing #53 | Block 26358579 | [View reference](https://rabdi.explorer.arkiv.network/entity/0xdb4995a90ca41235939cac4f14a54e89be1d97244ece56965f50202ef9c4f439) |
+| Listing #61 | Block 26358584 | [View reference](https://rabdi.explorer.arkiv.network/entity/0x0254a5de65f939a873574ac1480a13d8230d7750e78bb0334ab4ed8782825f69) |
+| Bid #61 | Block 26358587 | [View reference](https://rabdi.explorer.arkiv.network/entity/0x53d1d8f73bd6b91cfe484e83e716276d6715b96d1151bcd27b4c3d0683e93176) |
+
+The [evidence JSON](swarm-live-evidence.json) records full file references, checksums, order hashes, block provenance and the verification time. These are observations at that time, not ongoing availability promises. The same public service accepted uploads and served the verified files; independent gateway failover and a demo with Garuda stopped have not yet been demonstrated. For that stronger CROPS demo, export a receipt, stop the Garuda API and original metadata service, and use the independent retrieval command through another compatible gateway.
+
+The completed integration includes tests for recovering existing manifests into a fresh deployment, rejecting mismatched identity/provenance, and retrying without repeat uploads. The viewer's reference export was checked to contain both file checksums and its Arkiv entity link.
 
 ## Privacy and remaining dependencies
 
 Artwork, metadata and Arkiv manifests are public. They identify the NFT and order, so they can be correlated with public wallet activity. Bee receives uploaded bytes and server connection metadata; gateways see reader IPs and requested references. No wallet secret is uploaded. This is an availability improvement, not anonymous or encrypted storage.
 
-Initial uploads depend on our worker, database, Bee node, postage and Arkiv publisher. Retrieval depends on retained Swarm data and an available gateway; users can choose another gateway. The current in-app viewer asks our API for status, while exported references and direct Arkiv reads provide the independent path. The standalone position-recovery HTML does not currently include this artwork viewer.
+Initial uploads depend on our worker, database, upload provider, its postage and our Arkiv publisher. Public-gateway mode adds a shared upload service dependency; Bee mode lets an operator control the node and postage. Retrieval depends on retained Swarm data and an available gateway; users can choose another gateway. The current in-app viewer asks our API for status, while exported references and direct Arkiv reads provide the independent path. The standalone position-recovery HTML does not currently include this artwork viewer.

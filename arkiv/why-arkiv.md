@@ -4,9 +4,15 @@ A stake owner needs another person to discover a listing; a buyer needs their bi
 
 With only a private database, users would depend on our API to retrieve these published envelopes. Arkiv adds an independent read path and explicit expiration. The hosted Market queries Arkiv through our API; the downloadable backup can query Arkiv directly without that API. This is operational discovery and recovery data, not only an audit log. [Run the query](schema.md#query) or inspect [the live entities](evidence.md).
 
-We retain signed orders and their original Ethereum publication anchors in PostgreSQL. Discovery is independently readable, but Garuda execution still depends on those anchors and the market service. We do not claim a fully server-independent order book. Resetting an anchor on re-publication could incorrectly revive a signature after the NFT transferred away and back.
+We retain signed orders and their original Ethereum publication anchors in PostgreSQL. Published copies are independently readable, but the normal marketplace still uses those anchors and the market service to validate and serve its catalog. We do not claim a fully server-independent order book. Resetting an anchor on re-publication could incorrectly revive a signature after the NFT transferred away and back.
 
 Ethereum keeps NFT custody, WISE balances, allowances, counters, cancellations and atomic settlement. Private publisher credentials, wallet sessions and personal data are not stored on Arkiv. Short-lived stake snapshots are display caches only. The server owns Arkiv entities; the user owns and signs the Ethereum position/order. Those are different guarantees.
+
+## How this strengthens CROPS
+
+The strongest claim is an independently readable published order, paired with a tool that works without Garuda. Once publication succeeds, the user can recover supported signed terms directly from Arkiv even when our API or database is unavailable. That reduces dependence on us for recovery and supports the censorship-resistance property. The normal market still uses PostgreSQL; publication, retention and RPC availability remain dependencies. Public offers are a deliberate privacy trade-off, not a claim of anonymous trading.
+
+The saved tool currently targets the original V1 Signature settlement deployment and WISE orders. Its `wiseone.garuda.orders.v2` record support refers to the Arkiv schema, not the new V2 settlement contract. V2-specific discovery, export/import and individual cancellation still need integration and verification. Do not demonstrate a new V2 order as supported individual recovery until that work is complete.
 
 ## What users lose if we replace it with a private database
 
@@ -23,6 +29,6 @@ This is not a claim that no other database could provide public access or replic
 | Original publication anchors and operational catalog | PostgreSQL preserves the service's validation history; republication must not reset it |
 | Publication queue, retry state and rate-limit accounting | PostgreSQL provides transactional coordination for server jobs |
 | Local backup imports and user preferences | User device; no need to publish personal recovery files or UI choices |
-| Generated NFT artwork and image metadata (optional, prepared) | Swarm holds the larger files; Arkiv makes their references, checksums and observation provenance queryable. Uploads are disabled pending infrastructure and live verification. See [artwork backups](../docs/swarm-artwork.md). |
+| Generated NFT artwork and image metadata (optional) | Swarm holds the larger files; Arkiv makes their references, checksums and observation provenance queryable. Real uploads and verified references are recorded for listings #53 and #61 and a bid for #61. Uploads are opt-in per deployment. See [artwork backups and evidence](../docs/swarm-artwork.md). |
 
 Published envelopes include signatures, wallet addresses and trade terms. They are intentionally public offers, not encrypted private data. RPC operators can observe queries; this integration does not provide anonymous reads. The dedicated publisher controls Arkiv entity updates and can censor publication or delete its copies. Expiry and RPC limits remain dependencies, documented in [feedback](friction.md). User signatures and Ethereum checks constrain what a modified copy can execute; they do not prevent censorship.

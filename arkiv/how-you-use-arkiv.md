@@ -47,8 +47,8 @@ Both listings and bids enter the durable publication queue. A saved order is not
 
 The [standalone backup](../docs/backup-access.md) offers direct Arkiv reads, maker-signature verification and Ethereum checks without the Garuda API. It can recover and export verified own orders and distinguish incoming bids, but it is not a replacement trading UI. The normal hosted discovery path still depends on the service database for original order anchors.
 
-## Prepared Swarm artwork integration
+## Swarm artwork references
 
 The optional media worker uses `wiseone.garuda.media.v1` for public references to an SVG artwork snapshot and JSON metadata on Swarm. It indexes deployment scope, order hash, collection, token ID and renderer. The publisher owns these entities, with a 90-day lifetime independent of order deadlines and stake maturity. Files must pass gateway retrieval and checksum checks before the reference is published and the UI reports a completed backup.
 
-The **Artwork backup** viewer supports gateway selection and reference export. This adds another way to retrieve the generated artwork without the original metadata host; the NFT's `tokenURI` is unchanged. Uploads remain disabled pending Bee/postage configuration and a real retrieval demonstration. See [setup, privacy and retention limits](../docs/swarm-artwork.md). This is prepared functionality, not live-network evidence.
+The **Artwork backup** viewer supports gateway selection and reference export. This adds another way to retrieve the generated artwork without the original metadata host; the NFT's `tokenURI` is unchanged. On 7 November 2026, real uploads for listings #53 and #61 and a bid for #61 completed through the public Swarm gateway. Both files and the Arkiv manifests were verified; the #61 viewer displayed the real artwork. Uploads are enabled locally and remain opt-in per deployment, with either public-gateway or private Bee configuration. See [live evidence, setup, privacy and retention limits](../docs/swarm-artwork.md). A separate-gateway outage demonstration remains unverified.
