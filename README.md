@@ -130,6 +130,8 @@ Ethereum remains the authority for ownership, approvals, cancellation, and settl
 
 The [Signature deployment manifest](scripts/fixtures/signature-market.json) records Ethereum chain ID **1**, contract addresses and code hashes, fee settings, and confirmation policy. Browsing or connecting a wallet does not execute a trade. Signed orders are saved locally before publication so an API failure does not lose access to cancellation.
 
+The [deployed Signature validator source](contracts/deployed-signature-v1/README.md) includes the Solidity contracts, tests, original compiler input, deployment records, and a read-only script to verify the build against Ethereum bytecode.
+
 ## Sponsors and ecosystem integrations
 
 The implemented Arkiv integration targets the [ETHGlobal Mumbai Build on Arkiv track for existing projects](https://ethglobal.com/events/mumbai/prizes/arkiv). Users publish listings and bids to Arkiv and discover them through the Market. The [CROPS upgrade](#crops) targets the Ethereum Foundation's existing-project prize: users can manage supported positions and cancel orders without Garuda's application services. These are proposed submission targets, subject to Continuity eligibility.

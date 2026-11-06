@@ -1,0 +1,51 @@
+{
+  "contract": "src/SignatureSeaportZone.sol:SignatureSeaportZone",
+  "chainId": 1,
+  "address": "0xF8A4719a149227A9a15456a62ac49bAa8b95554D",
+  "deploymentTransaction": "0x0f6dff6258e164707852aa99ff546421c2e8e0bad37c7d710820fc24c9d4c2a8",
+  "compilerVersion": "0.8.30+commit.73712a01",
+  "standardInputSha256": "86807fdfffa0739f4897503afb225c109f149e35c5935a7f07ea2678ef8d4451",
+  "sourcify": {
+    "match": "exact_match",
+    "creationMatch": "exact_match",
+    "runtimeMatch": "exact_match",
+    "chainId": "1",
+    "address": "0xF8A4719a149227A9a15456a62ac49bAa8b95554D",
+    "verifiedAt": "2026-10-15T20:55:33Z",
+    "matchId": "56182002",
+    "verificationId": "7de0620f-3472-4e8b-b724-775a5ba0709d",
+    "url": "https://repo.sourcify.dev/1/0xF8A4719a149227A9a15456a62ac49bAa8b95554D"
+  },
+  "etherscan": {
+    "status": "verified",
+    "url": "https://etherscan.io/address/0xF8A4719a149227A9a15456a62ac49bAa8b95554D#code",
+    "method": "Solidity Standard JSON Input",
+    "result": "Successfully generated matching Bytecode and ABI",
+    "verifiedAt": "2026-10-15T21:03:22.400Z"
+  },
+  "activationSnapshot": {
+    "chainId": 1,
+    "validator": "0xf8a4719a149227a9a15456a62ac49baa8b95554d",
+    "checkedAtBlock": "26200462",
+    "checkedAtBlockHash": "0x8f75e9436049fe44d76d49295240b7aefd24887e3aa801881061c114f2bb71fc",
+    "newActivityPaused": false,
+    "owner": "0x22079A848266A7D2E40CF0fF71a6573D78adcF37",
+    "events": [
+      {
+        "paused": false,
+        "transactionHash": "0x182f6ada7ba98677e598ac58fa5fdb12c8296de9dabe9001e94486f02470411b",
+        "block": "26200448",
+        "sender": "0x22079a848266a7d2e40cf0ff71a6573d78adcf37",
+        "to": "0xf8a4719a149227a9a15456a62ac49baa8b95554d",
+        "status": "success",
+        "confirmations": "15",
+        "function": {
+          "functionName": "setNewActivityPaused",
+          "args": [
+            false
+          ]
+        }
+      }
+    ]
+  }
+}

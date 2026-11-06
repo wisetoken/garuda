@@ -1,0 +1,8 @@
+{
+  "name": "@wiseone/garuda-deployed-signature-v1",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": { "test": "forge test", "build": "forge build", "verify:mainnet": "node verify-mainnet.mjs" },
+  "devDependencies": { "@openzeppelin/contracts": "5.4.0" }
+}
