@@ -1,4 +1,5 @@
 import { formatEther } from "viem";
+import { exactStakeSearch, priceUnits, dateSeconds, type MarketRangeFilters } from "./filter-query";
 import type { SaleRow } from "../blend/sales";
 import type { SignaturePosition } from "../blend/live-portfolio";
 import { stakeCollection } from "../blend/stake-collections";
@@ -20,7 +21,7 @@ export const marketColumns = [
 export type MarketColumn = (typeof marketColumns)[number]["id"];
 export type MarketSort = Exclude<MarketColumn, "type" | "actions">;
 export type StakeStatus = SignaturePosition["status"];
-export type MarketFilters = {
+export type MarketFilters = MarketRangeFilters & {
   search: string;
   collections: string[];
   statuses: StakeStatus[];
@@ -39,6 +40,8 @@ export type MarketEntry = { row: SaleRow; position?: SignaturePosition };
 
 export function filterEntries(entries: MarketEntry[], filters: MarketFilters) {
   const search = filters.search.trim().toLowerCase();
+  const exact = exactStakeSearch(search), min = priceUnits(filters.minPrice), max = priceUnits(filters.maxPrice);
+  const from = dateSeconds(filters.maturesFrom), to = dateSeconds(filters.maturesTo, true);
   return entries.filter(({ row, position }) => {
     const collection = stakeCollection(row.order.collection);
     return (
@@ -49,9 +52,12 @@ export function filterEntries(entries: MarketEntry[], filters: MarketFilters) {
           filters.statuses.some(
             (status) => status === stakeTimeline(position).status,
           ))) &&
-      `${collection.name} Stake #${row.order.tokenId} ${collection.name} #${row.order.tokenId} ${row.order.owner} ${row.order.maker}`
-        .toLowerCase()
-        .includes(search)
+      (min === undefined || BigInt(row.order.amount) >= min) &&
+      (max === undefined || BigInt(row.order.amount) <= max) &&
+      (from === undefined || !!position && position.maturesAt >= from) &&
+      (to === undefined || !!position && position.maturesAt <= to) &&
+      (exact ? row.order.tokenId === exact.tokenId && (!exact.stakeType || collection.id === exact.stakeType) :
+        `${collection.name} Stake #${row.order.tokenId} ${collection.name} #${row.order.tokenId} ${row.order.owner} ${row.order.maker}`.toLowerCase().includes(search))
     );
   });
 }

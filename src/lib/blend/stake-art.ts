@@ -10,7 +10,7 @@ export const stakeDate = (seconds: number) => new Intl.DateTimeFormat("en-GB", {
 export function stakeTimeline(stake: SignaturePosition, at = stake.observedAt ?? Date.now() / 1000) {
   const duration = stake.maturesAt - stake.startAt;
   const progress = duration > 0 ? Math.max(0, Math.min(1, (at - stake.startAt) / duration)) : 0;
-  const status = stake.status === "Closed" ? "Closed" : at < stake.startAt ? "Pending" : at >= stake.maturesAt ? "Mature" : "Active";
+  const status: SignaturePosition["status"] = stake.status === "Closed" ? "Closed" : at < stake.startAt ? "Pending" : at >= stake.maturesAt ? "Mature" : "Active";
   const days = Math.max(0, Math.ceil(((status === "Pending" ? stake.startAt : stake.maturesAt) - at) / 86400));
   return { progress, status, caption: status === "Closed" ? "Position closed" : status === "Mature" ? "Lock period complete" : status === "Pending" ? `Starts in ${days.toLocaleString("en-US")} days` : `${days.toLocaleString("en-US")} days to maturity` };
 }

@@ -1,0 +1,61 @@
+.stakes-table-panel > .market-toolbar {
+  border-radius: 20px 20px 0 0;
+}
+.portfolio-stakes-table tbody tr {
+  cursor: auto;
+}
+.portfolio-stakes-table [data-column="progress"] {
+  min-width: 240px;
+}
+.portfolio-stakes-table [data-column="actions"] {
+  width: 150px;
+}
+.market-table .stake-table-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stake-table-date a {
+  display: inline-flex;
+  padding: 3px;
+  color: var(--text-muted);
+  border-radius: 4px;
+}
+.stake-table-date a:hover,
+.stake-table-date a:focus-visible {
+  color: var(--accent);
+}
+.stake-table-progress {
+  --progress-color: var(--market-orange);
+  height: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--border-strong);
+}
+.stake-table-progress[data-status="Mature"] {
+  --progress-color: var(--market-green);
+}
+.stake-table-progress[data-status="Pending"] {
+  --progress-color: var(--accent);
+}
+.stake-table-progress[data-status="Closed"] {
+  --progress-color: var(--text-muted);
+}
+.stake-table-progress > span {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--progress-color);
+}
+.market-table .stake-table-progress-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+@media (max-width: 700px) {
+  .stakes-table-panel .market-toolbar-end {
+    width: auto;
+  }
+}

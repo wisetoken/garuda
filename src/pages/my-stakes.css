@@ -32,16 +32,6 @@
   60% { opacity: .45; transform: scaleX(1); }
   100% { opacity: 0; transform: scaleX(1); }
 }
-.stakes-table-wrap { border: 1px solid var(--border-strong); border-radius: 18px; overflow-x: auto; }
-.stakes-table { border-collapse: collapse; width: 100%; min-width: 960px; text-align: left; font-size: 13px; }
-.stakes-table th { background: var(--panel); padding: 18px; font-weight: 400; color: var(--muted); }
-.stakes-table td { padding: 24px 18px; border-top: 1px solid var(--border); }
-.stakes-table small { display: block; color: var(--muted); margin-top: 6px; }
-.table-progress { background: var(--border-strong); border-radius: 8px; height: 8px; min-width: 130px; overflow: hidden; }
-.table-progress span { display: block; height: 100%; background: var(--accent); }
-.stake-type { position: relative; color: var(--accent); display: inline-flex; padding: 8px; }
-.stake-type [role=tooltip] { display: none; position: absolute; top: 100%; left: 0; z-index: 2; padding: 8px; white-space: nowrap; background: var(--panel); border: 1px solid var(--border-strong); border-radius: 6px; }
-.stake-type:hover [role=tooltip],.stake-type:focus [role=tooltip] { display: block; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 button:focus-visible,.stake-type:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 @media (max-width:1100px) { .stakes-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
@@ -51,3 +41,10 @@ button:focus-visible,.stake-type:focus-visible { outline: 2px solid var(--accent
 
 .garuda-stake-actions .stake-primary { font-family: inherit; font-size: 14px; font-weight: 600; min-height: 44px; }
 .garuda-stake-actions .ba-text-button { font-family: inherit; font-size: 14px; min-height: 44px; }
+
+/* Match the original WiseOne table's inline loading state. */
+.stakes-loading { display: flex; min-height: 240px; width: 100%; align-items: center; justify-content: center; padding: 0 16px; text-align: center; font-size: 15px; color: var(--text-muted); }
+.stakes-loading > span { display: inline-flex; align-items: center; gap: 10px; }
+.stakes-loading svg { flex-shrink: 0; color: var(--accent); animation: stakes-loading-spin 1s linear infinite; }
+@keyframes stakes-loading-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .stakes-loading svg { animation: none; } }

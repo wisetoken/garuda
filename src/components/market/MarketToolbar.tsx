@@ -1,107 +1,23 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { TablePopover } from "../table/TablePopover";
+import { TableColumnSettings } from "../table/TableColumnSettings";
+import type { ColumnPreference } from "../table/column-preferences";
+import { MarketRangeFilters } from "./MarketRangeFilters";
+import { StakeFilterFields, FilterToggle, stakeFilterCount } from "../table/StakeFilterFields";
 import {
   Filter,
   LayoutGrid,
   List,
-  Settings,
   RefreshCw,
-  X,
   ArrowDown,
   ArrowUp,
 } from "lucide-react";
 import {
-  defaultColumns,
   emptyFilters,
   marketColumns,
   type MarketColumn,
   type MarketFilters,
   type MarketSort,
 } from "../../lib/market/presentation";
-
-function ToolbarPopover({
-  label,
-  trigger,
-  children,
-  end = false,
-  active = false,
-}: {
-  label: string;
-  trigger: ReactNode;
-  children: ReactNode;
-  end?: boolean;
-  active?: boolean;
-}) {
-  const [open, setOpen] = useState(false),
-    id = useId();
-  const root = useRef<HTMLDivElement>(null),
-    button = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const outside = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        button.current?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", outside);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("pointerdown", outside);
-      document.removeEventListener("keydown", escape);
-    };
-  }, [open]);
-  return (
-    <div
-      className="market-popover-anchor"
-      ref={root}
-      data-align={end ? "end" : "start"}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
-      }}
-    >
-      <button
-        ref={button}
-        className={end ? "market-settings-button" : "market-filter-button"}
-        aria-label={label}
-        aria-expanded={open}
-        aria-controls={id}
-        data-active={active}
-        onClick={() => setOpen(!open)}
-      >
-        {trigger}
-      </button>
-      {open && (
-        <div
-          id={id}
-          className="market-popover"
-          role="region"
-          aria-label={label}
-        >
-          <div className="market-popover-heading">
-            <strong>{label}</strong>
-            <button
-              aria-label={`Close ${label.toLowerCase()}`}
-              onClick={() => {
-                setOpen(false);
-                button.current?.focus();
-              }}
-            >
-              <X size={16} />
-            </button>
-          </div>
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-const toggleItem = <T,>(values: T[], item: T) =>
-  values.includes(item)
-    ? values.filter((value) => value !== item)
-    : [...values, item];
 
 type Props = {
   count: number;
@@ -111,8 +27,11 @@ type Props = {
   setView: (value: "table" | "cards") => void;
   filters: MarketFilters;
   setFilters: (value: MarketFilters) => void;
-  columns: MarketColumn[];
-  setColumns: (value: MarketColumn[]) => void;
+  columns: ColumnPreference<MarketColumn>[];
+  setColumns: (value: ColumnPreference<MarketColumn>[]) => void;
+  resetColumns: () => void;
+  counts: Record<string, number>;
+  refreshing: boolean;
   sort: MarketSort;
   direction: "asc" | "desc";
   onSort: (value: MarketSort) => void;
@@ -128,18 +47,15 @@ export function MarketToolbar(props: Props) {
     filters,
     setFilters,
     columns,
-    setColumns,
+    setColumns, resetColumns, counts, refreshing,
     sort,
     direction,
     onSort,
     refresh,
   } = props;
   const priceLabel = mine ? "Order price" : bids ? "Bid price" : "Asking price";
-  const activeCount =
-    Number(!!filters.search.trim()) +
-    filters.collections.length +
-    filters.statuses.length +
-    Number(filters.showInactive);
+  const activeCount = stakeFilterCount(filters) + Number(filters.showInactive)
+    + Number(!!(filters.minPrice || filters.maxPrice)) + Number(!!(filters.maturesFrom || filters.maturesTo));
   return (
     <>
       <div className="market-toolbar">
@@ -147,7 +63,7 @@ export function MarketToolbar(props: Props) {
           <strong>
             {mine ? "Your orders" : "Market stakes"} ({count})
           </strong>
-          <ToolbarPopover
+          <TablePopover
             label="Filter stakes"
             active={!!activeCount}
             trigger={
@@ -155,84 +71,30 @@ export function MarketToolbar(props: Props) {
                 <Filter size={18} />
                 Filter
                 {activeCount > 0 && (
-                  <span className="market-filter-count">{activeCount}</span>
+                  <span className="market-filter-count" aria-label="Filters applied" />
                 )}
               </>
             }
           >
-            <label className="market-search">
-              Search
-              <input
-                value={filters.search}
-                placeholder="Stake ID or address"
-                onChange={(event) =>
-                  setFilters({ ...filters, search: event.target.value })
-                }
-              />
-            </label>
-            <fieldset>
-              <legend>Collection</legend>
-              {["Signature", "Advanced"].map((name) => (
-                <label key={name}>
-                  <input
-                    type="checkbox"
-                    checked={filters.collections.includes(name.toLowerCase())}
-                    onChange={() =>
-                      setFilters({
-                        ...filters,
-                        collections: toggleItem(
-                          filters.collections,
-                          name.toLowerCase(),
-                        ),
-                      })
-                    }
-                  />
-                  {name}
-                </label>
-              ))}
-            </fieldset>
-            <fieldset>
-              <legend>Stake status</legend>
-              {(["Pending", "Active", "Mature", "Closed"] as const).map(
-                (status) => (
-                  <label key={status}>
-                    <input
-                      type="checkbox"
-                      checked={filters.statuses.includes(status)}
-                      onChange={() =>
-                        setFilters({
-                          ...filters,
-                          statuses: toggleItem(filters.statuses, status),
-                        })
-                      }
-                    />
-                    {status === "Mature" ? "Matured" : status}
-                  </label>
-                ),
-              )}
-            </fieldset>
-            {!mine && (
-              <label>
-                <input
-                  type="checkbox"
-                  checked={filters.showInactive}
-                  onChange={(event) =>
-                    setFilters({
-                      ...filters,
-                      showInactive: event.target.checked,
-                    })
-                  }
-                />
-                Show inactive orders
-              </label>
-            )}
+            <StakeFilterFields
+              filters={filters}
+              counts={counts}
+              onChange={(next) => setFilters({ ...filters, ...next })}
+            />
+            {!mine && <div className="table-filter-group"><p>Order status</p>
+              <FilterToggle label="Show inactive" checked={filters.showInactive}
+                onToggle={() => setFilters({ ...filters, showInactive: !filters.showInactive })} />
+            </div>}
+            <MarketRangeFilters key={[filters.minPrice, filters.maxPrice, filters.maturesFrom, filters.maturesTo].join(":")}
+              filters={filters} onChange={ranges => setFilters({ ...filters, ...ranges })} />
+            <p className="table-filter-note">Counts and stake status reflect loaded results.</p>
             <button
-              className="market-popover-action"
+              className="table-filter-reset"
               onClick={() => setFilters(emptyFilters)}
             >
               Clear filters
             </button>
-          </ToolbarPopover>
+          </TablePopover>
         </div>
         <div className="market-toolbar-end">
           <div
@@ -255,40 +117,12 @@ export function MarketToolbar(props: Props) {
               Table
             </button>
           </div>
-          <ToolbarPopover
-            label="Table settings"
-            end
-            trigger={<Settings size={18} />}
-          >
-            <fieldset>
-              <legend>Visible columns</legend>
-              {marketColumns
-                .filter((column) => column.id !== "bidder" || bids)
-                .map((column) => (
-                  <label key={column.id}>
-                    <input
-                      type="checkbox"
-                      checked={columns.includes(column.id)}
-                      disabled={"fixed" in column}
-                      onChange={() =>
-                        setColumns(toggleItem(columns, column.id))
-                      }
-                    />
-                    {column.id === "price" ? priceLabel : column.label}
-                  </label>
-                ))}
-            </fieldset>
-            <button
-              className="market-popover-action"
-              onClick={() => setColumns(defaultColumns)}
-            >
-              Reset columns
-            </button>
-            <button className="market-popover-action" onClick={refresh}>
-              <RefreshCw size={15} />
-              Refresh market
-            </button>
-          </ToolbarPopover>
+          {view === "table" && <TableColumnSettings
+            columns={columns.map(column => ({ ...column, label: column.id === "price" ? priceLabel : column.label }))}
+            onChange={setColumns} onReset={resetColumns} exclude={bids ? [] : ["bidder"]} />}
+          <button type="button" className="market-settings-button" disabled={refreshing} onClick={refresh} aria-label="Refresh market">
+            <RefreshCw size={16} />
+          </button>
         </div>
       </div>
       {view === "cards" && (

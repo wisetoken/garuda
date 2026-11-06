@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { getAddress } from "viem";
+import type { MarketQueryFilters } from "./filter-query";
 import { marketApi, parseBook, type MarketBook } from "./api";
 import type { SalesDeployment, SaleRow } from "../blend/sales";
 import { loadSignaturePortfolio } from "../blend/live-portfolio";
@@ -14,15 +15,16 @@ import {
 } from "../blend/stake-snapshot";
 import { ethereumClient } from "../portfolio";
 
-export function useBook(id: StakeCollectionId, deployment?: SalesDeployment, source: "arkiv" | "catalog" = "catalog", kind?: "listing" | "bid", sort?: "price" | "principal" | "expires", direction: "asc" | "desc" = "asc") {
+export function useBook(id: StakeCollectionId, deployment?: SalesDeployment, source: "arkiv" | "catalog" = "catalog", kind?: "listing" | "bid", sort?: "price" | "principal" | "expires" | "stakeStartAt", direction: "asc" | "desc" = "asc", filters: MarketQueryFilters = {}) {
   return useInfiniteQuery({
-    queryKey: ["market-book", id, deployment?.adapter, source, kind, sort, direction],
+    queryKey: ["market-book", id, deployment?.adapter, source, kind, sort, direction, source === "arkiv" ? filters : null],
     enabled: !!deployment,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const path = pageParam ? `?before=${encodeURIComponent(pageParam)}` : "";
       if (source === "arkiv") {
         const query = new URLSearchParams({source:"arkiv",preview:"1"});
+        for (const [key, value] of Object.entries(filters)) if (value !== undefined) query.set(key, value);
         if (pageParam) query.set("before",pageParam);
         if (kind) query.set("kind",kind);
         if (sort) { query.set("sort",sort); query.set("direction",direction); }

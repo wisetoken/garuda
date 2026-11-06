@@ -44,7 +44,6 @@
   color: inherit;
   font: inherit;
   text-align: left;
-  cursor: pointer;
   white-space: nowrap;
 }
 .market-table th svg {
@@ -85,13 +84,9 @@
 }
 .market-table tbody tr {
   background: color-mix(in srgb, #000 15%, var(--panel));
-  cursor: pointer;
 }
 .market-table tbody tr:hover {
   background: color-mix(in srgb, var(--accent) 5%, var(--panel));
-}
-.market-table tbody tr[data-selected="true"] {
-  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
 }
 .market-table [data-column="type"] {
   width: 64px;
@@ -118,6 +113,23 @@
 .market-table .address-identity small {
   margin-top: 3px;
 }
+.stake-type {
+  position: relative;
+}
+.stake-type [role="tooltip"] {
+  display: none;
+  position: absolute;
+  z-index: 2;
+  padding: 8px;
+  white-space: nowrap;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+}
+.stake-type:hover [role="tooltip"],
+.stake-type:focus-visible [role="tooltip"] {
+  display: block;
+}
 .market-type {
   --type-color: var(--accent);
   display: inline-flex;
@@ -132,7 +144,6 @@
   background: color-mix(in srgb, var(--type-color) 12%, transparent);
   box-shadow: inset 0 0 0 2px
     color-mix(in srgb, var(--type-color) 8%, transparent);
-  cursor: pointer;
 }
 .market-type[data-status="Mature"] {
   --type-color: var(--market-green);

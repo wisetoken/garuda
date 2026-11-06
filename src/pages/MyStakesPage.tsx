@@ -1,33 +1,22 @@
 import { useErrorToast } from "../components/AppToast";
 import { useMarketActions } from "../components/MarketActions";
 import { useState } from "react";
-import { ArrowDownUp, LayoutGrid, List } from "lucide-react";
+import { LayoutGrid, List, LoaderCircle } from "lucide-react";
 import { useActiveAccount } from "thirdweb/react";
 import { GarudaPageKicker } from "../components/GarudaPageKicker";
 import { StakeCard } from "../components/StakeCard";
 import { WalletWelcome } from "../components/WalletWelcome";
-import {
-  usePortfolio,
-  useWiseUsd,
-  wiseAmount,
-  usdAmount,
-} from "../lib/portfolio";
-import { stakeDate, stakeTimeline, stakeYield } from "../lib/blend/stake-art";
-import {
-  stakeCollection,
-  STAKE_COLLECTIONS,
-} from "../lib/blend/stake-collections";
+import { usePortfolio } from "../lib/portfolio";
+import { StakesTable } from "../components/stakes/StakesTable";
+import { sortStakes } from "../lib/stakes/table";
 import "./my-stakes.css";
 
 export function MyStakesPage({ embedded = false }: { embedded?: boolean }) {
   const { open, busy } = useMarketActions();
   const [view, setView] = useState<"cards" | "table">("cards");
   const account = useActiveAccount();
-  const portfolio = usePortfolio(),
-    { data: price } = useWiseUsd();
-  const positions = [...(portfolio.data?.positions ?? [])].sort(
-    (a, b) => b.startAt - a.startAt,
-  );
+  const portfolio = usePortfolio();
+  const positions = sortStakes(portfolio.data?.positions ?? [], "created", "desc");
   useErrorToast("portfolio", portfolio.isError && !portfolio.isFetching && "Could not refresh your stakes. Please try again.", () => void portfolio.refetch());
   const actionsBlocked = busy || portfolio.isFetching || portfolio.isError;
   return (
@@ -77,8 +66,8 @@ export function MyStakesPage({ embedded = false }: { embedded?: boolean }) {
       ) : (
         <>
           {portfolio.isPending ? (
-            <div className="state-panel" role="status">
-              Reading your stakes from Ethereum…
+            <div className="stakes-loading" role="status" aria-live="polite">
+              <span><LoaderCircle size={16} aria-hidden="true" />Loading your stakes…</span>
             </div>
           ) : portfolio.isError && !positions.length ? (
             <div className="state-panel"><button className="market-secondary" disabled={portfolio.isFetching} onClick={() => void portfolio.refetch()}>{portfolio.isFetching ? "Refreshing…" : "Refresh stakes"}</button></div>
@@ -98,91 +87,9 @@ export function MyStakesPage({ embedded = false }: { embedded?: boolean }) {
               ))}
             </div>
           ) : (
-            <div className="stakes-table-wrap">
-              <table className="stakes-table">
-                <caption className="sr-only">
-                  Your NFT stakes, newest first
-                </caption>
-                <thead>
-                  <tr>
-                    <th>Type</th>
-                    <th>Stake created ↓</th>
-                    <th>Maturity progress</th>
-                    <th>Status</th>
-                    <th>Amount staked</th>
-                    <th>Annualized yield*</th>
-                    <th>Unclaimed interest</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {positions.map((position) => {
-                    const name = `${stakeCollection(position.collection ?? STAKE_COLLECTIONS.signature.address).name} Stake #${position.tokenId}`,
-                      timeline = stakeTimeline(position),
-                      yieldValue = stakeYield(position);
-                    return (
-                      <tr key={`${position.collection}:${position.tokenId}`}>
-                        <td>
-                          <span
-                            className="stake-type"
-                            tabIndex={0}
-                            aria-label={name}
-                          >
-                            <ArrowDownUp size={18} aria-hidden="true" />
-                            <span role="tooltip">{name}</span>
-                          </span>
-                        </td>
-                        <td>{stakeDate(position.startAt)}</td>
-                        <td>
-                          <div
-                            className="table-progress"
-                            role="progressbar"
-                            aria-label={`${name} term elapsed`}
-                            aria-valuenow={Math.round(timeline.progress * 100)}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                          >
-                            <span
-                              style={{ width: `${timeline.progress * 100}%` }}
-                            />
-                          </div>
-                          <small>
-                            {Math.round(timeline.progress * 100)}% elapsed
-                          </small>
-                        </td>
-                        <td>
-                          {timeline.status}
-                          <small>{stakeDate(position.maturesAt)}</small>
-                        </td>
-                        <td>
-                          {wiseAmount(position.principal)} WISE
-                          <small>{usdAmount(position.principal, price)}</small>
-                        </td>
-                        <td>
-                          {yieldValue?.toFixed(2) ?? "—"}%
-                          <small>Simple, historical</small>
-                        </td>
-                        <td>
-                          {wiseAmount(position.unclaimedInterest)} WISE
-                          <small>
-                            {usdAmount(position.unclaimedInterest, price)}
-                          </small>
-                        </td>
-                        <td>
-                          <button
-                            className="market-primary"
-                            disabled={actionsBlocked || !position.canList}
-                            onClick={() => open({ kind: "list", position })}
-                          >
-                            List for sale
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <StakesTable positions={positions} actionsBlocked={actionsBlocked}
+              onList={(position) => open({ kind: "list", position })}
+              onRefresh={() => void portfolio.refetch()} refreshing={portfolio.isFetching} />
           )}
         </>
       )}

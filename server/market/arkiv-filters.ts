@@ -1,4 +1,4 @@
-import { and, eq, gt, gte, lte } from "@arkiv-network/sdk/query";
+import { and, or, eq, gt, gte, lte } from "@arkiv-network/sdk/query";
 import { addr, u64, u256 } from "@arkiv-network/sdk/schema";
 import { isAddress } from "viem";
 import { SalesError, type SalesDeployment } from "../../src/lib/blend/sales";
@@ -6,17 +6,17 @@ import { arkivScope } from "./arkiv-schema";
 
 export type ArkivFilters = {
   maker?: string; tokenId?: string; before?: string; kind?: "listing" | "bid";
-  currency?: string; stakeOwner?: string; stakeType?: "signature" | "advanced";
+  participant?: string; currency?: string; stakeOwner?: string; stakeType?: "signature" | "advanced";
   minPrice?: string; maxPrice?: string; minPrincipal?: string; minShares?: string;
   maturesAfter?: string; maturesBefore?: string;
-  sort?: "price" | "principal" | "shares" | "maturesAt" | "publishedAt" | "expires";
+  sort?: "price" | "principal" | "shares" | "maturesAt" | "stakeStartAt" | "publishedAt" | "expires";
   direction?: "asc" | "desc";
 };
-const sorts = ["price", "principal", "shares", "maturesAt", "publishedAt", "expires"];
+const sorts = ["price", "principal", "shares", "maturesAt", "stakeStartAt", "publishedAt", "expires"];
 export function parseArkivFilters(input: Record<string, string | undefined>): ArkivFilters {
   const f: Record<string, string> = {};
   const fail = () => { throw new SalesError("invalid-filter", "Invalid Arkiv market filter."); };
-  for (const name of ["maker", "stakeOwner", "currency"]) {
+  for (const name of ["maker", "stakeOwner", "currency", "participant"]) {
     const value = input[name]; if (value === undefined) continue;
     if (!isAddress(value, { strict: false })) fail(); f[name] = value.toLowerCase();
   }
@@ -42,6 +42,7 @@ export function orderFilters(deployment: SalesDeployment, f: ArkivFilters) {
   return and(eq("scope", arkivScope(deployment)), eq("chainId", u64(1n)), eq("collection", addr(deployment.collection)),
     gt("expires", u64(BigInt(Math.floor(Date.now()/1000)))),
     ...(f.maker ? [eq("maker", addr(f.maker))] : []), ...(f.stakeOwner ? [eq("stakeOwner", addr(f.stakeOwner))] : []),
+    ...(f.participant ? [or(eq("maker", addr(f.participant)), eq("stakeOwner", addr(f.participant)))] : []),
     ...(f.currency ? [eq("currency", addr(f.currency))] : []), ...(f.kind ? [eq("kind", f.kind)] : []),
     ...(f.stakeType ? [eq("stakeType", f.stakeType)] : []), ...(f.tokenId ? [eq("tokenId", u256(BigInt(f.tokenId)))] : []),
     ...(f.minPrice ? [gte("price", u256(BigInt(f.minPrice)))] : []), ...(f.maxPrice ? [lte("price", u256(BigInt(f.maxPrice)))] : []),
@@ -50,5 +51,5 @@ export function orderFilters(deployment: SalesDeployment, f: ArkivFilters) {
 }
 // Legacy entities do not contain these indexed fields; do not pretend they match a range query.
 export function includeLegacy(f: ArkivFilters) {
-  return ![f.currency, f.stakeOwner, f.stakeType, f.minPrice, f.maxPrice, f.minPrincipal, f.minShares, f.maturesAfter, f.maturesBefore].some(v => v !== undefined);
+  return ![f.participant, f.currency, f.stakeOwner, f.stakeType, f.minPrice, f.maxPrice, f.minPrincipal, f.minShares, f.maturesAfter, f.maturesBefore].some(v => v !== undefined);
 }

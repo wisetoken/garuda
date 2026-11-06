@@ -9,20 +9,23 @@ import { OrderCard } from "../components/market/OrderViews";
 import { MarketTable } from "../components/market/MarketTable";
 import { MarketToolbar } from "../components/market/MarketToolbar";
 import { MarketActivity } from "../components/market/MarketActivity";
-import { OrderDetails } from "../components/market/OrderDetails";
 import { SavedOrders } from "../components/market/SavedOrders";
 import { useMarkets, orderAvailable } from "../lib/market/api";
 import { useBook, useOrderPositions, useOrderAvailability } from "../lib/market/queries";
 import {
-  defaultColumns,
+  marketColumns,
   emptyFilters,
   filterEntries,
   sortEntries,
-  type MarketColumn,
   type MarketSort,
   type MarketFilters,
 } from "../lib/market/presentation";
 import { type SalesDeployment, sameAddress } from "../lib/blend/sales";
+import { columnsForView } from "../components/table/column-preferences";
+import { useTableColumns } from "../components/table/useTableColumns";
+import { useMarketFilters } from "../lib/market/useMarketFilters";
+import { stakeCollection } from "../lib/blend/stake-collections";
+import { stakeTimeline } from "../lib/blend/stake-art";
 import { MyStakesPage } from "./MyStakesPage";
 import "../components/market.css";
 import "../components/market/market-table.css";
@@ -54,13 +57,13 @@ export function MarketPage() {
   }
   const [ownedView, setOwnedView] = useState<"stakes" | "orders">("stakes");
   const [filters, setFilters] = useState<MarketFilters>(emptyFilters);
-  const [columns, setColumns] = useState<MarketColumn[]>(defaultColumns);
+  const columnSettings = useTableColumns("garuda:market:columns:v1", marketColumns);
+  const remoteFilters = useMarketFilters(filters);
   const [sort, setSort] = useState<MarketSort>("price"),
     [direction, setDirection] = useState<"asc" | "desc">("asc");
-  const [selectedHash, setSelectedHash] = useState<string>();
-  const indexedSort = sort === "amount" ? "principal" : sort === "expiry" ? "expires" : "price";
-  const signature = useBook("signature", deployments[0], source, book === "bids" ? "bid" : "listing", indexedSort, direction),
-    advanced = useBook("advanced", deployments[1], source, book === "bids" ? "bid" : "listing", indexedSort, direction);
+  const indexedSort = sort === "amount" ? "principal" : sort === "expiry" ? "expires" : sort === "created" ? "stakeStartAt" : "price";
+  const signature = useBook("signature", deployments[0], source, book === "bids" ? "bid" : "listing", indexedSort, direction, remoteFilters.query),
+    advanced = useBook("advanced", deployments[1], source, book === "bids" ? "bid" : "listing", indexedSort, direction, remoteFilters.query);
   const pages = [
     ...(signature.data?.pages ?? []),
     ...(advanced.data?.pages ?? []),
@@ -89,16 +92,19 @@ export function MarketPage() {
           orderAvailable(row) ||
           row.status === "checking"),
     );
+  const viewColumns = columnsForView(columnSettings.columns, bids ? [] : ["bidder"]);
+  const counts: Record<string, number> = { signature: 0, advanced: 0, Pending: 0, Active: 0, Mature: 0, Closed: 0 };
+  for (const {row, position} of entries) {
+    counts[stakeCollection(row.order.collection).id]++;
+    if (position) counts[stakeTimeline(position).status]++;
+  }
   const filtered = sortEntries(
     filterEntries(entries, filters),
     sort,
     direction,
   );
-  const selected =
-    filtered.find((entry) => entry.row.hash === selectedHash)?.row ??
-    filtered[0]?.row;
   const loading =
-    markets.some((query) => query.isPending) ||
+    remoteFilters.pending || markets.some((query) => query.isPending) ||
     deployments.some(
       (deployment, index) =>
         deployment && [signature, advanced][index].isPending,
@@ -233,8 +239,11 @@ export function MarketPage() {
             setView={setView}
             filters={filters}
             setFilters={setFilters}
-            columns={columns}
-            setColumns={setColumns}
+            columns={viewColumns}
+            setColumns={columnSettings.update}
+            resetColumns={columnSettings.reset}
+            counts={counts}
+            refreshing={fetching}
             sort={sort}
             direction={direction}
             onSort={onSort}
@@ -269,12 +278,10 @@ export function MarketPage() {
         ) : view === "table" ? (
           <MarketTable
             entries={filtered}
-            columns={columns}
+            columns={viewColumns.filter(column => column.enabled).map(column => column.id)}
             sort={sort}
             direction={direction}
             onSort={onSort}
-            selected={selected?.hash}
-            onSelect={setSelectedHash}
             bids={bids}
             mine={mine}
           />
@@ -303,9 +310,6 @@ export function MarketPage() {
             </div>
           )}
       </section>
-      {showOrders && view === "table" && selected && (
-        <OrderDetails row={selected} />
-      )}
       <SavedOrders
         deployments={deployments.filter(
           (deployment): deployment is SalesDeployment => !!deployment,
