@@ -12,7 +12,7 @@ import { MarketTable } from "../components/market/MarketTable";
 import { MarketToolbar } from "../components/market/MarketToolbar";
 import { MarketActivityDialog } from "../components/market/MarketActivityDialog";
 import { useMarkets, orderAvailable } from "../lib/market/api";
-import { useBook, useOrderPositions, useOrderAvailability } from "../lib/market/queries";
+import { useBook, useOrderPositions } from "../lib/market/queries";
 import type { SaleRow } from "../lib/blend/sales";
 import {
   marketColumns,
@@ -76,7 +76,7 @@ export function MarketPage() {
     const cached = deployments.every((deployment, index) => {
       if (!deployment) return true;
       const id = index === 0 ? "signature" : "advanced";
-      return !!queryClient.getQueryState(["market-book", id, deployment.adapter, value, kind, indexedSort, direction, value === "arkiv" ? remoteFilters.query : null])?.data;
+      return !!queryClient.getQueryState(["market-book", id, deployment.adapter, value, kind, indexedSort, direction, value === "arkiv" ? remoteFilters.query : null, "checked"])?.data;
     });
     sourceSwitch.current = { source: value, started: performance.now(), cached };
     setParams(current => { const next = new URLSearchParams(current); next.set("source", value); return next; });
@@ -86,15 +86,15 @@ export function MarketPage() {
     for (const [index, deployment] of deployments.entries()) {
       if (!deployment) continue;
       const id = index === 0 ? "signature" : "advanced";
-      void queryClient.resetQueries({ queryKey: ["market-book", id, deployment.adapter, value] });
+      void queryClient.invalidateQueries({ queryKey: ["market-book", id, deployment.adapter, value] });
     }
     if (value === source) return;
     setParams(current => { const next = new URLSearchParams(current); next.set("source", value); return next; });
   }
-  const listingSignature = useBook("signature", deployments[0], source, "listing", indexedSort, direction, remoteFilters.query),
-    listingAdvanced = useBook("advanced", deployments[1], source, "listing", indexedSort, direction, remoteFilters.query),
-    bidSignature = useBook("signature", deployments[0], source, "bid", indexedSort, direction, remoteFilters.query),
-    bidAdvanced = useBook("advanced", deployments[1], source, "bid", indexedSort, direction, remoteFilters.query);
+  const listingSignature = useBook("signature", deployments[0], source, "listing", indexedSort, direction, remoteFilters.query, useCache),
+    listingAdvanced = useBook("advanced", deployments[1], source, "listing", indexedSort, direction, remoteFilters.query, useCache),
+    bidSignature = useBook("signature", deployments[0], source, "bid", indexedSort, direction, remoteFilters.query, useCache),
+    bidAdvanced = useBook("advanced", deployments[1], source, "bid", indexedSort, direction, remoteFilters.query, useCache);
   const listingQueries = [listingSignature, listingAdvanced];
   const bidQueries = [bidSignature, bidAdvanced];
   const [signature, advanced] = book === "bids" ? bidQueries : listingQueries;
@@ -102,22 +102,18 @@ export function MarketPage() {
     ...(signature.data?.pages ?? []),
     ...(advanced.data?.pages ?? []),
   ];
-  const indexedRows = Array.from(
-    new Map(
-      pages.flatMap((page) => page.orders).map((row) => [row.hash, row]),
-    ).values(),
+  const rows = Array.from(
+    new Map(pages.flatMap(page => page.orders).map(row => [row.hash, row])).values(),
   );
-  const availability = useOrderAvailability(indexedRows);
-  const rows = indexedRows.map((row,index) => ({...row,
-    status:row.status === "checking" && !availability[index].isError ? availability[index].data ?? row.status : row.status,
-  }));
+  // Evaluate deadlines at the checked response, not on unrelated UI renders.
+  const available = new Set(pages.flatMap(page => page.orders.filter(row => orderAvailable(row, page.checkedAt)).map(row => row.hash)));
   const positions = useOrderPositions(rows);
   const bids = book === "bids";
   const entries = rows
     .map((row, index) => ({ row, position: positions[index].data }))
     .filter(({ row }) =>
       row.order.kind === (bids ? 1 : 0) &&
-      (filters.showInactive || orderAvailable(row) || row.status === "checking"),
+      (filters.showInactive || available.has(row.hash)),
     );
   const viewColumns = columnsForView(columnSettings.columns, bids ? [] : ["bidder"]);
   const counts: Record<string, number> = { signature: 0, advanced: 0, Pending: 0, Active: 0, Mature: 0, Closed: 0 };
@@ -131,16 +127,19 @@ export function MarketPage() {
     direction,
     prices,
   );
+  const needsPositions = filters.statuses.length > 0 || !!filters.maturesFrom || !!filters.maturesTo ||
+    ["progress", "shares", "created", "status", "amount", "apy", "reward"].includes(sort);
   const loading =
+    (needsPositions && positions.some(query => query.isPending)) ||
     remoteFilters.pending || markets.some((query) => query.isPending) ||
     deployments.some(
       (deployment, index) =>
         deployment && [signature, advanced][index].isPending,
     );
   const unavailable =
-    markets.some((query) => query.isError) ||
-    signature.isError ||
-    advanced.isError;
+    markets.some(query => query.isError && !query.data) ||
+    (signature.isError && !signature.data) ||
+    (advanced.isError && !advanced.data);
   const pageEnd = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const target = pageEnd.current;
@@ -169,17 +168,13 @@ export function MarketPage() {
     for (const [index, query] of [...listingQueries, ...bidQueries].entries())
       if (deployments[index % 2]) void query.refetch();
     positions.forEach((query) => void query.refetch());
-    availability.forEach((query) => void query.refetch());
   }
   const fetching = markets.some(query => query.isFetching) || [...listingQueries, ...bidQueries].some(query => query.isFetching);
   const closedQueries = bids ? listingQueries : bidQueries;
   const closedOrders = collectOrders(closedQueries).filter((row) => row.order.kind === (bids ? 0 : 1));
-  const closedAvailability = useOrderAvailability(closedOrders);
-  const closedVisible = closedOrders.filter((row, index) => {
-    const check = closedAvailability[index];
-    const status = row.status === "checking" && check && !check.isError ? check.data ?? row.status : row.status;
-    return filters.showInactive || orderAvailable({ ...row, status }) || status === "checking";
-  }).length;
+  const closedPages = closedQueries.flatMap(query => query.data?.pages ?? []);
+  const closedAvailable = new Set(closedPages.flatMap(page => page.orders.filter(row => orderAvailable(row, page.checkedAt)).map(row => row.hash)));
+  const closedVisible = closedOrders.filter(row => filters.showInactive || closedAvailable.has(row.hash)).length;
   const closedCount = {
     count: closedVisible,
     pending: closedQueries.some((query, index) => deployments[index] && query.isPending),
@@ -192,7 +187,7 @@ export function MarketPage() {
     const mark = sourceSwitch.current;
     if (!mark || mark.source !== source) return;
     const active = [signature, advanced];
-    const ready = deployments.some(Boolean) && deployments.every((deployment, index) => !deployment || active[index].data || active[index].isError);
+    const ready = deployments.some(Boolean) && deployments.every((deployment, index) => !deployment || (!active[index].isFetching && (active[index].data || active[index].isError)));
     if (!ready) return;
     if (active.some(query => query.isError)) { sourceSwitch.current = null; return; }
     const seconds = (performance.now() - mark.started) / 1000;
@@ -201,8 +196,7 @@ export function MarketPage() {
     sourceSwitch.current = null;
   }, [source, deployments, signature, advanced, showToast]);
   const marketError = [signature, advanced, ...markets].find(query => query.error)?.error?.message ?? "Could not refresh the market. Please try again.";
-  useErrorToast("market-data", unavailable && !fetching && marketError, refresh);
-  useErrorToast("market-availability", availability.some(query => query.isError && !query.isFetching) && "Could not verify order availability. Please try again.", refresh);
+  useErrorToast("market-data", [signature, advanced, ...markets].some(query => query.isError) && !fetching && marketError, refresh);
   function onSort(value: MarketSort) {
     if (sort === value) setDirection(direction === "asc" ? "desc" : "asc");
     else {
@@ -268,7 +262,7 @@ export function MarketPage() {
           refresh={refresh}
           onActivity={() => setActivityOpen(true)}
         />
-        {!filtered.length ? (
+        {loading || !filtered.length ? (
           <div className="market-empty" role="status">
             {loading
                 ? <span className="market-loading"><LoaderCircle size={16} aria-hidden="true" /><span>{source === "arkiv" ? "Loading orders from Arkiv…" : "Loading orders from Graph…"}</span></span>

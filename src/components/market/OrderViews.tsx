@@ -45,15 +45,15 @@ export function RowActions({
     primary = (
       <button
         className="market-primary"
-        disabled={busy || !available || !position}
-        onClick={() => position && open({ kind: "fill", row, initialPosition: position })}
+        disabled={busy}
+        onClick={() => open({ kind: "fill", row, initialPosition: position })}
       >
         Accept
       </button>
     );
   else if (row.order.kind === 0) primary = (
-    <button className="market-primary" disabled={busy || !available || !position || owner}
-      onClick={() => position && open({ kind: "fill", row, initialPosition: position })}>Buy Stake</button>
+    <button className="market-primary" disabled={busy || owner}
+      onClick={() => open({ kind: "fill", row, initialPosition: position })}>Buy Stake</button>
   );
   const key = row.arkivEntity ?? row.arkiv?.entityKey;
   const entity = key && /^0x[0-9a-f]{64}$/i.test(key) ? key : undefined;
@@ -85,6 +85,7 @@ export function OrderCard({ row }: { row: SaleRow }) {
         {position.isError && (
           <button disabled={position.isFetching} onClick={() => void position.refetch()}>Refresh details</button>
         )}
+        <RowActions row={row} />
       </article>
     );
   return (

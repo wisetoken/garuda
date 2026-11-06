@@ -20,7 +20,7 @@ test("cached recovery settings disable submission without an outage message whil
 });
 
 test("initial display and balance reads do not delay the wallet action", () => {
-  for (const overrides of [{ live: pending() }, { kind: "bid", paying: true, balance: pending() }, { kind: "fill", availability: pending() }]) {
+  for (const overrides of [{ live: pending() }, { kind: "bid", paying: true, balance: pending() }]) {
     const result = reviewReadiness(review(overrides));
     assert.equal(result.blocked, false);
     assert.equal(result.checking, false);
@@ -29,7 +29,7 @@ test("initial display and balance reads do not delay the wallet action", () => {
 });
 
 test("failed background reads do not disable a previously loaded market", () => {
-  for (const overrides of [{live:failed({canList:true})},{kind:'fill',availability:failed()},{kind:'bid',paying:true,balance:failed()}]) {
+  for (const overrides of [{live:failed({canList:true})},{kind:'fill',availability:failed({status:'available',order:{startTime:'0',deadline:'9999999999'}})},{kind:'bid',paying:true,balance:failed()}]) {
     assert.deepEqual(reviewReadiness(review(overrides)),{checking:false,blocked:false,failure:undefined});
   }
   const noConfig=reviewReadiness(review({config:failed()}));
@@ -60,4 +60,29 @@ test("a seller's wallet balance never gates listing an NFT stake", () => {
   for (const balance of [ready(0n), pending(), failed()]) {
     assert.deepEqual(reviewReadiness(review({ balance })), { checking: false, blocked: false, failure: undefined });
   }
+});
+
+test("purchase and bid-acceptance reviews wait for their first order check inside the modal", () => {
+  assert.deepEqual(reviewReadiness(review({ kind: "fill", availability: pending() })),
+    { checking: true, blocked: true, failure: undefined });
+  const failure = reviewReadiness(review({ kind: "fill", availability: failed() }));
+  assert.equal(failure.checking, false);
+  assert.equal(failure.blocked, true);
+  assert.match(failure.failure, /Could not check this order/);
+});
+
+test("a ready review stays ready during a background order check", () => {
+  const availability = { ...review().availability, isFetching: true };
+  assert.deepEqual(reviewReadiness(review({ kind: "fill", availability })),
+    { checking: false, blocked: false, failure: undefined });
+});
+
+test("missing stake details block confirmation inside the review, while a display snapshot is sufficient", () => {
+  assert.deepEqual(reviewReadiness(review({ kind: "fill", live: pending(), hasPosition: false })),
+    { checking: true, blocked: true, failure: undefined });
+  const failure = reviewReadiness(review({ kind: "fill", live: failed(), hasPosition: false }));
+  assert.equal(failure.blocked, true);
+  assert.match(failure.failure, /Could not load this stake/);
+  assert.deepEqual(reviewReadiness(review({ kind: "fill", live: pending(), hasPosition: true })),
+    { checking: false, blocked: false, failure: undefined });
 });

@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useActiveAccount } from "thirdweb/react";
 import { orderAvailable, useMarkets } from "../lib/market/api";
-import { useBook, useOrderAvailability } from "../lib/market/queries";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { bookOptions } from "../lib/market/book-query";
 import { sameAddress, type SaleRow } from "../lib/blend/sales";
 import { stakeCollection } from "../lib/blend/stake-collections";
 import { screenHref } from "../navigation";
@@ -43,20 +44,15 @@ export function BidAlerts() {
     const markets = useMarkets();
     const deployments = markets.map((query) => query.data?.enabled ? query.data.deployment : undefined);
     const owned = address ? { stakeOwner: address } : {};
-    const signature = useBook("signature", address ? deployments[0] : undefined, "arkiv", "bid", undefined, "desc", owned);
-    const advanced = useBook("advanced", address ? deployments[1] : undefined, "arkiv", "bid", undefined, "desc", owned);
+    const signature = useInfiniteQuery({ ...bookOptions("signature", address ? deployments[0] : undefined, "arkiv", "bid", undefined, "desc", owned), staleTime: 15_000, refetchInterval: 30_000 });
+    const advanced = useInfiniteQuery({ ...bookOptions("advanced", address ? deployments[1] : undefined, "arkiv", "bid", undefined, "desc", owned), staleTime: 15_000, refetchInterval: 30_000 });
     const indexed = [...new Map(
         [...(signature.data?.pages ?? []), ...(advanced.data?.pages ?? [])]
             .flatMap((page) => page.orders)
             .filter((row) => row.order.kind === 1 && !!address && sameAddress(row.order.owner, address) && !sameAddress(row.order.maker, address))
             .map((row) => [row.hash, row]),
     ).values()];
-    const availability = useOrderAvailability(indexed);
-    const incoming = indexed.filter((row, index) => {
-        const check = availability[index];
-        const status = row.status === "checking" && check && !check.isError ? check.data ?? row.status : row.status;
-        return orderAvailable({ ...row, status });
-    });
+    const incoming = indexed.filter(row => orderAvailable(row));
     const activity = [...(signature.data?.pages ?? []), ...(advanced.data?.pages ?? [])].flatMap((page) => page.activity ?? []);
     const [noticeRevision, setNoticeRevision] = useState(0);
     const [tracked, setTracked] = useState(address);

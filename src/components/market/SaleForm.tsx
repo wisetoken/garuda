@@ -205,7 +205,7 @@ export function SaleForm({
           : buy
             ? "Confirm purchase"
             : "Accept bid";
-  const readiness = reviewReadiness({ kind: intent.kind, paying: paying && !!account, config, live, availability, balance });
+  const readiness = reviewReadiness({ kind: intent.kind, paying: paying && !!account, config, live, availability, balance, hasPosition: !!position });
   const retryReview = () => {
     void config.refetch();
     if (intent.kind !== "cancel") void live.refetch();
