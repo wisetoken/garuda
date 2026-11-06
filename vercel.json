@@ -59,5 +59,18 @@
   ],
   "regions": [
     "iad1"
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "garuda.wise.one"
+        }
+      ],
+      "destination": "/garuda/",
+      "permanent": false
+    }
   ]
 }

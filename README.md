@@ -232,7 +232,7 @@ Adding `--publish` writes valid existing orders as v2 using the configured Rabdi
 
 ## Production on Vercel
 
-Open the live app at **[Garuda on Vercel](https://garuda-vmarinchenkos-projects.vercel.app/garuda/)**. The **Garuda** project in the `vmarinchenkos-projects` team is connected to `wisetoken/garuda`: every push to `master` deploys production automatically; other branches receive previews. Production uses a dedicated Neon PostgreSQL database on the Free plan. The API and database run in `iad1` to keep database calls in the same region.
+Open the live app at **[garuda.wise.one](https://garuda.wise.one)**. The domain opens the app at `/garuda/`; the [Vercel URL](https://garuda-vmarinchenkos-projects.vercel.app/garuda/) remains available. The **Garuda** project in the `vmarinchenkos-projects` team is connected to `wisetoken/garuda`: every push to `master` deploys production automatically; other branches receive previews. Production uses a dedicated Neon PostgreSQL database on the Free plan. The API and database run in `iad1` to keep database calls in the same region.
 
 [`vercel.json`](vercel.json) runs the test suite before building the Vite frontend and the [Hono API entry](server/vercel-entry.ts) together. A failed test or build prevents that deployment from replacing production. `/garuda/` serves the app and `/api/garuda/*` serves its market API. Price, subgraph and owl-avatar requests use the existing public WiseOne API through explicit same-origin rewrites. The standalone backup remains available at `/garuda-backup.html`.
 
