@@ -10,6 +10,20 @@ Built as an extension of **WiseOne**, Garuda brings a market to existing NFT sta
 
 **Next comes stake-backed lending:** borrowing against a position or funding another owner's loan. The ambition is to give stake owners more ways to use the value they have already committed. Trading is implemented today; lending is the next step.
 
+## The stake economy behind Garuda
+
+Garuda builds on an existing pool of capital and staking positions. **Ethereum snapshot: 6 November 2026, 09:43 India time.**
+
+| Metric | Snapshot |
+| --- | ---: |
+| WISE/ETH Uniswap liquidity, both assets | **$126.45 million** |
+| LP supply burned to the zero address | **99.9973%** — about **$126.45 million** in ownerless liquidity |
+| Total WISE staked across the token protocol | **68.21 million WISE** · ≈ **$8.24 million** |
+| WiseOne Protocol — Signature stakes | **21.38 million WISE** · **31.34%** of all WISE staked |
+| Signature + legacy Advanced NFT stakes | **28.58 million WISE** · **41.90%** of all WISE staked |
+
+The pool held **28,412.91 WETH and 523.19 million WISE**. Burned LP shares cannot be redeemed by an owner; pool reserves still change with swaps. “WiseOne Protocol” refers to the Signature contract; the combined figure also includes Advanced stakes. These figures describe the underlying ecosystem, with USD estimates at the snapshot price. [Sources, exact values and reproducible queries](docs/wise-metrics.md).
+
 ## Why Garuda exists
 
 Long-term staking meets short-notice life. You may commit WISE for years, then need access to capital sooner. Ending an active stake early costs principal and stops its future earnings. It also destroys the stake's shares.

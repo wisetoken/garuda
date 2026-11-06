@@ -1,0 +1,69 @@
+{
+  "blockNumber": "26353342",
+  "blockHash": "0x54cb2a5feb83a8ca582bcade53359bad026cf5d05e38900a628f938680102834",
+  "timestamp": "2026-11-06T04:13:23.000Z",
+  "pair": "0x21b8065d10f73ee2e260e5b47d3344d3ced7596e",
+  "wiseReserve": 523188110.7118785,
+  "ethReserve": 28412.914470002568,
+  "burnedLp": "3817946843874468118152924",
+  "lpSupply": "3818049074091314756770197",
+  "ownerlessSharePercent": 99.99732244885116,
+  "ethUsd": 2225.25388638,
+  "ethUsdUpdatedAt": "2026-11-06T03:35:35.000Z",
+  "wiseUsd": 0.1208474486580497,
+  "poolUsd": 126451896.6955115,
+  "ownerlessPoolUsd": 126448510.88129881,
+  "totalStakedWise": 68206522.8958882,
+  "graphTotalStakedWise": 68206522.8958882,
+  "stakers": [
+    {
+      "address": "0x48791dbdfb38baa58e48329148c321bf33b3c1e1",
+      "stakedWise": 21376249.03596802,
+      "count": 43,
+      "percent": 31.3404,
+      "usd": 2583265.15787583
+    },
+    {
+      "address": "0xf863a603501fcd30f56dffcb6700a25effefbe94",
+      "stakedWise": 7203250.08328636,
+      "count": 89,
+      "percent": 10.5609,
+      "usd": 870494.3946110406
+    }
+  ],
+  "indexerResponse": {
+    "data": {
+      "dailyGlobals": [
+        {
+          "day": "2186",
+          "totalStaked": "68206522895888192422764414"
+        }
+      ],
+      "stakers": [
+        {
+          "id": "0x48791dbdfb38baa58e48329148c321bf33b3c1e1",
+          "totalStaked": "21376249035968020505568832",
+          "activeStakeCount": 43
+        },
+        {
+          "id": "0xf863a603501fcd30f56dffcb6700a25effefbe94",
+          "totalStaked": "7203250083286360040797299",
+          "activeStakeCount": 89
+        }
+      ],
+      "_meta": {
+        "block": {
+          "number": 26353342,
+          "timestamp": 1793938403
+        },
+        "hasIndexingErrors": false
+      }
+    }
+  },
+  "sources": {
+    "subgraph": "https://api.studio.thegraph.com/query/2012/wise-token/v0.1.2",
+    "wiseToken": "0x66a0f676479cee1d7373f3dc2e2952778bff5bd6",
+    "ethUsdFeed": "0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419",
+    "ethUsdDecimals": 8
+  }
+}
