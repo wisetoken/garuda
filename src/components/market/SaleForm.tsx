@@ -42,7 +42,7 @@ import { reviewReadiness } from "../../lib/market/review-readiness";
 export function SaleForm({
   intent,
   busy,
-  status,
+  busyLabel,
   blocked,
   execute,
   connect,
@@ -52,7 +52,7 @@ export function SaleForm({
 }: {
   intent: MarketIntent;
   busy: boolean;
-  status: string;
+  busyLabel: string;
   blocked: boolean;
   execute: (price: string, days: number) => Promise<void>;
   connect: () => Promise<void>;
@@ -377,7 +377,6 @@ export function SaleForm({
         </section>
       </div>
       <footer className="sale-footer">
-        {status && <p role="status">{status}</p>}
         {!account ? (
           <button
             className="stake-primary"
@@ -404,7 +403,7 @@ export function SaleForm({
             aria-busy={busy || readiness.checking}
           >
             {(busy || readiness.checking) && <LoaderCircle className="sale-loading" size={18} aria-hidden="true" />}
-            {busy ? "Check your wallet…" : readiness.checking ? "Checking…" : action}
+            <span aria-live="polite">{busy ? busyLabel : readiness.checking ? "Checking…" : action}</span>
           </button>
         )}
       </footer>

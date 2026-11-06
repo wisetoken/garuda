@@ -107,11 +107,7 @@ select:focus-visible {
   text-align: center;
   color: var(--muted);
 }
-.market-pagination {
-  display: flex;
-  justify-content: center;
-  padding: 20px;
-}
+.market-page-end { height: 1px; }
 .market-row-actions {
   display: flex;
   gap: 8px;

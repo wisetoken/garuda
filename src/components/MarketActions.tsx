@@ -21,14 +21,13 @@ const MarketContext = createContext<MarketContextValue>({
 });
 export const useMarketActions = () => useContext(MarketContext);
 const labels: Record<SalesStep, string> = {
-  checking: "Checking ownership and order state…",
-  "approving-nft": "Approve this NFT in your wallet…",
-  "approving-wise": "Approve the exact WISE amount in your wallet…",
-  signing: "Review and sign the order in your wallet…",
-  publishing: "Publishing your signed order…",
-  confirming:
-    "Waiting for Ethereum confirmations. This can take several minutes.",
-  settling: "Confirm the stake transfer in your wallet…",
+  checking: "Checking…",
+  "approving-nft": "Approve NFT in your wallet…",
+  "approving-wise": "Approve WISE in your wallet…",
+  signing: "Sign order in your wallet…",
+  publishing: "Publishing…",
+  confirming: "Waiting for confirmation…",
+  settling: "Confirm transfer in your wallet…",
   cancelling: "Confirm cancellation in your wallet…",
 };
 export function MarketActionsProvider({ children }: { children: ReactNode }) {
@@ -100,7 +99,7 @@ export function MarketActionsProvider({ children }: { children: ReactNode }) {
             }
             intent={intent}
             busy={busy}
-            status={busy && step !== "checking" ? labels[step] : ""}
+            busyLabel={labels[step]}
             blocked={
               (!!pending && !pending.confirmed) ||
               (!!unsaved && intent.kind !== "cancel")

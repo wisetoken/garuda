@@ -1,6 +1,6 @@
 import { useErrorToast } from "../components/AppToast";
 import { ArkivSource } from "../components/market/ArkivSource";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useActiveAccount } from "thirdweb/react";
 import { Layers, Wallet, Clock3, Plus, RefreshCw, LoaderCircle } from "lucide-react";
@@ -114,6 +114,26 @@ export function MarketPage() {
     signature.isError ||
     advanced.isError;
   const showOrders = section === "market" || mine;
+  const pageEnd = useRef<HTMLDivElement>(null);
+  const paginate = showOrders || section === "activity";
+  useEffect(() => {
+    const target = pageEnd.current;
+    if (!paginate || !target) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      // Keep pagination lazy, avoid duplicate requests, and let the existing
+      // retry notification handle failures rather than looping on an outage.
+      if (signature.hasNextPage && !signature.isFetching && !signature.isError)
+        void signature.fetchNextPage({ cancelRefetch: false });
+      if (advanced.hasNextPage && !advanced.isFetching && !advanced.isError)
+        void advanced.fetchNextPage({ cancelRefetch: false });
+    }, { rootMargin: "240px" });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [paginate, signature.hasNextPage, signature.isFetching, signature.isError,
+    signature.data?.pages.length, signature.fetchNextPage,
+    advanced.hasNextPage, advanced.isFetching, advanced.isError,
+    advanced.data?.pages.length, advanced.fetchNextPage]);
   function refresh() {
     markets.forEach((query) => void query.refetch());
     if (deployments[0]) void signature.refetch();
@@ -292,23 +312,7 @@ export function MarketPage() {
             ))}
           </div>
         )}
-        {(showOrders || section === "activity") &&
-          (signature.hasNextPage || advanced.hasNextPage) && (
-            <div className="market-pagination">
-              <button
-                className="market-secondary"
-                disabled={
-                  signature.isFetchingNextPage || advanced.isFetchingNextPage
-                }
-                onClick={() => {
-                  if (signature.hasNextPage) void signature.fetchNextPage();
-                  if (advanced.hasNextPage) void advanced.fetchNextPage();
-                }}
-              >
-                Load more
-              </button>
-            </div>
-          )}
+        {paginate && <div ref={pageEnd} className="market-page-end" aria-hidden="true" />}
       </section>
       <SavedOrders
         deployments={deployments.filter(
