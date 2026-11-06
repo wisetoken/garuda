@@ -289,7 +289,7 @@
   padding-top: 20px;
   border-top: 1px solid var(--border);
 }
-.sale-footer .stake-primary {
+.sale-dialog .stake-primary {
   width: 100%;
   min-height: 46px;
   font-size: 15px;
@@ -347,7 +347,7 @@
   }
 }
 
-.sale-footer .stake-primary {
+.sale-dialog .stake-primary {
   border: 1px solid #29b8b2;
   border-radius: 12px;
   background: #00aaa5;
@@ -357,7 +357,7 @@
   cursor: pointer;
   padding: 13px 20px;
 }
-.sale-footer .stake-primary:disabled {
+.sale-dialog .stake-primary:disabled {
   cursor: not-allowed;
 }
 
@@ -383,7 +383,7 @@
 .sale-currency { display: flex; align-items: center; flex-shrink: 0; gap: 8px; padding-left: 12px; border-left: 1px solid var(--border); }
 .sale-currency img { object-fit: contain; }
 .sale-breakdown dd small { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; font-weight: 400; }
-.sale-footer .stake-primary { min-height: 56px; padding: 16px 24px; font-size: 16px; }
+.sale-dialog .stake-primary { min-height: 56px; padding: 16px 24px; font-size: 16px; }
 @media (max-width: 480px) {
   .sale-amount { padding: 12px; gap: 8px; font-size: 24px; }
   .sale-currency { gap: 6px; padding-left: 8px; }

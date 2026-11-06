@@ -68,7 +68,7 @@ export function OrderSuccess({ receipt, onClose, onView }: {
       {copyError && <p role="status" className="order-success-copy-error">Copy unavailable. Order hash: <code>{receipt.hash}</code></p>}
       <p className="order-success-next">{bid ? "The owner can accept your bid before it expires. Keep enough WISE in your wallet." : "Your stake stays in your wallet until a buyer completes the purchase."}</p>
       <div className="order-success-actions">
-        <button type="button" className="market-primary" onClick={onView}>{bid ? "View purchase bids" : "View listings"}</button>
+        <button type="button" className="stake-primary" onClick={onView}>{bid ? "View purchase bids" : "View listings"}</button>
         <button type="button" className="market-secondary" onClick={onClose}>Done</button>
       </div>
     </section>
