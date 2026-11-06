@@ -6,7 +6,7 @@ import "./guide-base.css";
 import "./garuda-problem.css";
 
 const stakingSource = "https://github.com/wise-foundation/wise-token-contracts/blob/master/contracts/StakingToken.sol";
-const closingSource = "https://docs.wisetoken.net/wise-token/wise-ethereum/wise-contract-functionality/circulation-epoch/staking/closing-stakes";
+const closingSource = "https://teal.wise.one/#sec-2-3-5-4";
 const signatureSource = "https://github.com/wisetoken/signature-stakes#integrating-both-collections";
 const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 const ratio = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });

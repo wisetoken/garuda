@@ -35,7 +35,7 @@ export function StakeEcosystem() {
         <div><h2 id={`stake-title-${item.key}`}>{item.title}</h2><p className="stake-dialog-intro" id={`stake-intro-${item.key}`}>{item.intro}</p></div>
       </div>
       <div className="stake-explanations">{item.rows.map(([title, text]) => <div key={title}><h3>{title}</h3><p>{text}</p></div>)}</div>
-      <a className="stake-detail-link" href={item.href}>{item.link} ↗</a>
+      <a className="stake-detail-link" href={item.href} {...(item.href.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}>{item.link} ↗</a>
     </dialog>)}
   </div>;
 }

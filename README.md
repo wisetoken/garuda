@@ -26,11 +26,11 @@ The pool held **28,412.91 WETH and 523.19 million WISE**. Burned LP shares canno
 
 ## Why Garuda exists
 
-Long-term staking meets short-notice life. You may commit WISE for years, then need access to capital sooner. Ending an active stake early costs principal and stops its future earnings. It also destroys the stake's shares.
+Long-term staking meets short-notice life. You may commit WISE for years, then need access to capital sooner. Ending an active stake early costs principal and stops its future earnings. It also destroys the stake's shares. The [WISE teal paper](https://teal.wise.one/#sec-2-3-5) specifies staking, including [how a stake closes](https://teal.wise.one/#sec-2-3-5-4).
 
 Those shares matter. If WISE's share price has risen, recreating an equivalent position with the same principal, term and bonuses buys fewer shares. An existing stake can hold earning weight that a new stake would cost more to recreate. Buyers can compare that position's remaining shares, rewards, time to maturity and asking price. [How WISE shares work](https://github.com/wise-foundation/wise-token-contracts/blob/master/contracts/StakingToken.sol).
 
-**Signature NFTs make the position transferable. Garuda brings the counterparties together.** The seller can move on, and the buyer takes over the existing stake without restarting its term. This applies to supported NFT stakes; ordinary wallet-bound WISE stakes remain non-transferable. [Supported stake contracts](https://github.com/wisetoken/signature-stakes).
+**Signature NFTs make the position transferable. Garuda brings the counterparties together.** The seller can move on, and the buyer takes over the existing stake without restarting its term. This applies to supported NFT stakes; ordinary wallet-bound WISE stakes remain non-transferable. Signature stakes are opened at [stake.wise.one](https://stake.wise.one). [Supported stake contracts](https://github.com/wisetoken/signature-stakes).
 
 A market creates choices, not guaranteed liquidity: a sale needs a buyer, proceeds may be below principal, and future rewards vary. Garuda puts the stake's details in view so both sides can judge the trade.
 
