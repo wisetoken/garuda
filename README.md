@@ -303,6 +303,8 @@ This submission claims independent access for supported Signature positions. It 
 
 ### Evidence for judging
 
+See the [integration struggle log](docs/struggles.md) for observed Arkiv failures, diagnostics, fixes, and remaining infrastructure dependencies.
+
 | Judging consideration | Implementation and recorded evidence |
 | --- | --- |
 | End-to-end behavior | The [fork verifier](scripts/verify-backup-fork.mjs) recovers an Arkiv-format order, checks its signature/state, exports/imports it, cancels it and proves previously executable settlement now fails. It also checks permission removal and matured redemption. |

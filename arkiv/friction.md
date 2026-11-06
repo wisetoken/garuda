@@ -22,11 +22,32 @@ Observed on 6 November 2026 while listing Signature Stake #40 for **42,000 WISE*
 
 **Improvement request for Arkiv developer materials:** a complete asynchronous publication example would help teams expose these stages clearly: application save/queue, transaction submission, confirmation, entity read-back and query visibility. Include stable identifiers, timestamped diagnostics, suggested polling/backoff and recovery after a lost response. Garuda now supplies its own durable queue and status endpoint; documenting the Arkiv-facing stages together would reduce integration guesswork.
 
-## Public RPC limits are easy to miss during setup
+## Public RPC discovery rejected with 429 ANON_COST_LIMITED
 
-Constructing `rabdi({ accessKey: '' })` prints a warning that the public endpoint is heavily rate limited. A simple application can make several discovery, chain-ID and read-back requests for one interaction. We added a server-side access-key setting, reused the runtime client and bounded publication/cache writes. We did not record a reproducible HTTP 429 in this verification, so this is setup feedback rather than a claimed outage.
+**Observed:** 6 November 2026, approximately 15:44–15:50 IST. SDK 1.0.1, Rabdi 7794095, server-side `rabdi({ accessKey: "" })`. This is a separate incident from the earlier publication-status issue above.
 
-Reproduce: leave `ARKIV_ACCESS_KEY` empty and run `npm run arkiv:query`. Improvement: an end-to-end marketplace example with request budgeting, cached clients and retry guidance would make the intended production setup clearer.
+**Expected:** a discovery query would return offers or an explicit quota error that the app could handle. A failed query should not look like an empty market.
+
+**What happened:** `eth_chainId` succeeded, while `arkiv_query` returned HTTP **429** with `ANON_COST_LIMITED`. Our API initially hid that behind HTTP 503 and a generic error; the UI displayed zero listings and bids. Reducing the query page from 25 entities to 5 still failed. The PostgreSQL catalog returned eight stored orders; subsequently the Arkiv view recovered to four listings and two bids with browser cache off. We did not measure the rate-limit reset interval or establish data loss.
+
+**Configuration finding:** the original project and `garuda-full` had the same publisher signing key, but neither local environment had an RPC access key. A signing key authorizes writes; it does not authenticate query quota. The public endpoint recovered without an access key being added.
+
+**Reproduction conditions:** use a configured Garuda database/deployment and the anonymous public Rabdi endpoint. This depends on upstream allowance and is not guaranteed to fail on every run. Do not generate excess traffic to force it.
+
+```sh
+# In a local environment without ARKIV_ACCESS_KEY:
+npm run server
+# In another terminal:
+curl -i 'http://127.0.0.1:3213/api/garuda/sales?source=arkiv&preview=1&kind=listing&sort=price&direction=asc'
+```
+
+The query scopes v2 entities to our publisher and Ethereum deployment, filters unexpired listings and sorts by `price:u256`. Use [the standalone query](schema.md#query) to distinguish an upstream query rejection from an API/UI failure. The historical generic 503 is now replaced with an explicit 429 message when the upstream response is 429.
+
+**What we changed:** surfaced the rate-limit error, added an explicit catalog fallback, stopped interval polling after an order-book failure, avoided immediate rate-limit retries, and displayed unknown counts instead of zero. TypeScript and 40 Arkiv tests passed, including a throttling regression. [Full incident record](../docs/struggles.md).
+
+**What Arkiv could improve today:** expose a stable SDK error type for quota failures, distinguish per-query cost from exhausted allowance, include retry/reset and remaining-budget information, and show a realistic marketplace query budget in the quickstart. Document the difference between the publisher signing key and RPC access key next to the first write example. These would let us give users a useful recovery action without inspecting raw transport errors.
+
+**Remaining action:** configure a Rabdi `ARKIV_ACCESS_KEY` on the server and verify a real discovery query. A successful chain-ID call is insufficient. Access keys raise limits but retain quotas; see [Arkiv access-key documentation](https://docs.arkiv.network/start-here/access-keys/).
 
 ## Time-based orders meet block-based entity expiration
 
