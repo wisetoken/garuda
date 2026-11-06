@@ -71,7 +71,8 @@
 .gp-two-sides p { font-size: 16px; margin: 0; max-width: 430px; }
 .gp-solution-limit { margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--ba-line); }
 .gp-solution-limit p { font-size: 15px; margin: 0; max-width: 820px; }
-.gp-solution-limit .gp-source { margin-top: 22px; }
+.gp-solution-limit .gp-source { margin-top: 22px; font-size: 15px; }
+.gp-solution-limit .gp-source svg { width: 15px; height: 15px; }
 .gp-compare { display: grid; grid-template-columns: minmax(0,.8fr) minmax(0,1.2fr); gap: 70px; padding: 60px 0 36px; }
 .gp-compare > div > p { font-size: 16px; max-width: 320px; }
 .gp-checks { margin: 0; }

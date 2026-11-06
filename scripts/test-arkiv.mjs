@@ -60,7 +60,7 @@ for(const field of ['scope','kind','maker','owner','collection','tokenId','expir
 });
 test('does not disguise Arkiv outages as database results',async()=>{
  const {s}=fixture(),r=runtime();r.reader.select=()=>{throw new Error('RPC down')};
- await assert.rejects(discoverArkiv(s,{},r),/RPC down/);
+ await assert.rejects(discoverArkiv(s,{},r),/Arkiv orders could not be loaded/);
 });
 test('rejects wrong network, invalid pagination and canonical chain change',async()=>{
  const {s}=fixture(),r=runtime();r.reader.getChainId=async()=>1;
@@ -208,3 +208,14 @@ test('Arkiv RPC throttling is reported as rate limiting, not an empty market',as
  r.reader.getChainId=async()=>{throw {cause:{status:429}};};
  await assert.rejects(discoverArkiv(s,{},r,true),error=>error.code==='rate-limit' && /order catalog/.test(error.message));
 });
+
+ test('simultaneous Arkiv discovery shares reads but later refreshes remain fresh', async () => {
+   const {s,v2}=fixture(), r=runtime([v2]);
+   const select=r.reader.select;
+   let reads=0;
+   r.reader.select=()=>{ reads++; return select(); };
+   const [a,b]=await Promise.all([discoverArkiv(s,{kind:'listing'},r,true),discoverArkiv(s,{kind:'listing'},r,true)]);
+   assert.equal(a.orders.length,1); assert.deepEqual(a,b); assert.equal(reads,1);
+   await discoverArkiv(s,{kind:'listing'},r,true);
+   assert.equal(reads,2);
+ });

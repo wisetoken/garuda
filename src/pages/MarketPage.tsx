@@ -173,7 +173,7 @@ export function MarketPage() {
     pending: closedQueries.some((query, index) => deployments[index] && query.isPending),
     failed: closedQueries.some((query, index) => deployments[index] && query.isError && !query.data),
   };
-  const openCount = { count: filtered.length, pending: loading, failed: false };
+  const openCount = { count: filtered.length, pending: loading, failed: unavailable };
   const saleCount = bids ? closedCount : openCount;
   const bidCount = bids ? openCount : closedCount;
   useEffect(() => {
@@ -182,12 +182,14 @@ export function MarketPage() {
     const active = [signature, advanced];
     const ready = deployments.some(Boolean) && deployments.every((deployment, index) => !deployment || active[index].data || active[index].isError);
     if (!ready) return;
+    if (active.some(query => query.isError)) { sourceSwitch.current = null; return; }
     const seconds = (performance.now() - mark.started) / 1000;
     const time = seconds < 0.1 ? "<0.1s" : `${seconds.toFixed(1)}s`;
     showToast(`${source === "arkiv" ? "Arkiv" : "Graph"} loaded in ${time}. ${mark.cached ? "Cached." : "Not cached."}`, { id: `market-source-${mark.started}` });
     sourceSwitch.current = null;
   }, [source, deployments, signature, advanced, showToast]);
-  useErrorToast("market-data", unavailable && !fetching && "Could not refresh the market. Please try again.", refresh);
+  const marketError = [signature, advanced, ...markets].find(query => query.error)?.error?.message ?? "Could not refresh the market. Please try again.";
+  useErrorToast("market-data", unavailable && !fetching && marketError, refresh);
   useErrorToast("market-availability", availability.some(query => query.isError && !query.isFetching) && "Could not verify order availability. Please try again.", refresh);
   useErrorToast("market-positions", positions.some(query => query.isError && !query.isFetching) && "Could not refresh stake details. Please try again.", refresh);
   function onSort(value: MarketSort) {
@@ -217,11 +219,11 @@ export function MarketPage() {
           <div className="stake-view-switch" role="group" aria-label="Order book">
             <button aria-pressed={book === "listings"} onClick={() => setBook("listings")}>
               <Tag size={15} aria-hidden="true" />
-              For sale ({saleCount.count})
+              For sale ({saleCount.pending || saleCount.failed ? "—" : saleCount.count})
             </button>
             <button aria-pressed={bids} onClick={() => setBook("bids")}>
               <HandCoins size={15} aria-hidden="true" />
-              Purchase bids ({bidCount.count})
+              Purchase bids ({bidCount.pending || bidCount.failed ? "—" : bidCount.count})
             </button>
           </div>
         </div>
@@ -238,7 +240,7 @@ export function MarketPage() {
           </Link>
         </header>
         <MarketToolbar
-          count={filtered.length}
+          count={loading || unavailable ? undefined : filtered.length}
           bids={bids}
           view={view}
           setView={setView}
@@ -260,7 +262,7 @@ export function MarketPage() {
             {loading
                 ? <span className="market-loading"><LoaderCircle size={16} aria-hidden="true" /><span>{source === "arkiv" ? "Loading orders from Arkiv…" : "Loading orders from Graph…"}</span></span>
                 : unavailable
-                  ? <button className="market-secondary" disabled={fetching} onClick={refresh}>{fetching ? "Refreshing…" : "Refresh market"}</button>
+                  ? <div><p>{marketError}</p><button className="market-secondary" disabled={fetching} onClick={refresh}>{fetching ? "Refreshing…" : "Refresh market"}</button>{source === "arkiv" && <button className="market-secondary" onClick={() => setSource("catalog")}>Load order catalog</button>}</div>
                   : "No matching orders right now."}
           </div>
         ) : view === "table" ? (

@@ -20,7 +20,7 @@ import {
 } from "../../lib/market/presentation";
 
 type Props = {
-  count: number;
+  count: number | undefined;
   bids: boolean;
   view: "table" | "cards";
   setView: (value: "table" | "cards") => void;
@@ -61,7 +61,7 @@ export function MarketToolbar(props: Props) {
       <div className="market-toolbar">
         <div className="market-toolbar-start">
           <strong>
-            Market stakes ({count})
+            Market stakes ({count ?? "—"})
           </strong>
           <TablePopover
             label="Filter stakes"

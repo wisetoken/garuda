@@ -46,7 +46,7 @@ export function ExtendOfferDialog({ row, entity, onClose }: { row: SaleRow; enti
   return <dialog ref={dialog} className="market-activity-dialog extend-offer-dialog" aria-labelledby={titleId}
     onCancel={event => { event.preventDefault(); if (!busy) onClose(); }}>
     <header className="market-activity-heading">
-      <div><h2 id={titleId}>Extend offer storage</h2><p>{collection.name} Stake #{row.order.tokenId} · {row.order.kind === 1 ? "Purchase bid" : "Sale listing"}</p></div>
+      <div><h2 id={titleId}>Extend offer storage</h2><p>{collection.name} Stake #{row.order.tokenId} / {row.order.kind === 1 ? "Purchase bid" : "Sale listing"}</p></div>
       <button type="button" className="market-secondary" aria-label="Close extension" disabled={busy} onClick={onClose}><X size={20} /></button>
     </header>
     <div className="extend-offer-content">

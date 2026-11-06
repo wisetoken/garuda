@@ -56,7 +56,8 @@ export function useBook(id: StakeCollectionId, deployment?: SalesDeployment, sou
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     staleTime: useCache ? 15_000 : 0,
     gcTime: useCache ? 5 * 60_000 : 0,
-    refetchInterval: 30_000,
+    retry: (failures, error) => !/rate limit|busy/i.test(error.message) && failures < 1,
+    refetchInterval: query => query.state.status === "error" ? false : 30_000,
   });
 }
 function orderPositionQuery(row: SaleRow) {

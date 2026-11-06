@@ -1,3 +1,4 @@
+import { arkivReadOptions, inFlightOnly, arkivDiscoveryFailure } from "./arkiv-reads";
 import { extendOfferMessage } from "../../src/lib/market/arkiv-extension";
 import { createPublicClient, createWalletClient, ExpirationTime } from "@arkiv-network/sdk";
 import { rabdi } from "@arkiv-network/sdk/chains";
@@ -19,7 +20,7 @@ function createArkivRuntime(env: NodeJS.ProcessEnv) {
   if (!publisher || !/^0x[0-9a-f]{40}$/i.test(publisher)) return null;
   const chain = rabdi({ accessKey: env.ARKIV_ACCESS_KEY ?? "" });
   const transport = http(undefined, { timeout: 12_000, retryCount: 0 });
-  return { publisher: publisher as Hex, chain, reader: createPublicClient({chain,transport}),
+  return { publisher: publisher as Hex, chain, reader: createPublicClient({chain,transport: http(undefined, arkivReadOptions)}),
     writer: account ? createWalletClient({chain,transport,account}) : undefined };
 }
 
@@ -30,7 +31,20 @@ export function arkivRuntime(env = process.env) {
   return cachedRuntime;
 }
 
+type DiscoveryResult = Awaited<ReturnType<typeof readArkivOrders>>;
+const discoveryRequests = new WeakMap<SalesService, WeakMap<NonNullable<ReturnType<typeof arkivRuntime>>, ReturnType<typeof inFlightOnly<DiscoveryResult>>>>();
 export async function discoverArkiv(service: SalesService, input: ArkivFilters, runtime = arkivRuntime(), preview = false) {
+  if (!runtime) throw new SalesError("arkiv-disabled", "Arkiv discovery is not configured.");
+  const filters = parseArkivFilters(input);
+  let byRuntime = discoveryRequests.get(service);
+  if (!byRuntime) { byRuntime = new WeakMap(); discoveryRequests.set(service, byRuntime); }
+  let run = byRuntime.get(runtime);
+  if (!run) { run = inFlightOnly<DiscoveryResult>(); byRuntime.set(runtime, run); }
+  const key = JSON.stringify([preview, Object.entries(filters).sort(([a], [b]) => a.localeCompare(b))]);
+  // No cached catalog substitution: the source remains Arkiv even during outages.
+  return run(key, () => readArkivOrders(service, filters, runtime, preview));
+}
+async function readArkivOrders(service: SalesService, input: ArkivFilters, runtime = arkivRuntime(), preview = false) {
   try { return await discoverArkivRows(service, input, runtime, preview); }
   catch (error) {
     let cause: unknown = error;
@@ -47,7 +61,7 @@ async function discoverArkivRows(service: SalesService, input: ArkivFilters, run
   if (!runtime) throw new SalesError("arkiv-disabled", "Arkiv discovery is not configured.");
   const filters = parseArkivFilters(input);
   if (!(await service.store.limit("arkiv-read", 60))) throw new SalesError("rate-limit", "Arkiv is busy. Try again shortly.");
-  if (await runtime.reader.getChainId() !== 7794095) throw new Error("Arkiv Rabdi required.");
+  if (await runtime.reader.getChainId().catch(error => { throw arkivDiscoveryFailure(error); }) !== 7794095) throw new Error("Arkiv Rabdi required.");
   let legacy = filters.before?.startsWith("v1:") ?? false;
   let offset = Number(filters.before?.replace("v1:", "") ?? 0);
   const canReadLegacy = includeLegacy(filters);
@@ -60,9 +74,10 @@ async function discoverArkivRows(service: SalesService, input: ArkivFilters, run
   const readV2 = () => runtime.reader.select().from(ArkivListings).where(orderFilters(service.store.deployment, filters))
     .ownedBy(runtime.publisher).orderBy((filters.direction === "desc" ? desc : asc)(filters.sort ?? "price"))
     .limit(25).offset(offset).fetch();
-  let result = legacy ? (canReadLegacy ? await readLegacy() : { entities: [] }) : await readV2();
+  const read = async <T,>(query: () => Promise<T>) => { try { return await query(); } catch (error) { throw arkivDiscoveryFailure(error); } };
+  let result = legacy ? (canReadLegacy ? await read(readLegacy) : { entities: [] }) : await read(readV2);
   if (!legacy && result.entities.length === 0 && canReadLegacy) {
-    legacy = true; offset = 0; result = await readLegacy();
+    legacy = true; offset = 0; result = await read(readLegacy);
   }
   const [block, snapshots] = await Promise.all([preview ? null : service.snapshot(), service.store.stakeSnapshots?.() ?? []]);
   const orders = [], seen = new Set<string>();
