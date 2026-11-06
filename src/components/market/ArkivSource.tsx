@@ -13,7 +13,7 @@ export function ArkivSource({source,onChange,onReload,useCache,onCacheChange}: {
       <button aria-pressed={source==='catalog'} title="Double-click to reload without cache" onClick={()=>onChange('catalog')} onDoubleClick={()=>onReload('catalog')}>Graph</button>
     </div>
     <div className="arkiv-source-options">
-    {source==='arkiv' ? <p>Listings and bids published on Arkiv. Availability verified on Ethereum.</p>
+    {source==='arkiv' ? <p>Listings and bids published on Arkiv.</p>
     : <p>The service order catalog, for comparison with Arkiv.</p>}
       <label className="market-cache-toggle" title="Reuse recently loaded order results. Turn off to refetch the current tab.">
         <input type="checkbox" role="switch" checked={useCache} onChange={event=>onCacheChange(event.target.checked)} />
