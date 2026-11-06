@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { stringToHex } from 'viem';
+import { stringToHex, bytesToHex } from 'viem';
 import { readFile } from 'node:fs/promises';
 import { discoverArkiv,publishArkiv,arkivScope } from '../server/market/arkiv.ts';
 import { serializeSale,parseSignedSale,SalesError } from '../src/lib/blend/sales.ts';
 import { processPublication } from '../server/market/publication.ts';
+import { orderAttributes, parseOrderEntity, ArkivListings } from '../server/market/arkiv-schema.ts';
+import { parseArkivFilters, orderFilters } from '../server/market/arkiv-filters.ts';
+import { render } from '@arkiv-network/sdk/query';
 const d=JSON.parse(await readFile(new URL('./fixtures/signature-market.json',import.meta.url),'utf8'));
 const addr=b=>`0x${b.repeat(40)}`;
 function fixture(kind=0) {
@@ -20,12 +23,26 @@ function fixture(kind=0) {
  const s={store:{deployment:d,limit:async()=>true,activity:async()=>[],get:async()=>stored,transaction:fn=>fn({query:async()=>({rows:[{locked:true}]})})},
   snapshot:async()=>({number:100n,hash:'0xabc'}),client:{getBlock:async()=>({hash:'0xabc'})},
   status:async row=>({...row,status:'available'}),get:async()=>({...stored,status:'available'})};
- return {s,entity,stored,hash,deadline};
+ const snapshot={version:1,chainId:1,blockNumber:'100',blockHash:`0x${'bb'.repeat(32)}`,observedAt:Number(deadline)-3600,
+ collection:d.collection,owner:signed.order.owner,tokenId:'53',stakeId:signed.order.stakeId,principal:String(1000n*10n**18n),shares:String(2n**120n),
+ startAt:100,maturesAt:31536100,status:'Active',canList:true,unclaimedInterest:'5',
+ displayStake:{id:signed.order.stakeId,stakedAmount:String(1000n*10n**18n),stakesShares:String(2n**120n),startDay:'1',lockDays:'365',closeDay:'0',
+ rewardAmount:'5',penaltyAmount:'0',scrapedAmount:'0',createdAtTimestamp:'100',closedAtTimestamp:'0',isActive:true}};
+ const metadata={snapshot,publishedAt:Number(deadline)-7200,indexedAt:Number(deadline)-3600};
+ const v2={$key:entity.$key,...Object.fromEntries(Object.entries(orderAttributes(stored,d,metadata)).map(([k,v])=>[k,
+ typeof v==='string'?{value:v}:v instanceof Uint8Array?{value:bytesToHex(v)}:v]))};
+ return {s,entity,stored,hash,deadline,metadata,v2};
 }
 function runtime(entities=[]) {
  const calls=[];
- const q={where(value){calls.push(['where',value]);return this},ownedBy(value){calls.push(['owner',value]);return this},limit(){return this},offset(){return this},from(){return this},fetch:async()=>({entities})};
- return {calls,publisher:addr('3'),reader:{select:()=>q,getChainId:async()=>7794095},writer:{createEntity:async()=>{throw new Error('must not write')}}};
+ const reader={select:()=>{
+   let schema;
+   const q={where(value){calls.push(['where',value]);return this},ownedBy(value){calls.push(['owner',value]);return this},
+     orderBy(value){calls.push(['orderBy',value]);return this},limit(){return this},offset(){return this},from(value){schema=value;return this},
+     fetch:async()=>({entities:entities.filter(e=>Boolean(e.price)===(schema?.name==='wiseone.garuda.orders.v2'))})};
+   return q;
+ },getChainId:async()=>7794095};
+ return {calls,publisher:addr('3'),reader,writer:{createEntity:async()=>{throw new Error('must not write')}}};
 }
 for(const kind of [0,1]) test(`Arkiv discovers ${kind?'bids':'listings'} and preserves original publication anchor`,async()=>{
  const {s,entity}=fixture(kind),r=runtime([entity,entity]);
@@ -53,10 +70,10 @@ test('rejects wrong network, invalid pagination and canonical chain change',asyn
  await assert.rejects(discoverArkiv(s,{},runtime()),/Chain changed/);
 });
 for(const kind of [0,1]) test(`publishes ${kind?'bid':'listing'} with signed expiry, then deduplicates retries`,async()=>{
- const {s,entity,hash,deadline}=fixture(kind),r=runtime();let written,expiry,count=0;
+ const {s,v2:entity,hash,deadline,metadata}=fixture(kind),r=runtime();let written,expiry,count=0;
  r.writer.createEntity=async(_schema,values,options)=>{written=values;expiry=options.expiration;count++;return {entityKey:entity.$key,txHash:'0xtx',expiresAt:123n}};
  r.reader.getEntity=async()=>entity;
- const receipt=await publishArkiv(s,hash,r);
+ const receipt=await publishArkiv(s,hash,r,async()=>metadata);
  assert.equal(written.kind,kind?'bid':'listing');assert.equal(written.expires.value,deadline);
  assert.equal(expiry.expiresAt.getTime(),Number(deadline)*1000);
  assert.equal(receipt.expiresAt,'123');assert.doesNotThrow(()=>JSON.stringify(receipt));
@@ -85,8 +102,61 @@ test('missing attributes are ignored without hiding other valid orders',async()=
  assert.equal((await discoverArkiv(s,{},runtime([missing,entity]))).orders.length,1);
 });
 test('write read-back must preserve the signed envelope and expiry',async()=>{
- const {s,entity,hash}=fixture(),r=runtime();
+ const {s,v2:entity,hash,metadata}=fixture(),r=runtime();
  r.writer.createEntity=async()=>({entityKey:entity.$key,txHash:'0xtx',expiresAt:123n});
  r.reader.getEntity=async()=>({...entity,expires:{value:0n}});
- await assert.rejects(publishArkiv(s,hash,r),/could not be verified/);
+ await assert.rejects(publishArkiv(s,hash,r,async()=>metadata),/could not be verified/);
+});
+
+for (const kind of [0,1]) test(`v2 ${kind?'bid':'listing'} preserves exact amounts, snapshots and signer identity`,async()=>{
+ const {s,v2,metadata}=fixture(kind);
+ const parsed=parseOrderEntity(v2,d,2);
+ assert.equal(v2.price.value,BigInt(parsed.signed.order.amount));
+ assert.equal(v2.shares.value,2n**120n); assert.equal(v2.principal.value,1000n*10n**18n);
+ assert.equal(v2.stakeStartAt.value,BigInt(metadata.snapshot.startAt));
+ assert.equal((await discoverArkiv(s,{},runtime([v2]))).orders.length,1);
+});
+for (const field of ['price','currency','chainId','principal','shares','maturesAt','stakeOwner','stateHash','publishedAt','snapshot'])
+ test(`v2 rejects inconsistent ${field}`,()=>{
+  const {v2}=fixture(); const broken={...v2,[field]:{value:typeof v2[field].value==='bigint'?0n:'wrong'}};
+  assert.throws(()=>parseOrderEntity(broken,d,2));
+ });
+test('legacy pagination avoids duplicate v2 orders and retains legacy-only orders',async()=>{
+ const {s,entity,v2}=fixture();
+ assert.equal((await discoverArkiv(s,{before:'v1:0'},runtime([entity,v2]))).orders.length,0);
+ assert.equal((await discoverArkiv(s,{before:'v1:0'},runtime([entity]))).orders.length,1);
+ assert.deepEqual((await discoverArkiv(s,{before:'v1:0',minPrice:'10'},runtime([entity]))).orders,[]);
+});
+test('typed price/share ranges do not round large values and reject unsafe filters',()=>{
+ const amount=String(2n**200n);
+ const filters=parseArkivFilters({kind:'bid',minPrice:amount,maxPrice:amount,minShares:amount,maturesAfter:'100',sort:'price',direction:'desc'});
+ const query=render(orderFilters(d,filters),ArkivListings);
+ assert.ok(query.includes(amount)); assert.ok(query.includes('u256('));
+ for(const input of [{minPrice:'1.5'},{minPrice:'-1'},{minPrice:String(2n**256n)},{minPrice:'9',maxPrice:'1'},
+  {maturesAfter:String(2n**64n)},{stakeOwner:'bad'},{kind:'offer'},{sort:'price;drop'},{before:'v1:-1'}]) assert.throws(()=>parseArkivFilters(input));
+});
+test('order that becomes unavailable during metadata reads is never published',async()=>{
+ const {s,hash,metadata}=fixture();let count=0;
+ s.get=async()=>({...(await s.store.get()),status:++count===1?'available':'sold'});
+ await assert.rejects(publishArkiv(s,hash,runtime(),async()=>metadata),/sold/);
+});
+
+test('Arkiv discovery includes stake metadata and checks independent rows concurrently',async()=>{
+ const a=fixture(0),b=fixture(1);let active=0,peak=0;
+ a.s.store.get=async hash=>hash===a.hash?a.stored:b.stored;
+ a.s.status=async row=>{active++;peak=Math.max(peak,active);await new Promise(resolve=>setTimeout(resolve,10));active--;return {...row,status:'available'}};
+ const result=await discoverArkiv(a.s,{},runtime([a.v2,b.v2]));
+ assert.equal(peak,2);assert.equal(result.orders.length,2);
+ assert.equal(result.orders[0].stakeSnapshot.principal,a.metadata.snapshot.principal);
+ assert.equal(result.orders[1].hash,b.hash);
+});
+
+test('indexed preview renders snapshots without Ethereum checks and cannot grant availability',async()=>{
+ const {s,v2,metadata}=fixture();
+ s.snapshot=async()=>{throw Error('Preview must not wait on Ethereum')};
+ s.status=s.snapshot;s.client.getBlock=s.snapshot;
+ const result=await discoverArkiv(s,{},runtime([v2]),true);
+ assert.equal(result.orders.length,1);assert.equal(result.orders[0].status,'checking');
+ assert.equal(result.orders[0].stakeSnapshot.principal,metadata.snapshot.principal);
+ assert.equal(result.blockNumber,'');assert.equal(result.blockHash,undefined);
 });

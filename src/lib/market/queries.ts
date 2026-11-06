@@ -14,18 +14,19 @@ import {
 } from "../blend/stake-snapshot";
 import { ethereumClient } from "../portfolio";
 
-export function useBook(id: StakeCollectionId, deployment?: SalesDeployment, source: "arkiv" | "catalog" = "catalog", kind?: "listing" | "bid") {
+export function useBook(id: StakeCollectionId, deployment?: SalesDeployment, source: "arkiv" | "catalog" = "catalog", kind?: "listing" | "bid", sort?: "price" | "principal" | "expires", direction: "asc" | "desc" = "asc") {
   return useInfiniteQuery({
-    queryKey: ["market-book", id, deployment?.adapter, source, kind],
+    queryKey: ["market-book", id, deployment?.adapter, source, kind, sort, direction],
     enabled: !!deployment,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const path = pageParam ? `?before=${encodeURIComponent(pageParam)}` : "";
       if (source === "arkiv") {
-        const query = new URLSearchParams({source:"arkiv"});
+        const query = new URLSearchParams({source:"arkiv",preview:"1"});
         if (pageParam) query.set("before",pageParam);
         if (kind) query.set("kind",kind);
-        return {...parseBook(await marketApi<MarketBook>(id, `sales?${query}`), deployment!),verified:true};
+        if (sort) { query.set("sort",sort); query.set("direction",direction); }
+        return {...parseBook(await marketApi<MarketBook>(id, `sales?${query}`), deployment!),verified:false};
       }
       try {
         return {
@@ -100,13 +101,14 @@ function orderPositionQuery(row: SaleRow) {
                 owner: row.order.owner,
                 tokenId: row.order.tokenId,
                 stakeId: row.order.stakeId,
-              }),
+              }, undefined, 86400),
             )
           : undefined;
       } catch {
         return undefined;
       }
     },
+    initialDataUpdatedAt: row.stakeSnapshot ? row.stakeSnapshot.observedAt * 1000 : undefined,
     staleTime: 30_000,
     retry: 1,
   };
@@ -125,4 +127,18 @@ export function useOrderPositions(rows: SaleRow[]) {
     unique.map((row, index) => [key(row), queries[index]]),
   );
   return rows.map((row) => byPosition.get(key(row))!);
+}
+
+/** Indexed rows render first; settlement availability is independently verified. */
+export function useOrderAvailability(rows: SaleRow[]) {
+  return useQueries({queries: rows.map(row => ({
+    queryKey:["market-availability",row.order.collection,row.hash],
+    enabled:row.status === "checking",
+    queryFn:async()=> {
+      const verified = await marketApi<SaleRow>(stakeCollection(row.order.collection).id,`sales/${row.hash}`);
+      if (verified.hash.toLowerCase() !== row.hash.toLowerCase()) throw new Error("Order identity mismatch.");
+      return verified.status;
+    },
+    staleTime:15_000,refetchInterval:30_000,retry:1,
+  }))});
 }

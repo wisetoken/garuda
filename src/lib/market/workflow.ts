@@ -23,7 +23,7 @@ export function tradeDestination(intent: MarketIntent, collection: string) {
 export function refreshTradeData(cache: QueryClient) {
   // Refresh both sides of a transfer, including any already-open order review.
   return Promise.all([
-    "market-book", "portfolio", "market-position", "market-review",
+    "market-book", "market-availability", "portfolio", "market-position", "market-review",
     "market-order-review", "wise-balance",
   ].map((key) => cache.invalidateQueries({ queryKey: [key] })));
 }

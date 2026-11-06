@@ -1,19 +1,16 @@
 import { createPublicClient, createWalletClient, ExpirationTime } from "@arkiv-network/sdk";
 import { rabdi } from "@arkiv-network/sdk/chains";
-import { defineSchema, str, bytes, u64 } from "@arkiv-network/sdk/schema";
-import { and, eq, gt } from "@arkiv-network/sdk/query";
-import { hexToString, http, stringToBytes, keccak256, type Hex } from "viem";
+import { u64 } from "@arkiv-network/sdk/schema";
+import { and, eq, gt, asc, desc } from "@arkiv-network/sdk/query";
+import { bytesToHex, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { deploymentScope, parseSignedSale, SalesError } from "../../src/lib/blend/sales";
+import { SalesError } from "../../src/lib/blend/sales";
 import type { SalesService } from "./service";
+import { ArkivListings, ArkivListingsV1, arkivScope, orderAttributes, parseOrderEntity } from "./arkiv-schema";
+import { readOrderMetadata } from "./arkiv-metadata";
+import { parseArkivFilters, orderFilters, includeLegacy, type ArkivFilters } from "./arkiv-filters";
+export { ArkivListings, ArkivListingsV1, arkivScope } from "./arkiv-schema";
 
-export const arkivScope = (deployment: Parameters<typeof deploymentScope>[0]) => keccak256(stringToBytes(deploymentScope(deployment)));
-
-export const ArkivListings = defineSchema("wiseone.garuda.orders.v1", {
-  scope: str().indexed(), orderHash: str().indexed(), maker: str().indexed(), owner: str().indexed(), kind: str().indexed(),
-  collection: str().indexed(), tokenId: str().indexed(), format: str().indexed(),
-  expires: u64().indexed(), envelope: bytes(),
-});
 function createArkivRuntime(env: NodeJS.ProcessEnv) {
   const key = env.ARKIV_PUBLISHER_PRIVATE_KEY;
   const account = key && /^0x[0-9a-f]{64}$/i.test(key) ? privateKeyToAccount(key as Hex) : undefined;
@@ -32,80 +29,104 @@ export function arkivRuntime(env = process.env) {
   return cachedRuntime;
 }
 
-export async function discoverArkiv(service: SalesService, filters: { maker?: string; tokenId?: string; before?: string; kind?: "listing" | "bid" }, runtime = arkivRuntime()) {
+export async function discoverArkiv(service: SalesService, input: ArkivFilters, runtime = arkivRuntime(), preview = false) {
   if (!runtime) throw new SalesError("arkiv-disabled", "Arkiv discovery is not configured.");
+  const filters = parseArkivFilters(input);
   if (!(await service.store.limit("arkiv-read", 60))) throw new SalesError("rate-limit", "Arkiv is busy. Try again shortly.");
-  const offset = filters.before ? Number(filters.before) : 0;
-  if (!Number.isSafeInteger(offset) || offset < 0 || offset > 10000) throw new Error("Invalid Arkiv page.");
-  const conditions = [eq("scope", arkivScope(service.store.deployment)), gt("expires", u64(BigInt(Math.floor(Date.now()/1000)))),
-    ...(filters.maker ? [eq("maker", filters.maker.toLowerCase())] : []),
-    ...(filters.kind ? [eq("kind", filters.kind)] : []),
-    ...(filters.tokenId ? [eq("tokenId", filters.tokenId)] : [])];
-  const result = await runtime.reader.select().from(ArkivListings).where(and(...conditions))
-    .ownedBy(runtime.publisher).limit(25).offset(offset).fetch();
   if (await runtime.reader.getChainId() !== 7794095) throw new Error("Arkiv Rabdi required.");
-  const block = await service.snapshot();
-  const orders = [];
-  const seen = new Set<string>();
+  let legacy = filters.before?.startsWith("v1:") ?? false;
+  let offset = Number(filters.before?.replace("v1:", "") ?? 0);
+  const canReadLegacy = includeLegacy(filters);
+  const readLegacy = () => runtime.reader.select().from(ArkivListingsV1)
+    .where(and(eq("scope", arkivScope(service.store.deployment)), eq("collection", service.store.deployment.collection.toLowerCase()),
+      gt("expires", u64(BigInt(Math.floor(Date.now()/1000)))),
+      ...(filters.maker ? [eq("maker", filters.maker.toLowerCase())] : []),
+      ...(filters.kind ? [eq("kind", filters.kind)] : []), ...(filters.tokenId ? [eq("tokenId", filters.tokenId)] : [])))
+    .ownedBy(runtime.publisher).orderBy(asc("orderHash")).limit(25).offset(offset).fetch();
+  const readV2 = () => runtime.reader.select().from(ArkivListings).where(orderFilters(service.store.deployment, filters))
+    .ownedBy(runtime.publisher).orderBy((filters.direction === "desc" ? desc : asc)(filters.sort ?? "price"))
+    .limit(25).offset(offset).fetch();
+  let result = legacy ? (canReadLegacy ? await readLegacy() : { entities: [] }) : await readV2();
+  if (!legacy && result.entities.length === 0 && canReadLegacy) {
+    legacy = true; offset = 0; result = await readLegacy();
+  }
+  const [block, snapshots] = await Promise.all([preview ? null : service.snapshot(), service.store.stakeSnapshots?.() ?? []]);
+  const orders = [], seen = new Set<string>();
+  const candidates = [];
+
   for (const entity of result.entities) {
-    // Arkiv attributes and payload are discovery hints, never purchase authority.
     let parsed;
-    try { parsed = parseSignedSale(JSON.parse(hexToString(entity.envelope.value)), service.store.deployment); }
+    try { parsed = parseOrderEntity(entity, service.store.deployment, legacy ? 1 : 2); }
     catch { continue; }
-    if (parsed.hash !== entity.orderHash?.value || seen.has(parsed.hash)) continue;
-    const order = parsed.signed.order;
-    if (entity.scope?.value !== arkivScope(service.store.deployment) ||
-        entity.format?.value !== "seaport-1.6" ||
-        entity.kind?.value !== (order.kind === 0 ? "listing" : "bid") ||
-        entity.maker?.value !== order.maker.toLowerCase() || entity.owner?.value !== order.owner.toLowerCase() ||
-        entity.collection?.value !== order.collection.toLowerCase() || entity.tokenId?.value !== order.tokenId ||
-        entity.expires?.value !== BigInt(order.deadline) || Number(order.deadline) <= Date.now()/1000) continue;
+    if (seen.has(parsed.hash) || Number(parsed.signed.order.deadline) <= Date.now()/1000) continue;
+    if (legacy) {
+      // V1 remains readable, but a valid v2 copy takes its place instead of showing twice.
+      const newer = await runtime.reader.select().from(ArkivListings)
+        .where(and(eq("scope", arkivScope(service.store.deployment)), eq("orderHash", parsed.hash)))
+        .ownedBy(runtime.publisher).limit(1).fetch();
+      if (newer.entities.some(candidate => {
+        try { return parseOrderEntity(candidate, service.store.deployment, 2).hash === parsed.hash; } catch { return false; }
+      })) continue;
+    }
     seen.add(parsed.hash);
     const stored = await service.store.get(parsed.hash);
-    // Preserve the original publication anchor. A re-published entity must not
-    // make a transferred-away-and-back NFT's stale signature appear fresh.
+    // Keep the original Ethereum anchor: republication cannot revive a stale signature.
     if (!stored || JSON.stringify(stored.order) !== JSON.stringify(parsed.signed.order)) continue;
-    orders.push({...await service.status(stored, block), arkivEntity: entity.$key});
+    const local = snapshots.find(s => s.collection.toLowerCase() === stored.order.collection.toLowerCase()
+      && s.owner.toLowerCase() === stored.order.owner.toLowerCase() && s.tokenId === stored.order.tokenId);
+    const snapshot = local && local.observedAt > (parsed.stakeSnapshot?.observedAt ?? 0) ? local : parsed.stakeSnapshot;
+    candidates.push({stored,entityKey:entity.$key,snapshot});
   }
-  if ((await service.client.getBlock({blockNumber:block.number})).hash !== block.hash) throw new Error("Chain changed during discovery.");
-  return { orders, nextCursor: result.entities.length === 25 ? String(offset+25) : null,
-    blockNumber:String(block.number), blockHash:block.hash, activity:await service.store.activity(), source:"arkiv" };
+  // Bounded parallel checks allow viem to combine independent contract reads.
+  for (let i=0; i<candidates.length; i+=4) {
+    orders.push(...await Promise.all(candidates.slice(i,i+4).map(async ({stored,entityKey,snapshot}) => ({
+      ...(block ? await service.status(stored,block) : {...stored,status:"checking" as const}), arkivEntity:entityKey, stakeSnapshot:snapshot,
+    }))));
+  }
+  if (block && (await service.client.getBlock({ blockNumber: block.number })).hash !== block.hash) throw new Error("Chain changed during discovery.");
+  const nextCursor = result.entities.length === 25 ? `${legacy ? "v1:" : ""}${offset+25}` : (!legacy && canReadLegacy ? "v1:0" : null);
+  return { orders, nextCursor, blockNumber: block ? String(block.number) : "", blockHash: block?.hash,
+    activity: await service.store.activity(), source: "arkiv" };
 }
 
-export async function publishArkiv(service: SalesService, hash: string, runtime = arkivRuntime()) {
+export async function publishArkiv(service: SalesService, hash: string, runtime = arkivRuntime(), readMetadata = readOrderMetadata) {
   if (!runtime?.writer) throw new SalesError("arkiv-disabled", "Arkiv publication is not configured.");
   const writer = runtime.writer;
   if (await runtime.reader.getChainId() !== 7794095) throw new Error("Arkiv Rabdi required.");
   if (service.store.deployment.environment !== "ethereum-mainnet") throw new Error("Only Ethereum orders can be published to Rabdi.");
   if (!(await service.store.limit("arkiv-publish", 6))) throw new SalesError("rate-limit", "Please wait before publishing another Arkiv order.");
   return service.store.transaction(async db => {
-    // A dedicated publisher may serve multiple collections. Serialize its nonce
-    // across server processes and check for existing entities before spending gas.
     const lock = await db.query("SELECT pg_try_advisory_xact_lock(hashtext($1)) AS locked", [`arkiv:${runtime.publisher.toLowerCase()}`]);
     if (!lock.rows[0].locked) throw new SalesError("busy", "Another Arkiv publication is pending. Try again shortly.");
     const row = await service.get(hash);
     if (row.status !== "available") throw new SalesError("order-unavailable", `Order is ${row.status}.`);
     const scope = arkivScope(service.store.deployment);
     const existing = await runtime.reader.select().from(ArkivListings)
-      .where(and(eq("scope",scope),eq("orderHash",hash))).ownedBy(runtime.publisher).limit(1).fetch();
+      .where(and(eq("scope", scope), eq("orderHash", hash))).ownedBy(runtime.publisher).limit(1).fetch();
     if (existing.entities.length) {
       const entity = existing.entities[0];
-      const saved = parseSignedSale(JSON.parse(hexToString(entity.envelope.value)), service.store.deployment);
-      if (saved.hash !== hash || entity.expires.value !== BigInt(row.order.deadline))
+      if (parseOrderEntity(entity, service.store.deployment, 2).hash !== hash)
         throw new Error("Existing Arkiv entity does not match the signed order.");
-      return { entityKey:entity.$key, created:false };
+      return { entityKey: entity.$key, created: false };
     }
-    const expires = BigInt(row.order.deadline);
-    const now = BigInt(Math.floor(Date.now()/1000));
+    const expires = BigInt(row.order.deadline), now = BigInt(Math.floor(Date.now()/1000));
     if (expires <= now || expires > now+30n*86400n) throw new Error("Unsupported Arkiv order lifetime.");
-    const signed = {order:row.order,signature:row.signature};
-    const result = await writer.createEntity(ArkivListings, {
-      scope, orderHash:hash, maker:row.order.maker.toLowerCase(), owner:row.order.owner.toLowerCase(), kind:row.order.kind === 0 ? "listing" : "bid", collection:row.order.collection.toLowerCase(),
-      tokenId:row.order.tokenId, format:"seaport-1.6", expires:u64(expires), envelope:stringToBytes(JSON.stringify(signed)),
-    }, {expiration:ExpirationTime.atDate(new Date(Number(expires)*1000))});
-    const readBack = await runtime.reader.getEntity(result.entityKey,ArkivListings);
-    const saved = parseSignedSale(JSON.parse(hexToString(readBack.envelope.value)), service.store.deployment);
-    if (readBack.orderHash.value !== hash || saved.hash !== hash || readBack.expires.value !== expires) throw new Error("Arkiv write could not be verified. Check publication before retrying.");
-    return {entityKey:result.entityKey,txHash:result.txHash,expiresAt:String(result.expiresAt),created:true};
+    const metadata = await readMetadata(service, row);
+    // Slow metadata reads may cross an expiry or a cancellation. Recheck before spending gas.
+    const checked = await service.get(hash);
+    if (checked.status !== "available") throw new SalesError("order-unavailable", `Order is ${checked.status}.`);
+    const attributes = orderAttributes(row, service.store.deployment, metadata);
+    const result = await writer.createEntity(ArkivListings, attributes,
+      { expiration: ExpirationTime.atDate(new Date(Number(expires)*1000)) });
+    const readBack = await runtime.reader.getEntity(result.entityKey, ArkivListings);
+    try {
+      if (parseOrderEntity(readBack, service.store.deployment, 2).hash !== hash) throw new Error("Wrong order.");
+      for (const [name, expected] of Object.entries(attributes)) {
+        const actual = readBack[name as keyof typeof attributes]?.value;
+        const bare = typeof expected === "string" ? expected : expected instanceof Uint8Array ? bytesToHex(expected) : expected.value;
+        if (actual !== bare) throw new Error("Write read-back differs.");
+      }
+    } catch { throw new Error("Arkiv write could not be verified. Check publication before retrying."); }
+    return { entityKey: result.entityKey, txHash: result.txHash, expiresAt: String(result.expiresAt), created: true };
   });
 }

@@ -4,6 +4,7 @@ import { isAddress } from "viem";
 import { SalesError, parseSignedSale } from "../../src/lib/blend/sales";
 import type { SalesService } from "./service";
 import { zoneAbi } from "../../src/lib/blend/seaport";
+import { parseArkivFilters } from "./arkiv-filters";
 import { publicationStates } from "./publication";
 
 export function registerMarketRoutes(
@@ -103,14 +104,14 @@ export function registerMarketRoutes(
       if (
         (maker && !isAddress(maker, { strict: false })) ||
         (tokenId && !/^(0|[1-9][0-9]{0,77})$/.test(tokenId)) ||
-        (before && !/^[1-9][0-9]{0,17}$/.test(before))
+        (before && c.req.query("source") !== "arkiv" && !/^[1-9][0-9]{0,17}$/.test(before))
       )
         return c.json({ error: "Invalid market filter." }, 400);
       if (c.req.query("source") === "arkiv") {
         const kind = c.req.query("kind");
         if (kind !== undefined && kind !== "listing" && kind !== "bid") return c.json({error:"Invalid order kind."},400);
         const {discoverArkiv} = await import("./arkiv");
-        return c.json(await discoverArkiv(service,{maker,tokenId,before,kind}));
+        return c.json(await discoverArkiv(service,parseArkivFilters(c.req.query()),undefined,c.req.query("preview") === "1"));
       }
       const book = await service.list({ maker, tokenId, before });
       const states = await publicationStates(service.store,book.orders.map(row=>row.hash));
@@ -123,7 +124,7 @@ export function registerMarketRoutes(
               ? e.message
               : "Market data could not be verified. Please retry.",
         },
-        e instanceof SalesError && e.code === "rate-limit" ? 429 : 503,
+        e instanceof SalesError ? (e.code === "invalid-filter" ? 400 : e.code === "rate-limit" ? 429 : 503) : 503,
       );
     }
   });

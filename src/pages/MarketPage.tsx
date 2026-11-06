@@ -3,7 +3,7 @@ import { ArkivSource } from "../components/market/ArkivSource";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useActiveAccount } from "thirdweb/react";
-import { Layers, Wallet, Clock3, Plus, RefreshCw } from "lucide-react";
+import { Layers, Wallet, Clock3, Plus, RefreshCw, LoaderCircle } from "lucide-react";
 import { GarudaPageKicker } from "../components/GarudaPageKicker";
 import { OrderCard } from "../components/market/OrderViews";
 import { MarketTable } from "../components/market/MarketTable";
@@ -12,7 +12,7 @@ import { MarketActivity } from "../components/market/MarketActivity";
 import { OrderDetails } from "../components/market/OrderDetails";
 import { SavedOrders } from "../components/market/SavedOrders";
 import { useMarkets, orderAvailable } from "../lib/market/api";
-import { useBook, useOrderPositions } from "../lib/market/queries";
+import { useBook, useOrderPositions, useOrderAvailability } from "../lib/market/queries";
 import {
   defaultColumns,
   emptyFilters,
@@ -41,8 +41,6 @@ export function MarketPage() {
   const [view, setView] = useState<"table" | "cards">("table");
   const book = params.get("book") === "bids" ? "bids" : "listings";
   const source = params.get("source") === "catalog" || section !== "market" ? "catalog" : "arkiv";
-  const signature = useBook("signature", deployments[0], source, source === "arkiv" ? (book === "bids" ? "bid" : "listing") : undefined),
-    advanced = useBook("advanced", deployments[1], source, source === "arkiv" ? (book === "bids" ? "bid" : "listing") : undefined);
   function setSource(value: "arkiv" | "catalog") {
     setParams(current=> {const next=new URLSearchParams(current); next.set("source",value);return next;});
   }
@@ -60,15 +58,22 @@ export function MarketPage() {
   const [sort, setSort] = useState<MarketSort>("price"),
     [direction, setDirection] = useState<"asc" | "desc">("asc");
   const [selectedHash, setSelectedHash] = useState<string>();
+  const indexedSort = sort === "amount" ? "principal" : sort === "expiry" ? "expires" : "price";
+  const signature = useBook("signature", deployments[0], source, book === "bids" ? "bid" : "listing", indexedSort, direction),
+    advanced = useBook("advanced", deployments[1], source, book === "bids" ? "bid" : "listing", indexedSort, direction);
   const pages = [
     ...(signature.data?.pages ?? []),
     ...(advanced.data?.pages ?? []),
   ];
-  const rows = Array.from(
+  const indexedRows = Array.from(
     new Map(
       pages.flatMap((page) => page.orders).map((row) => [row.hash, row]),
     ).values(),
   );
+  const availability = useOrderAvailability(indexedRows);
+  const rows = indexedRows.map((row,index) => ({...row,
+    status:row.status === "checking" && !availability[index].isError ? availability[index].data ?? row.status : row.status,
+  }));
   const positions = useOrderPositions(rows);
   const mine = section === "positions" && ownedView === "orders",
     bids = mine || book === "bids";
@@ -108,9 +113,11 @@ export function MarketPage() {
     if (deployments[0]) void signature.refetch();
     if (deployments[1]) void advanced.refetch();
     positions.forEach((query) => void query.refetch());
+    availability.forEach((query) => void query.refetch());
   }
   const fetching = markets.some(query => query.isFetching) || signature.isFetching || advanced.isFetching;
   useErrorToast("market-data", unavailable && !fetching && "Could not refresh the market. Please try again.", refresh);
+  useErrorToast("market-availability", availability.some(query => query.isError && !query.isFetching) && "Could not verify order availability. Please try again.", refresh);
   useErrorToast("market-positions", positions.some(query => query.isError && !query.isFetching) && "Could not refresh stake details. Please try again.", refresh);
   function onSort(value: MarketSort) {
     if (sort === value) setDirection(direction === "asc" ? "desc" : "asc");
@@ -254,7 +261,7 @@ export function MarketPage() {
             {mine && !account
               ? "Connect your wallet to see your orders."
               : loading
-                ? "Loading the market…"
+                ? <span className="market-loading"><LoaderCircle size={16} aria-hidden="true" /><span>{source === "arkiv" ? "Loading orders from Arkiv…" : "Loading market orders…"}</span></span>
                 : unavailable
                   ? <button className="market-secondary" disabled={fetching} onClick={refresh}>{fetching ? "Refreshing…" : "Refresh market"}</button>
                   : "No matching orders right now."}

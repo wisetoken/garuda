@@ -271,3 +271,8 @@ select:focus-visible {
     flex-direction: column;
   }
 }
+
+.market-loading { display: inline-flex; align-items: center; justify-content: center; gap: 10px; color: var(--text-muted); font-size: 15px; }
+.market-loading > svg { flex-shrink: 0; color: var(--accent); animation: market-loading-spin 1s linear infinite; }
+@keyframes market-loading-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .market-loading > svg { animation: none; } }
