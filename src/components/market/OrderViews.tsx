@@ -94,11 +94,13 @@ export function OrderCard({ row }: { row: SaleRow }) {
               Order: {row.status.replaceAll("-", " ")}
             </p>
           )}
+          <div className="market-card-summary">
           <div className="market-card-price">
             <span>{row.order.kind === 0 ? "Asking price" : "Bid price"}</span>
             <strong>{formatAmount(BigInt(row.order.amount), 6)} WISE</strong>
             <small>{usdAmount(BigInt(row.order.amount), usd)}</small>
           </div>
+          <div className="market-card-parties">
           <div className="market-card-owner">
             <span>Owner</span>
             <AddressIdentity address={row.order.owner} />
@@ -109,6 +111,8 @@ export function OrderCard({ row }: { row: SaleRow }) {
               <AddressIdentity address={row.order.maker} />
             </div>
           )}
+          </div>
+          </div>
           <RowActions row={row} position={position.data} />
           {!(row.arkivEntity ?? row.arkiv?.entityKey) && <ArkivPublication row={row} />}
         </>

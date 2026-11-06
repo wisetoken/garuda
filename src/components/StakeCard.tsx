@@ -14,6 +14,7 @@ export function StakeCard({ position, onList, actions }: { position: SignaturePo
   const collection=position.collection??STAKE_COLLECTIONS.signature.address;
   const {data:hash}=useQuery({queryKey:['stake-creation',collection,position.stakeId],queryFn:()=>loadStakeCreationTx(ethereumClient,position.stakeId,collection),staleTime:Infinity});
   const timeline=stakeTimeline(position),yieldValue=stakeYield(position);
+  const showInterestUsd = !!price && Number(position.unclaimedInterest) / 1e18 * price >= 0.01;
   const stake={...timeline,id:position.tokenId,collection:stakeCollection(collection).name,principal:wiseAmount(position.principal),principalUsd:usdAmount(position.principal,price),interest:wiseAmount(position.unclaimedInterest),interestUsd:usdAmount(position.unclaimedInterest,price),annualYield:yieldValue?.toLocaleString('en-US',{maximumFractionDigits:2})??'—',progress:Math.round(timeline.progress*100),started:new Date(position.startAt*1000).toISOString(),maturity:new Date(position.maturesAt*1000).toISOString(),creationTransactionHash:hash};
   const stakeDate=(date:string)=>formatDate(Date.parse(date)/1000);
   return <article className="garuda-stake-card" aria-label={`${stake.collection} Stake #${stake.id}`} data-status={stake.status}>
@@ -29,8 +30,8 @@ export function StakeCard({ position, onList, actions }: { position: SignaturePo
         <div className="garuda-stake-dates"><div><span>Started / UTC</span><div className="garuda-stake-start-date"><time dateTime={stake.started}>{stakeDate(stake.started)}</time>{stake.creationTransactionHash && /^0x[a-fA-F0-9]{64}$/.test(stake.creationTransactionHash) && <a className="garuda-stake-creation-link" href={`https://etherscan.io/tx/${stake.creationTransactionHash}`} target="_blank" rel="noopener noreferrer" aria-label={`View ${stake.collection} Stake #${stake.id} creation transaction on Etherscan (opens in a new tab)`} title="View creation transaction on Etherscan"><ArrowUpRight size={14} aria-hidden="true" /></a>}</div></div><div><span>Maturity / UTC</span><time dateTime={stake.maturity}>{stakeDate(stake.maturity)}</time></div></div>
       </div>
       <dl className="garuda-stake-metrics">
-        <div><dt>Unclaimed interest</dt><dd>{stake.interest} <small>WISE</small></dd><span>{stake.interestUsd}</span></div>
-        <div><dt>Annualized yield*</dt><dd>{stake.annualYield}%</dd><span>*Simple, historical</span></div>
+        <div><dt>Unclaimed interest</dt><dd>{stake.interest} <small>WISE</small></dd>{showInterestUsd && <span>{stake.interestUsd}</span>}</div>
+        <div><dt title="Simple annualized yield based on past accrued interest. Future returns may vary.">Annualized yield</dt><dd>{stake.annualYield}%</dd></div>
       </dl>
     </div>
     <div className="garuda-stake-footer"><div className="garuda-stake-actions">
