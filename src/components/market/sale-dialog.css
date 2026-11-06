@@ -120,6 +120,9 @@
   border-bottom: 1px solid var(--border);
   font-size: 14px;
 }
+.sale-facts > div:first-child {
+  padding-top: 0;
+}
 .sale-facts dt {
   color: var(--muted);
 }

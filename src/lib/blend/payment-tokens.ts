@@ -37,6 +37,16 @@ export function formatPaymentAmount(value: bigint, currency: string, precision?:
   const digits = fraction.slice(0, precision ?? token.decimals).replace(/0+$/, "");
   return `${BigInt(whole).toLocaleString("en-US")}${digits ? `.${digits}` : ""}`;
 }
+export function formatTokenBalance(value: bigint, currency: string) {
+  const decimals = paymentToken(currency).decimals;
+  const negative = value < 0n;
+  const abs = negative ? -value : value;
+  const unit = 10n ** BigInt(Math.max(decimals - 2, 0));
+  const scaled = decimals >= 2 ? (abs + unit / 2n) / unit : abs * 10n ** BigInt(2 - decimals);
+  const whole = scaled / 100n;
+  const fraction = (scaled % 100n).toString().padStart(2, "0");
+  return `${negative ? "-" : ""}${whole.toLocaleString("en-US")}.${fraction}`;
+}
 export type PaymentPrices = Partial<Record<PaymentToken["symbol"], number>>;
 export function paymentUsdValue(value: bigint, currency: string, prices: PaymentPrices): number | undefined {
   const token = paymentToken(currency), price = prices[token.symbol];

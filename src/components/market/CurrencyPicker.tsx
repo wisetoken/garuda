@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 import type { Address } from 'viem';
-import { paymentToken, formatPaymentAmount, paymentUsd, type PaymentToken, type PaymentPrices } from '../../lib/blend/payment-tokens';
+import { paymentToken, formatTokenBalance, paymentUsd, type PaymentToken, type PaymentPrices } from '../../lib/blend/payment-tokens';
 import { FundingTokenIcon } from '../funding/funding-token-display';
 
 type CurrencyPickerProps = { disabled?: boolean; value: Address; tokens: readonly PaymentToken[]; onChange: (value: Address) => void; balances?: Record<string, bigint | undefined>; prices: PaymentPrices };
@@ -52,7 +52,7 @@ export function CurrencyPicker({ disabled = false, value, tokens, onChange, bala
           onClick={() => { onChange(token.address); close(); }}>
           <FundingTokenIcon symbol={token.symbol}/>
           <span className="sale-currency-identity"><strong>{token.symbol} {active && <Check size={14} aria-hidden="true" />}</strong><small>Ethereum</small></span>
-          <span className="sale-currency-balance"><strong>{balance === undefined ? "—" : `${formatPaymentAmount(balance,token.address,6)} ${token.symbol}`}</strong>
+          <span className="sale-currency-balance"><strong>{balance === undefined ? "—" : `${formatTokenBalance(balance,token.address)} ${token.symbol}`}</strong>
             {balance !== undefined && <small>{paymentUsd(balance,token.address,prices)}</small>}</span>
         </button>;
       })}

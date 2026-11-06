@@ -1,5 +1,5 @@
 import { allowanceOptions, nftApprovalOptions, signingOptions } from "../../lib/market/transaction-preparation";
-import { paymentToken, paymentTokens, supportedPaymentTokens, parsePaymentAmount, formatPaymentAmount, paymentUsd } from "../../lib/blend/payment-tokens";
+import { paymentToken, paymentTokens, supportedPaymentTokens, parsePaymentAmount, formatPaymentAmount, formatTokenBalance, paymentUsd } from "../../lib/blend/payment-tokens";
 import { usePaymentPrices } from "../../lib/market/payment-prices";
 import { useFundingBalances } from "../../lib/blend/wallet-funding";
 import { PurchaseFunding } from "./PurchaseFunding";
@@ -152,7 +152,7 @@ export function SaleForm({
       payWith, payWith !== currency && deployment?.purchaseRouter ? deployment.purchaseRouter.address : preparation.d.market)] : []),
   ].map(options=>({...options,refetchInterval:15_000})) : []});
   const balanceLabel = balance.data !== undefined
-    ? `${tokenAmount(balance.data)} ${token.symbol}`
+    ? `${formatTokenBalance(balance.data, currency)} ${token.symbol}`
     : account && balance.isFetching ? "Loading…" : "—";
   let amount: bigint | undefined,
     amountError = "";

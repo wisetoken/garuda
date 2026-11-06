@@ -6,7 +6,7 @@ import { withoutWalletAnalytics } from './scripts/no-analytics';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const proxy = { '/api/garuda': { target: env.GARUDA_MARKET_API_ORIGIN || 'http://127.0.0.1:3213', changeOrigin: true }, '/api': { target: env.GARUDA_API_ORIGIN || 'http://127.0.0.1:3202', changeOrigin: true } };
+  const proxy = { '/api/garuda': { target: env.GARUDA_MARKET_API_ORIGIN || 'http://127.0.0.1:3213', changeOrigin: true }, '/api/wise-price': { target: 'https://wise.one', changeOrigin: true }, '/api': { target: env.GARUDA_API_ORIGIN || 'http://127.0.0.1:3202', changeOrigin: true } };
   return {
     plugins: [localDeploymentPlugin(env.GARUDA_MARKET_API_ORIGIN || 'http://127.0.0.1:3213'), withoutWalletAnalytics(), react()],
     // Thirdweb remains unbundled so the analytics transform runs in dev.

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { decodeAbiParameters, parseUnits, recoverTypedDataAddress, zeroAddress } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { paymentTokens, parsePaymentAmount, formatPaymentAmount, supportedPaymentTokens } from '../src/lib/blend/payment-tokens.ts';
+import { paymentTokens, parsePaymentAmount, formatPaymentAmount, formatTokenBalance, supportedPaymentTokens } from '../src/lib/blend/payment-tokens.ts';
 import { zoneProof, seaportComponents, seaportTypedData, seaportOrderHash } from '../src/lib/blend/seaport.ts';
 import { parseSalesDeployment, parseSignedSale, serializeSale } from '../src/lib/blend/sales.ts';
 import { assertLegacyTradingRetired, legacySignatureDeployment } from '../src/lib/blend/sales-migration.ts';
@@ -35,6 +35,9 @@ test('V2 currency is bound into both proof and Seaport signature; V1 remains WIS
 test('USDC amounts retain six-decimal precision, reject rounding and group thousands',()=>{
  assert.equal(parsePaymentAmount('1000.123456',usdc.address),1000123456n);
  assert.equal(formatPaymentAmount(1000123456n,usdc.address),'1,000.123456');
+ assert.equal(formatTokenBalance(433901666373115024704n,wise.address),'433.90');
+ assert.equal(formatTokenBalance(10n*10n**18n,wise.address),'10.00');
+ assert.equal(formatTokenBalance(1235000n,usdc.address),'1.24');
  for(const value of ['0','-1','1e3','1.1234567','NaN','1,000'])assert.throws(()=>parsePaymentAmount(value,usdc.address));
  assert.equal(parsePaymentAmount('0.000000000000000001',weth.address),1n);
 });
