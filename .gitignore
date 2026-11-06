@@ -7,3 +7,6 @@ dist/
 *.tsbuildinfo
 contracts/seaport/deployments/v2-deployment-review.json
 contracts/seaport/deployments/v2-standard-input.json
+.vercel
+
+.generated/

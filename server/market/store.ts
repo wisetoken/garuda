@@ -57,7 +57,12 @@ export class SaleStore {
         this.scope = deploymentScope(deployment);
     }
     async migrate() {
-        await this.pool.query(SALES_SCHEMA + PUBLICATION_SCHEMA + MEDIA_SCHEMA);
+        await this.transaction(async db => {
+            // Serverless cold starts may initialize concurrently. Serialize DDL
+            // so CREATE IF NOT EXISTS cannot race on PostgreSQL catalog entries.
+            await db.query("SELECT pg_advisory_xact_lock(hashtext($1))", ["garuda-schema"]);
+            await db.query(SALES_SCHEMA + PUBLICATION_SCHEMA + MEDIA_SCHEMA);
+        });
     }
     async saveAvailability(rows: SaleRow[], blockNumber: bigint) {
         if (!rows.length) return;

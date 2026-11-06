@@ -4,13 +4,13 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.12.0"
+    "node": "22.x"
   },
   "scripts": {
     "predev": "npm run build:backup",
     "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "build": "npm run typecheck && npm run build:backup && vite build",
+    "build": "npm run typecheck && npm run build:backup && npm run build:api && vite build",
     "build:backup": "node scripts/build-backup.mjs",
     "test:backup:fork": "node --import tsx scripts/verify-backup-fork.mjs",
     "preview": "vite preview",
@@ -18,7 +18,8 @@
     "test:market:fork": "node --import tsx scripts/verify-market-fork.mjs",
     "server": "node --env-file-if-exists=.env.local --import tsx server/index.ts",
     "arkiv:query": "node --env-file-if-exists=.env.local --import tsx scripts/arkiv-query.mjs",
-    "test:market:api": "node --import tsx scripts/verify-market-api.mjs"
+    "test:market:api": "node --import tsx scripts/verify-market-api.mjs",
+    "build:api": "node scripts/build-api.mjs"
   },
   "dependencies": {
     "@anon-rpc/browser-harness": "0.4.0",
@@ -28,6 +29,7 @@
     "@dnd-kit/utilities": "3.2.2",
     "@hono/node-server": "1.19.11",
     "@tanstack/react-query": "5.81.5",
+    "@vercel/functions": "3.11.0",
     "canvas-confetti": "1.9.3",
     "hono": "4.11.9",
     "lucide-react": "1.6.0",

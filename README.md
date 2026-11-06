@@ -230,6 +230,18 @@ node --env-file-if-exists=.env.local --import tsx scripts/arkiv-republish.mjs
 
 Adding `--publish` writes valid existing orders as v2 using the configured Rabdi publisher. It preserves signatures, prices, deadlines and original publication blocks, verifies receipts and entity read-backs, and skips unavailable orders. Run it with the background publisher stopped; restart the API afterward. Repeating it reuses verified v2 entities.
 
+## Production on Vercel
+
+The Vercel project is **Garuda** in the `vmarinchenkos-projects` team. The intended production branch is `master`: once the GitHub integration has access to `wisetoken/garuda`, pushes to that branch deploy production; other branches receive previews.
+
+[`vercel.json`](vercel.json) builds the Vite frontend and the [Hono API entry](server/vercel-entry.ts) together. `/garuda/` serves the app and `/api/garuda/*` serves its market API. Price, subgraph and owl-avatar requests use the existing public WiseOne API through explicit same-origin rewrites. The standalone backup remains available at `/garuda-backup.html`.
+
+Production needs a dedicated hosted PostgreSQL database, with `sslmode=verify-full`, and these server-only variables: `GARUDA_DATABASE_URL`, `GARUDA_DEPLOYMENT_JSON`, `GARUDA_RPC_URL`, `ARKIV_PUBLISHER_PRIVATE_KEY`, and `CRON_SECRET` (a random secret of at least 32 characters). Set `VITE_THIRDWEB_CLIENT_ID` at build time and allow the production domain in the corresponding Thirdweb app. `GARUDA_DEPLOYMENT_JSON` contains the public [Ethereum deployment manifest](contracts/seaport/deployments/ethereum-mainnet-v2-with-router.json); do not also set `GARUDA_DEPLOYMENT_FILE`. Preview deployments must use an isolated database and publisher before enabling writes.
+
+Order publication uses Vercel's `waitUntil` to continue after returning the saved-order response. A protected minute cron retries durable publication jobs and processes stake snapshots and optional artwork backups. PostgreSQL retains retry state; its queue leases and publisher locks coordinate concurrent invocations. The minute cron requires Vercel Pro or above. Swarm uploads remain disabled unless their separate environment variables are configured.
+
+`GET /api/garuda/health` checks the configured database. `GET /api/cron/garuda` requires `Authorization: Bearer <CRON_SECRET>` and returns a non-success status if a maintenance task fails. Production secrets stay in Vercel and must never be committed or prefixed with `VITE_`.
+
 ## Run locally
 
 Requirements: **Node.js 22.12+**, npm, PostgreSQL, an Ethereum RPC endpoint, and a public Thirdweb client ID configured for your app origin.
@@ -280,7 +292,7 @@ npm run build
 npm run preview
 ```
 
-Open [the build preview](http://127.0.0.1:3214/garuda/). This serves the last build and does not hot reload; use `npm run dev` on port `3212` while editing. A production host must provide equivalent API routing and run the market service separately; Vite's proxy is not part of the static build.
+Open [the build preview](http://127.0.0.1:3214/garuda/). This serves the last build and does not hot reload; use `npm run dev` on port `3212` while editing. Vite's proxy is local-only. The Vercel setup above packages the market API and production routes with the frontend.
 
 ## Verification
 

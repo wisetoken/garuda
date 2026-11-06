@@ -1,0 +1,8 @@
+node_modules
+.git
+.beads
+.env
+.env.*
+!.env.example
+history
+contracts/seaport/node_modules

@@ -8,7 +8,7 @@ import { SalesService } from './service';
 import { seedPublications } from './publication';
 import { stakeCollection } from '../../src/lib/blend/stake-collections';
 
-export function serviceResolver(collection: 'signature' | 'advanced') {
+export function serviceResolver(collection: 'signature' | 'advanced', onPool?: (pool: Pool) => void) {
   let pending: Promise<SalesService | null> | undefined;
   return () => pending ??= (async()=> {
     const runtime = await readSalesRuntime(collection === 'signature' ? process.env : {...process.env,
@@ -19,7 +19,8 @@ export function serviceResolver(collection: 'signature' | 'advanced') {
     const client=createPublicClient({chain: runtime.deployment.environment === 'ethereum-mainnet' ? mainnet : undefined, batch:{multicall:true}, transport:http(runtime.rpcUrl,{timeout:15000,retryCount:0})});
     if (runtime.deployment.environment === 'local-fork' && !/anvil/i.test(await client.request({method:'web3_clientVersion'})))
       throw new Error('Anvil required.');
-    const pool=new Pool(runtime.database);
+    const pool=new Pool({...runtime.database, idleTimeoutMillis:5000});
+    onPool?.(pool);
     pool.on('error',()=>console.error('Garuda database connection interrupted.'));
     const store=new SaleStore(pool,runtime.deployment);
     try { await store.migrate(); await seedPublications(store); await seedMedia(store); }
