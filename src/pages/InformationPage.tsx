@@ -3,6 +3,7 @@ import { PlaceholderPage } from '../components/PlaceholderPage';
 
 const ProblemPage = lazy(() => import('./guides/GarudaProblem').then(module => ({ default: module.GarudaProblem })));
 const SolutionPage = lazy(() => import('./guides/GarudaGuide').then(module => ({ default: module.GarudaGuide })));
+const BackupPage = lazy(() => import('./BackupAccessPage').then(module => ({ default: module.BackupAccessPage })));
 
 const content = {
   fund: { section: 'Get WISE', title: 'Get ready for your next position.', description: 'The WISE funding interface will be brought over from the existing app.' },
@@ -12,6 +13,7 @@ const content = {
 type InformationScreen = keyof typeof content | 'problem' | 'how';
 
 export function InformationPage({ screen }: { screen: InformationScreen }) {
+  if (screen === 'privacy') return <Suspense fallback={<p role="status">Loading backup access…</p>}><BackupPage /></Suspense>;
   if (screen === 'problem' || screen === 'how') {
     return <>
       <title>{`${screen === 'problem' ? 'The Problem' : 'The Solution'} | WiseOne | Garuda Extension`}</title>

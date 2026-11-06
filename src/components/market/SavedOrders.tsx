@@ -5,6 +5,8 @@ import type { SalesDeployment } from "../../lib/blend/sales";
 import { readRecovery } from "../../lib/market/recovery";
 import { stakeCollection } from "../../lib/blend/stake-collections";
 import { formatAmount } from "../../lib/blend/domain";
+import { useState } from "react";
+import { downloadOrderBackup } from "../../lib/backup/export";
 
 export function SavedOrders({
   deployments,
@@ -13,6 +15,7 @@ export function SavedOrders({
 }) {
   const account = useActiveAccount(),
     { open, revision, busy } = useMarketActions();
+  const [exportNotice, setExportNotice] = useState("");
   void revision;
   const groups = (account ? deployments : []).map((d) => {
     try {
@@ -35,6 +38,12 @@ export function SavedOrders({
         attempts. A signature can remain valid until expiry or onchain
         cancellation.
       </p>
+      <button type="button" className="market-secondary" disabled={busy} onClick={() => {
+        if (!account) return;
+        try { setExportNotice(`Exported ${downloadOrderBackup(account.address)} Signature orders. Keep the backup private until the orders expire or are cancelled.`); }
+        catch { setExportNotice("Export failed. Keep this browser's saved data and use the CROPS page for independent access."); }
+      }}>Export Signature order backup</button>
+      <p role="status">{exportNotice}</p>
       {groups.map(({ d, orders, error }) => (
         <div key={d.collection}>
           {!error && (
