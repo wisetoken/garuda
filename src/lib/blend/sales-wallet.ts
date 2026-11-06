@@ -49,6 +49,7 @@ export type SalesSession = {
   deployment: SalesDeployment;
   address: Address;
   assertWallet: () => Promise<void>;
+  requireBidApproval?: boolean;
   validateSale?: (signed: SignedSale) => Promise<void>;
   onStep?: (step: SalesStep) => void;
   onTransaction?: (hash: Hex, kind: string) => void;
@@ -165,7 +166,7 @@ async function approveNFT(s: SalesSession, tokenId: bigint) {
       "The NFT approval was not confirmed.",
     );
 }
-async function approveWISE(s: SalesSession, amount: bigint) {
+async function approveWISE(s: SalesSession, amount: bigint, allowWrite = true) {
   const d = s.deployment;
   const [balance, allowance] = await Promise.all([
     s.client.readContract({
@@ -184,19 +185,10 @@ async function approveWISE(s: SalesSession, amount: bigint) {
   if (balance < amount)
     throw new SalesError("balance", "Insufficient WISE balance.");
   if (allowance >= amount) return;
-  // Never request an unlimited token approval. Reset an existing insufficient allowance first.
+  if (!allowWrite)
+    throw new SalesError("approval-missing", "Approve WISE before signing this bid.");
+  // WISE supports replacing a nonzero allowance. Approve only the requested amount.
   s.onStep?.("approving-wise");
-  if (allowance > 0n)
-    await send(
-      s,
-      {
-        address: d.currency,
-        abi: tokenSalesAbi,
-        functionName: "approve",
-        args: [d.market, 0n],
-      },
-      "WISE allowance reset",
-    );
   await send(
     s,
     {
@@ -220,6 +212,17 @@ async function approveWISE(s: SalesSession, amount: bigint) {
       "WISE approval was not confirmed.",
     );
 }
+/** Approval is a separate user action; it never signs or publishes an order. */
+export async function approveBid(s: SalesSession, amount: bigint) {
+  await guard(s);
+  if (amount <= 0n || amount >= (1n << 128n))
+    throw new SalesError("terms", "Invalid bid amount.");
+  await verifySalesDeployment(s.client, s.deployment);
+  if (await s.client.readContract({ address: s.deployment.adapter, abi: zoneAbi, functionName: "newActivityPaused" }))
+    throw new SalesError("paused", "New orders are paused.");
+  await approveWISE(s, amount);
+}
+
 export async function publishSale(
   s: SalesSession,
   input: {
@@ -257,7 +260,7 @@ export async function publishSale(
       "The selected wallet cannot create this order.",
     );
   if (input.kind === 0) await approveNFT(s, input.tokenId);
-  else await approveWISE(s, input.amount);
+  else await approveWISE(s, input.amount, !s.requireBidApproval);
   s.onStep?.("checking");
   // Approval dialogs may have taken minutes. Re-read every signed collateral field afterwards.
   const block = await verifySalesDeployment(s.client, d);

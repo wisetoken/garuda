@@ -22,6 +22,7 @@ import {
 } from "../blend/sales";
 import {
   publishSale,
+  approveBid,
   fillSale,
   cancelSale,
   randomSaleNonce,
@@ -130,7 +131,7 @@ export function useMarketController() {
     void refreshTradeData(cache);
     setRevision((v) => v + 1);
   }
-  async function execute(price: string, days: number) {
+  async function execute(price: string, days: number, approvalOnly = false) {
     if (!intent || lock.current) return;
     lock.current = true;
     setBusy(true);
@@ -179,6 +180,7 @@ export function useMarketController() {
         txKey = `garuda:pending:${address.toLowerCase()}`;
       let lastTx: PendingTx | null = null;
       const session: SalesSession = {
+        requireBidApproval: true,
         client: ethereumClient,
         deployment: d,
         address,
@@ -243,6 +245,11 @@ export function useMarketController() {
         },
       };
       if (activeIntent.kind === "list" || activeIntent.kind === "bid") {
+        if (activeIntent.kind === "bid" && approvalOnly) {
+          await approveBid(session, parseAmount(price));
+          showToast("WISE approved. You can now sign and publish your bid.");
+          return;
+        }
         prepareRecovery(localStorage, d, address); // Verify storage before asking for a signature.
         const amount = parseAmount(price);
         const signed = await publishSale(
@@ -288,6 +295,7 @@ export function useMarketController() {
       showToast(salesFailure(e, phase.current), { tone: "error" });
       refresh();
     } finally {
+      await cache.invalidateQueries({ queryKey: ["bid-allowance"] });
       lock.current = false;
       setBusy(false);
     }
@@ -315,10 +323,11 @@ export function useMarketController() {
       );
       showToast(
         receipt.status === "success"
-          ? "Transaction confirmed. Review the current order state before continuing."
+          ? (pending.kind === "WISE approval" ? "WISE approval confirmed. Continue to sign your bid." : pending.kind === "WISE allowance reset" ? "Allowance reset confirmed. Approve WISE to continue." : "Transaction confirmed. Review the current order state before continuing.")
           : "Transaction reverted. Refresh and review before trying again.",
         { tone: receipt.status === "success" ? "info" : "error", link },
       );
+      await cache.invalidateQueries({ queryKey: ["bid-allowance"] });
       refresh();
     } catch {
       showToast(

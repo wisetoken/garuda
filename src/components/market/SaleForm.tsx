@@ -50,7 +50,7 @@ export function SaleForm({
   busy: boolean;
   busyLabel: string;
   blocked: boolean;
-  execute: (price: string, days: number) => Promise<void>;
+  execute: (price: string, days: number, approvalOnly?: boolean) => Promise<void>;
   connect: () => Promise<void>;
   switchChain: () => Promise<void>;
   correctChain: boolean;
@@ -122,6 +122,17 @@ export function SaleForm({
     staleTime: 10_000,
     refetchInterval: 30_000,
   });
+  const spender = config.data?.enabled ? config.data.deployment.market : undefined;
+  const allowance = useQuery({
+    queryKey: ["bid-allowance", account?.address.toLowerCase(), currency, spender],
+    queryFn: () => ethereumClient.readContract({
+      address: currency, abi: tokenSalesAbi, functionName: "allowance",
+      args: [getAddress(account!.address), spender!],
+    }),
+    enabled: intent.kind === "bid" && !!account && !!spender && correctChain,
+    staleTime: 0,
+    refetchInterval: 15_000,
+  });
   const balanceLabel = balance.data !== undefined
     ? `${wiseAmount(balance.data)} WISE`
     : account && balance.isFetching ? "Loading…" : "—";
@@ -167,11 +178,14 @@ export function SaleForm({
           : buy
             ? "Review purchase"
             : "Accept this bid";
+  const needsApproval = intent.kind === "bid" && amount !== undefined && allowance.data !== undefined && allowance.data < amount;
+  const allowanceBlocked = intent.kind === "bid" && (allowance.data === undefined || allowance.isError);
+  useErrorToast("bid-allowance", intent.kind === "bid" && allowance.isError && !allowance.isFetching && "Could not check WISE approval. Please try again.", () => void allowance.refetch());
   const action =
     intent.kind === "list"
       ? "Sign & publish listing"
       : intent.kind === "bid"
-        ? "Sign & publish bid"
+        ? (needsApproval ? "Approve WISE" : "Sign & publish bid")
         : intent.kind === "cancel"
           ? (intent.row.order.kind === 0 ? "Cancel Sale" : "Cancel")
           : buy
@@ -190,7 +204,7 @@ export function SaleForm({
   const showInsufficientBalance = !!account && insufficient && !balance.isError &&
     !busy && !readiness.checking;
   const submitBlocked = !account || !correctChain || busy || blocked || !!wrongOwner ||
-    readiness.blocked || insufficient || amount === undefined;
+    readiness.blocked || allowanceBlocked || insufficient || amount === undefined;
   function validateAmount() {
     setTouched(true);
     if (price.trim() && amount === undefined) showToast(amountError || "Enter a valid WISE amount.", { id: "sale-amount", tone: "error" });
@@ -200,7 +214,7 @@ export function SaleForm({
       onSubmit={(e) => {
         e.preventDefault();
         setTouched(true);
-        if (!submitBlocked) void execute(price, days);
+        if (!submitBlocked) void execute(price, days, needsApproval);
       }}
     >
       <header className="sale-heading">
@@ -343,7 +357,7 @@ export function SaleForm({
           >
             {(busy || readiness.checking) && <LoaderCircle className="sale-loading" size={18} aria-hidden="true" />}
             <span aria-live="polite">{
-              busy ? busyLabel : readiness.checking ? "Checking…" :
+              busy ? busyLabel : readiness.checking || (allowanceBlocked && allowance.isFetching) ? "Checking…" :
                 showInsufficientBalance ? "Insufficient WISE balance" : action
             }</span>
           </button>

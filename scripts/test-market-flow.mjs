@@ -10,6 +10,7 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import {
   publishSale,
+  approveBid,
   fillSale,
   cancelSale,
 } from "../src/lib/blend/sales-wallet.ts";
@@ -208,14 +209,13 @@ test("listing approves only the selected NFT and persists before publication", a
   assert.equal(signed.order.amount, input.amount.toString());
   assert.equal(signed.order.deadline, String(2000 + 7 * 86400));
 });
-test("bids reset insufficient allowance and approve only the exact WISE amount", async () => {
+test("bids replace insufficient allowance with only the exact WISE amount", async () => {
   const f = fixture(buyer);
   f.state.allowance = 10n;
   await publishSale(f.session, { ...input, kind: 1 }, async () => {});
   assert.deepEqual(
     f.state.writes.map((x) => x.args),
     [
-      [SEAPORT, 0n],
       [SEAPORT, input.amount],
     ],
   );
@@ -449,4 +449,35 @@ test("a failed publication keeps the recoverable signature and never produces a 
     succeeded=true;
   },/publication offline/);
   assert.equal(succeeded,false);assert.ok(f.state.events.includes('saved'));
+});
+
+
+test("separate bid approval never signs; subsequent signing needs no transaction", async () => {
+  const f = fixture(buyer);
+  f.session.requireBidApproval = true;
+  f.state.allowance = 10n;
+  await approveBid(f.session, input.amount);
+  assert.equal(f.state.writes.length, 1);
+  assert.deepEqual(f.state.writes[0].args, [SEAPORT, input.amount]);
+  assert.deepEqual(f.state.events, []);
+  await publishSale(f.session, { ...input, kind: 1 }, async () => f.state.events.push("published"));
+  assert.equal(f.state.writes.length, 1);
+  assert.deepEqual(f.state.events, ["signed", "saved", "published"]);
+});
+test("changed bid amount requires approval again without unexpected wallet prompts", async () => {
+  const f = fixture(buyer);
+  f.session.requireBidApproval = true;
+  f.state.allowance = input.amount - 1n;
+  await assert.rejects(() => publishSale(f.session, { ...input, kind: 1 }, async () => {}), /Approve WISE before signing/);
+  assert.equal(f.state.writes.length, 0);
+  assert.deepEqual(f.state.events, []);
+});
+test("failed or rejected approval never requests a bid signature", async () => {
+  for (const failure of ["reverted", "rejected"]) {
+    const f = fixture(buyer);
+    if (failure === "reverted") f.session.client.waitForTransactionReceipt = async () => ({ status: "reverted" });
+    else f.session.wallet.writeContract = async () => { throw Error("User rejected"); };
+    await assert.rejects(() => approveBid(f.session, input.amount));
+    assert.deepEqual(f.state.events, []);
+  }
 });
