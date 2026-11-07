@@ -94,3 +94,20 @@ test('the actual app transport does not send balance reads to direct fallbacks w
  `],{cwd:new URL('../',import.meta.url)});
  assert.match(stdout,/fail-closed app routing passed/);
 });
+
+test('standalone Nym failure never leaks the wallet read to fetch or the external wallet',async()=>{
+ const {stdout}=await promisify(execFile)(process.execPath,['--import','tsx','--input-type=module','-e',`
+ import assert from 'node:assert/strict';
+ const direct=[];let walletCalls=0;
+ globalThis.fetch=async (_url,init)=>{const req=JSON.parse(init.body);direct.push(req);throw Error('Bootstrap offline')};
+ const {backupReadTransport}=await import('./src/lib/backup/connection.ts');
+ const transport=backupReadTransport({selection:'nym',provider:{request:async()=>{walletCalls++;return '0x1'}}})({});
+ const request={method:'eth_getBalance',params:['0x'+'11'.repeat(20),'latest']};
+ await assert.rejects(transport.request(request));
+ await assert.rejects(transport.request(request));
+ assert.deepEqual(direct.map(r=>r.method),['eth_chainId']);
+ assert.deepEqual(direct[0].params,[]);assert.equal(walletCalls,0);
+ console.log('fail-closed backup routing passed');
+ `],{cwd:new URL('../',import.meta.url)});
+ assert.match(stdout,/fail-closed backup routing passed/);
+});

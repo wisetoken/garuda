@@ -3,7 +3,8 @@
 // No publishing key, application API, or Arkiv wallet SDK belongs in this bundle.
 import { getAddress, hexToString, keccak256, parseAbi, recoverTypedDataAddress, stringToBytes,
   type Address, type Hex, type PublicClient } from 'viem';
-import { backupDeployment as deployment, parseRpcUrl, verifyBackupContracts } from './core';
+import { backupDeployment as deployment, backupDeployments, parseRpcUrl, verifyBackupContracts, type BackupDeploymentId } from './core';
+import { paymentToken } from '../blend/payment-tokens';
 import { deploymentScope, parseSignedSale, sameAddress, type SignedSale } from '../blend/sales';
 import { seaportAbi, seaportComponents, seaportDigest, seaportTypedData } from '../blend/seaport';
 
@@ -12,10 +13,13 @@ export const arkivRecovery = {
   publisher: '0x8d5b491D2c843F6B996De1EC66269809138cA60A' as Address,
   scope: keccak256(stringToBytes(deploymentScope(deployment))), pageSize: 25, maxPages: 2,
 } as const;
+export const recoveryScopes = Object.fromEntries(Object.entries(backupDeployments).map(([id, d]) =>
+  [id, keccak256(stringToBytes(deploymentScope(d)))])) as Record<BackupDeploymentId, Hex>;
 type Version = 1 | 2;
 export type RecoveredOrder = {
   signed: SignedSale; hash: Hex; entityKey: Hex; version: Version;
   relation: 'own' | 'incoming'; expiresAtBlock: bigint;
+  deploymentId: BackupDeploymentId;
 };
 export type RecoveryStatus = {
   state: 'cancelled' | 'filled' | 'counter-invalidated' | 'expired' | 'not-started' | 'open';
@@ -68,9 +72,12 @@ export function parseRecoveryEntity(raw: unknown, version: Version, account: Add
   };
   const envelope = value('envelope', 'bytes');
   if (typeof envelope !== 'string' || envelope.length > 40_002 || !/^0x(?:[0-9a-f]{2})+$/i.test(envelope)) throw new Error('Invalid order envelope.');
-  const parsed = parseSignedSale(JSON.parse(hexToString(envelope as Hex)), deployment), o = parsed.order;
+  const scope = value('scope', 'str');
+  const deploymentId = (Object.keys(recoveryScopes) as BackupDeploymentId[]).find(id => recoveryScopes[id] === scope);
+  if (!deploymentId) throw new Error('Unsupported recovery scope.');
+  const parsed = parseSignedSale(JSON.parse(hexToString(envelope as Hex)), backupDeployments[deploymentId]), o = parsed.order;
   matches('arkiv.schema', 'str', `wiseone.garuda.orders.v${version}`);
-  matches('scope', 'str', arkivRecovery.scope);
+  matches('scope', 'str', recoveryScopes[deploymentId]);
   matches('orderHash', 'str', parsed.hash);
   matches('format', 'str', 'seaport-1.6');
   matches('kind', 'str', o.kind === 0 ? 'listing' : 'bid');
@@ -85,8 +92,9 @@ export function parseRecoveryEntity(raw: unknown, version: Version, account: Add
     matches('tokenId', 'u256', o.tokenId);
     matches('chainId', 'u64', 1n);
     matches('currency', 'addr', o.currency);
-    matches('currencySymbol', 'str', 'WISE');
-    matches('currencyDecimals', 'u64', 18n);
+    const token = paymentToken(o.currency);
+    matches('currencySymbol', 'str', token.symbol);
+    matches('currencyDecimals', 'u64', BigInt(token.decimals));
     matches('price', 'u256', o.amount);
     matches('stakeId', 'str', o.stakeId);
     matches('stateHash', 'str', o.stateHash);
@@ -94,7 +102,7 @@ export function parseRecoveryEntity(raw: unknown, version: Version, account: Add
   }
   const relation = sameAddress(o.maker, account) ? 'own' : o.kind === 1 && sameAddress(o.owner, account) ? 'incoming' : undefined;
   if (!relation) throw new Error('Order does not concern this wallet.');
-  return { signed: parsed.signed, hash: parsed.hash, version, relation, entityKey: key(entity.key), expiresAtBlock };
+  return { signed: parsed.signed, hash: parsed.hash, version, relation, entityKey: key(entity.key), expiresAtBlock, deploymentId };
 }
 
 /** Explicit opt-in network request with bounded response, no cookies, referrer, or persisted key. */
@@ -138,7 +146,8 @@ export async function discoverRecoveryOrders(request: RecoveryRequest, account: 
       assertCurrent();
       const maker = version === 1 ? `maker = str('${who}')` : `maker = addr(${who})`;
       const owner = version === 1 ? `owner = str('${who}')` : `stakeOwner = addr(${who})`;
-      const query = `arkiv.schema = str('wiseone.garuda.orders.v${version}') AND scope = str('${arkivRecovery.scope}') AND $owner = addr(${arkivRecovery.publisher}) AND (${maker} OR (${owner} AND kind = str('bid'))) ORDER BY $key:key ASC`;
+      const scopes = Object.values(recoveryScopes).map(scope => `scope = str('${scope}')`).join(' OR ');
+      const query = `arkiv.schema = str('wiseone.garuda.orders.v${version}') AND (${scopes}) AND $owner = addr(${arkivRecovery.publisher}) AND (${maker} OR (${owner} AND kind = str('bid'))) ORDER BY $key:key ASC`;
       let result: Record<string, unknown>;
       try {
         result = object(await request('arkiv_query', [query, { select: { key: true, owner: true, expiresAt: true,
@@ -171,7 +180,7 @@ export async function verifyRecoveredOrder(client: Reader, recovered: RecoveredO
   block?: { number: bigint; timestamp: bigint }): Promise<RecoveryStatus> {
   // Callers checking a batch may pass the one block already checked with verifyBackupContracts.
   const at = block ?? await verifyBackupContracts(client, chainId);
-  const d = { ...deployment, chainId }, parsed = parseSignedSale(recovered.signed, d), o = parsed.order;
+  const d = { ...backupDeployments[recovered.deploymentId], chainId }, parsed = parseSignedSale(recovered.signed, d), o = parsed.order;
   if (parsed.hash !== recovered.hash) throw new Error('Order identity changed.');
   const code = await client.getCode({ address: o.maker, blockNumber: at.number });
   let verified = false;

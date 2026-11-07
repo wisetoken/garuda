@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import { stringToHex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { arkivRecovery, parseRecoveryEntity, discoverRecoveryOrders, recoveryRequest, verifyRecoveredOrder } from '../src/lib/backup/arkiv.ts';
-import { backupDeployment as d, createBackup } from '../src/lib/backup/core.ts';
+import { backupDeployment as d, backupDeployments, createBackup, createBackupFile, parseBackupFile } from '../src/lib/backup/core.ts';
 import { parseSignedSale } from '../src/lib/blend/sales.ts';
 import { seaportTypedData } from '../src/lib/blend/seaport.ts';
 import { recoveryEntity } from './fixtures/arkiv-recovery.mjs';
+
+import { recoverySnapshots, visibleRecoveryEntries, verifyRecoveryEntries, canCancelRecovered, canExportRecovered } from '../src/lib/backup/recovery-view.ts';
+import { paymentTokens } from '../src/lib/blend/payment-tokens.ts';
 
 const maker = privateKeyToAccount(`0x${'31'.repeat(32)}`);
 const stranger = privateKeyToAccount(`0x${'32'.repeat(32)}`);
@@ -140,4 +143,77 @@ test('a forged v2 signature cannot hide a valid v1 signature with the same order
   assert.equal(found.orders.length, 2);
   const checks = await Promise.allSettled(found.orders.map(order => verifyRecoveredOrder(reader(), order, 1, block)));
   assert.equal(checks[0].status, 'rejected'); assert.equal(checks[1].status, 'fulfilled');
+});
+
+
+test('V2 WISE/WETH/USDC records use the pinned zone, signatures and exact currency decimals', async () => {
+  for (const token of paymentTokens) {
+    const order = { ...base, currency: token.address, amount: (2n * 10n ** BigInt(token.decimals)).toString() };
+    const parsed = parseSignedSale({ order, signature: '0x00' }, backupDeployments.v2);
+    const signed = { order, signature: await maker.signTypedData(seaportTypedData(backupDeployments.v2, parsed.order)) };
+    const record = parseRecoveryEntity(recoveryEntity(signed, 2, 'v2'), 2, maker.address, 1n);
+    assert.equal(record.deploymentId, 'v2');
+    const client = reader({ readContract: async req => req.functionName === 'getOrderHash' ? record.hash : reader().readContract(req) });
+    assert.equal((await verifyRecoveredOrder(client, record, 1, block)).state, 'open');
+    const portable = createBackupFile(maker.address, [{ signed, deploymentId: 'v2' }, { signed: await signedOrder(), deploymentId: 'v1' }]);
+    const groups = parseBackupFile(JSON.parse(JSON.stringify(portable)), maker.address);
+    assert.equal(groups.length, 2);
+    assert.equal(groups[1].adapter, backupDeployments.v2.adapter);
+    assert.equal(groups[1].orders[0].order.amount, order.amount);
+    const forged = recoveryEntity(signed, 2, 'v2');
+    forged.attributes.find(a => a.name === 'currencyDecimals').value = '0x0';
+    assert.throws(() => parseRecoveryEntity(forged, 2, maker.address, 1n));
+    await assert.rejects(verifyRecoveredOrder(client, { ...record, deploymentId: 'v1' }, 1, block));
+  }
+});
+
+test('published snapshots arrive before Ethereum and survive an outage without enabling actions', async () => {
+  const updates = []; let reachedRpc = false;
+  const entries = await verifyRecoveryEntries([recovered], () => {
+    assert.equal(updates.length, 1, 'publish snapshots before requesting Ethereum');
+    reachedRpc = true; throw Error('RPC offline');
+  }, () => {}, entries => updates.push(entries));
+  assert.equal(reachedRpc, true);
+  assert.equal(updates[0][0].verification, 'pending');
+  assert.equal(entries[0].verification, 'unavailable');
+  assert.equal(entries[0].signed.order.amount, signed.order.amount);
+  assert.equal(canCancelRecovered(entries[0], maker.address), false);
+  assert.equal(canExportRecovered(entries[0], maker.address), false);
+  assert.equal(canCancelRecovered(updates[0][0], maker.address), false);
+});
+
+test('retry verifies retained records; forged variants cannot hide a valid order or enable actions', async () => {
+  const parsed = parseSignedSale(signed, d);
+  const forged = { ...recovered, version: 2, signed: { ...signed, signature: await stranger.signTypedData(seaportTypedData(d, parsed.order)) } };
+  const valid = { ...recovered, version: 1 };
+  const entries = await verifyRecoveryEntries([forged, valid], () => reader(), () => {}, () => {}, async () => block);
+  assert.equal(entries[0].verification, 'failed');
+  assert.equal(canCancelRecovered(entries[0], maker.address), false);
+  const visible = visibleRecoveryEntries(entries);
+  assert.equal(visible.length, 1);
+  assert.equal(visible[0].verification, 'verified');
+  assert.equal(canCancelRecovered(visible[0], maker.address), true);
+  assert.equal(canExportRecovered(visible[0], maker.address), true);
+  assert.equal(canCancelRecovered(visible[0], stranger.address), false);
+  assert.equal(canCancelRecovered(visible[0]), false);
+  assert.equal(canCancelRecovered({ ...visible[0], status: { ...visible[0].status, state: 'cancelled' } }, maker.address), false);
+  assert.equal(canCancelRecovered(recoverySnapshots(visible, 'unavailable')[0], maker.address), false);
+});
+
+test('changed lookup during verification cannot apply a stale verified result', async () => {
+  let current = true; const updates = [];
+  await assert.rejects(verifyRecoveryEntries([recovered], () => reader(), () => {
+    if (!current) throw Error('lookup changed');
+  }, entries => updates.push(entries), async () => { current = false; return block; }), /lookup changed/);
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0][0].verification, 'pending');
+});
+
+test('backup bundles reject unknown deployments, wrong account, duplicate groups and oversized totals', () => {
+  const one = createBackup(maker.address, [signed]);
+  for (const groups of [[one, one], [{ ...one, adapter: stranger.address }], [{ ...one, account: stranger.address }], []])
+    assert.throws(() => parseBackupFile({ format: 'wiseone.garuda.backup-bundle', version: 1, groups }, maker.address));
+  assert.throws(() => parseBackupFile({ format: 'wiseone.garuda.backup-bundle', version: 2, groups: [one] }, maker.address));
+  const many = (count, deploymentId) => createBackup(maker.address, Array.from({ length: count }, (_, i) => ({ ...signed, order: { ...signed.order, nonce: String(i + 1) } })), deploymentId);
+  assert.throws(() => parseBackupFile({ format: 'wiseone.garuda.backup-bundle', version: 1, groups: [many(51, 'v1'), many(50, 'v2')] }, maker.address), /too many orders/);
 });

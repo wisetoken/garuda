@@ -1,13 +1,17 @@
 import {ETHEREUM_CONFIRMATIONS} from "../lib/confirmation-policy";
 // SPDX-License-Identifier: MIT
-import { createPublicClient, createWalletClient, custom, formatUnits, getAddress, http, zeroAddress,
+import { createWalletClient, custom, formatUnits, getAddress, isAddress, zeroAddress,
   type Address, type EIP1193Provider, type Hex } from 'viem';
 import { mainnet } from 'viem/chains';
-import { createBackup, executeBackupAction, parseBackup, parseRpcUrl, readBackupState, verifyBackupContracts,
+import { createBackupFile, executeBackupAction, parseBackupFile, readBackupState, verifyBackupContracts,
   type BackupAction, type BackupEnvelope } from '../lib/backup/core';
 import { parseSignedSale, sameAddress } from '../lib/blend/sales';
-import { backupDeployment } from '../lib/backup/core';
-import { arkivRecovery, discoverRecoveryOrders, recoveryRequest, verifyRecoveredOrder,
+import { backupDeployments, backupDeploymentId } from '../lib/backup/core';
+import { formatPaymentAmount, paymentToken } from '../lib/blend/payment-tokens';
+import { canCancelRecovered, canExportRecovered, recoverySnapshots, visibleRecoveryEntries, verifyRecoveryEntries, type RecoveryEntry } from '../lib/backup/recovery-view';
+import { backupReadClient } from '../lib/backup/connection';
+import { privateReadSession } from '../lib/private-rpc';
+import { arkivRecovery, discoverRecoveryOrders, recoveryRequest,
   type RecoveredOrder, type RecoveryStatus } from '../lib/backup/arkiv';
 
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -22,10 +26,17 @@ let provider: Provider | undefined;
 let account: Address | undefined;
 let generation = 0;
 let busy = false;
+let privateTesting = false;
+let privateTestAttempt = 0;
 let state: Awaited<ReturnType<typeof readBackupState>> | undefined;
-let backup: BackupEnvelope | undefined;
+let backup: BackupEnvelope[] | undefined;
 let action: BackupAction | undefined;
-let recovered: (RecoveredOrder & { status: RecoveryStatus })[] = [];
+let recovered: RecoveryEntry[] = [];
+let discovered: RecoveredOrder[] = [];
+let searchedAccount: Address | undefined;
+let discoveryNotice = '';
+const lookup = el<HTMLInputElement>('lookup-account');
+const validLookup = () => isAddress(lookup.value.trim(), { strict: false });
 type Pending = { hash: Hex; account: Address };
 let pending: Pending | undefined;
 try {
@@ -39,6 +50,24 @@ const amount = (value: bigint) => {
 function message(text: string, error = false) {
   el('status').textContent = text;
   el('status').parentElement!.classList.toggle('error', error);
+}
+let toastTimer = 0;
+function toast(text: string) {
+  const stack = el('toasts');
+  stack.replaceChildren();
+  const node = document.createElement('div');
+  node.className = 'toast';
+  const body = document.createElement('p');
+  body.textContent = text;
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Dismiss notification');
+  close.textContent = 'Dismiss';
+  const remove = () => { window.clearTimeout(toastTimer); if (node.isConnected) node.remove(); };
+  close.onclick = remove;
+  node.append(body, close);
+  stack.append(node);
+  toastTimer = window.setTimeout(remove, 8000);
 }
 function describeError(error: unknown) {
   // Do not show raw provider URLs, request bodies, or arbitrary RPC HTML.
@@ -55,47 +84,53 @@ function rememberPending(value: Pending | undefined) {
   el('pending-controls').hidden = !value;
 }
 function controls() {
-  button('connect').disabled = busy || providers.length === 0;
-  walletSelect.disabled = busy;
+  const locked = busy || privateTesting;
+  button('connect').disabled = locked || providers.length === 0;
+  walletSelect.disabled = locked;
   connection.disabled = busy;
   el<HTMLInputElement>('rpc').disabled = busy;
-  button('refresh').disabled = busy || !account;
-  el<HTMLInputElement>('import').disabled = busy || !account;
-  button('check-pending').disabled = busy || !account;
-  button('find-orders').disabled = busy || !account;
-  button('export-recovered').disabled = busy || !account || !recovered.some(order => order.relation === 'own');
+  button('refresh').disabled = locked || !account;
+  el<HTMLInputElement>('import').disabled = locked || !account;
+  button('check-pending').disabled = locked || !account;
+  button('find-orders').disabled = locked || !validLookup();
+  lookup.disabled = locked;
+  button('verify-orders').disabled = locked || !discovered.length;
+  button('export-recovered').disabled = locked || !account || !recovered.some(order => canExportRecovered(order, account));
   el<HTMLSelectElement>('arkiv-connection').disabled = busy;
   el<HTMLInputElement>('arkiv-rpc').disabled = busy;
-  button('revoke-wise').disabled = busy || !!pending || !state || state.allowance === 0n;
-  button('revoke-operator').disabled = busy || !!pending || !state?.operator;
-  button('counter-action').disabled = busy || !!pending || !account;
-  document.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(node => { node.disabled = busy || !!pending || !account; });
+  button('revoke-wise').disabled = locked || !!pending || !state || state.allowance === 0n;
+  button('revoke-operator').disabled = locked || !!pending || !state?.operator;
+  button('counter-action').disabled = locked || !!pending || !account;
+  button('test-private').disabled = locked;
+  button('stop-private').hidden = !privateTesting;
+  button('test-private').textContent = privateTesting ? 'Testing private connection…' : privateReadSession.getSnapshot().phase === 'error' ? 'Retry private connection' : 'Test private connection';
+  document.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(node => { node.disabled = locked || !!pending || !account; });
+}
+function readClient() {
+  return backupReadClient({ selection: connection.value, provider, rpcUrl: el<HTMLInputElement>('rpc').value });
 }
 function clients() {
   if (!provider || !account) throw new Error('Connect an external wallet first.');
-  const rpc = connection.value;
-  const transport = rpc === 'wallet' ? custom(provider, { retryCount: 0 }) : http(parseRpcUrl(rpc === 'custom' ? el<HTMLInputElement>('rpc').value : rpc), {
-    retryCount: 0, timeout: 20_000, fetchOptions: { credentials: 'omit', referrerPolicy: 'no-referrer' },
-  });
-  return { client: createPublicClient({ chain: mainnet, transport, cacheTime: 0 }),
+  return { client: readClient(),
     wallet: createWalletClient({ chain: mainnet, transport: custom(provider, { retryCount: 0 }) }) };
 }
-function invalidate() {
+function invalidate(preserveOrders = false) {
   generation++;
   state = undefined;
   action = undefined;
-  clearRecovered();
+  if (preserveOrders) { recovered = visibleRecoveryEntries(recoverySnapshots(discovered, 'unavailable')); renderRecovered(); }
+  else clearRecovered();
   review.close();
   renderState();
   controls();
 }
 function clearRecovered() {
-  recovered = [];
+  recovered = []; discovered = []; searchedAccount = undefined; discoveryNotice = '';
   el('recovered-orders').replaceChildren();
-  el('recovery-status').textContent = 'Search only runs when you choose Find my published orders.';
+  el('recovery-status').textContent = 'Search only runs when you choose Find published orders.';
 }
 function walletChanged() {
-  account = undefined; backup = undefined;
+  account = undefined; backup = undefined; lookup.value = '';
   el('account').textContent = 'Wallet changed. Connect again.';
   el('orders').replaceChildren();
   invalidate();
@@ -131,15 +166,54 @@ button('connect').onclick = async () => {
     const chain = await provider.request({ method: 'eth_chainId' });
     if (chain !== '0x1') throw new Error('Select Ethereum mainnet in your wallet, then connect again.');
     if (!addresses[0]) throw new Error('The wallet did not provide an account.');
-    account = getAddress(addresses[0]);
+    account = getAddress(addresses[0]); lookup.value = account;
     el('account').textContent = account;
-    message('Connected. Loading your Signature stakes directly from Ethereum…');
+    message('Connected. Loading your Signature stakes from Ethereum…');
   } catch (error) { account = undefined; message(describeError(error), true); }
   finally { busy = false; controls(); }
   if (account) await refresh();
 };
-connection.onchange = () => { el('custom-rpc').hidden = connection.value !== 'custom'; invalidate(); message('Read connection changed. Load from Ethereum to verify it.'); };
-el<HTMLInputElement>('rpc').oninput = () => { invalidate(); };
+function privateStatus() {
+  const status = privateReadSession.getSnapshot();
+  el('private-status').textContent = status.phase === 'starting' ? 'Starting Nym and verifying the private Ethereum route…' :
+    status.phase === 'error' ? 'Private connection unavailable. No direct fallback was used. Retry the test or choose a different read connection.' :
+    status.phase === 'ready' ? `Private Ethereum connection ready${status.block ? ` · block ${BigInt(status.block).toLocaleString()}` : ''}.` :
+    'Not started. Test the connection without connecting a wallet.';
+  controls();
+}
+privateReadSession.subscribe(privateStatus);
+connection.onchange = () => {
+  privateTestAttempt++; privateTesting = false; privateReadSession.reset();
+  el('custom-rpc').hidden = connection.value !== 'custom';
+  el('private-connection').hidden = connection.value !== 'nym';
+  el('connection-privacy').textContent = connection.value === 'nym' ?
+    'Ethereum reads use the Nym mixnet. The destination RPC still sees requested addresses and data, but sees a Nym exit IP. Wallet traffic, transactions and Arkiv discovery use their own connections.' :
+    'Direct reads are not anonymous. The selected provider can see your IP address and queried wallet.';
+  invalidate(true); message('Read connection changed. Load positions or verify the published orders through this connection.');
+};
+button('test-private').onclick = async () => {
+  if (busy || privateTesting || connection.value !== 'nym') return;
+  privateTesting = true;
+  const attempt = ++privateTestAttempt;
+  if (privateReadSession.getSnapshot().phase === 'error') privateReadSession.reset();
+  controls();
+  try {
+    const client = backupReadClient({ selection: 'nym' });
+    const block = await verifyBackupContracts(client);
+    if (attempt === privateTestAttempt) el('private-status').textContent =
+      `Private read succeeded at Ethereum block ${block.number!.toLocaleString()}. Recovery contract code hashes verified. No wallet address was queried.`;
+  } catch {
+    if (attempt === privateTestAttempt) el('private-status').textContent =
+      'Private connection or contract verification failed. No direct fallback was used. Retry the test or select another connection.';
+  } finally { if (attempt === privateTestAttempt) { privateTesting = false; controls(); } }
+};
+button('stop-private').onclick = () => {
+  privateTestAttempt++; privateTesting = false; privateReadSession.reset();
+  el('private-status').textContent = 'Test stopped. Anon-RPC / Nym remains selected; no direct fallback was used.';
+  controls();
+};
+el<HTMLInputElement>('rpc').oninput = () => { invalidate(true); };
+lookup.oninput = () => { generation++; clearRecovered(); controls(); };
 walletSelect.onchange = walletChanged;
 el<HTMLSelectElement>('arkiv-connection').onchange = () => {
   el('custom-arkiv-rpc').hidden = el<HTMLSelectElement>('arkiv-connection').value !== 'custom';
@@ -156,68 +230,81 @@ function renderRecovered() {
   for (const entry of recovered) {
     const item = document.createElement('article'); item.className = 'item';
     const title = document.createElement('h3');
-    title.textContent = `${entry.relation === 'incoming' ? 'Incoming bid' : entry.signed.order.kind === 0 ? 'My listing' : 'My bid'} · Signature #${entry.signed.order.tokenId}`;
-    const facts = document.createElement('p');
-    facts.textContent = `${amount(BigInt(entry.signed.order.amount))} WISE · ${labels[entry.status.state]}`;
+    title.textContent = `${entry.relation === 'incoming' ? 'Incoming bid' : entry.signed.order.kind === 0 ? 'Published listing' : 'Published bid'} · Signature #${entry.signed.order.tokenId}`;
+    const facts = document.createElement('p'), token = paymentToken(entry.signed.order.currency);
+    facts.textContent = `${formatPaymentAmount(BigInt(entry.signed.order.amount), token.address)} ${token.symbol} · Signature market ${entry.deploymentId.toUpperCase()}`;
+    const verification = document.createElement('p');
+    verification.textContent = entry.verification === 'verified' && entry.status
+      ? `${labels[entry.status.state]} · Maker signature checked · Ethereum block ${entry.status.blockNumber}`
+      : entry.verification === 'pending' ? 'Published snapshot — checking signature and current Ethereum status…'
+      : entry.verification === 'failed' ? 'Published snapshot — signature or current status could not be verified. Actions unavailable.'
+      : 'Published snapshot — current status unavailable. Signature and Ethereum state have not been verified. Actions unavailable.';
+    const maker = document.createElement('small'); maker.className = 'address'; maker.textContent = `Signed maker field: ${entry.signed.order.maker}`;
     const identity = document.createElement('small'); identity.className = 'address'; identity.textContent = entry.hash;
-    const verification = document.createElement('small');
-    verification.textContent = `Maker signature checked · Ethereum block ${entry.status.blockNumber} · Arkiv v${entry.version} record expires at Rabdi block ${entry.expiresAtBlock}.`;
-    item.append(title, facts, identity, verification);
-    if (entry.relation === 'own' && ['open', 'not-started'].includes(entry.status.state))
-      item.append(rowButton('Review cancellation', { kind: 'cancel', signed: entry.signed }));
-    if (entry.relation === 'incoming') {
-      const note = document.createElement('small'); note.textContent = 'Signed by another wallet. You cannot cancel this bid; accepting bids is outside this tool.'; item.append(note);
+    const expiry = document.createElement('small');
+    expiry.textContent = `Signed offer deadline: ${new Date(Number(entry.signed.order.deadline) * 1000).toUTCString()} · Arkiv record expires at Rabdi block ${entry.expiresAtBlock}.`;
+    const source = document.createElement('a'); source.href = `https://rabdi.explorer.arkiv.network/entity/${entry.entityKey}`;
+    source.textContent = 'View published record on Arkiv ↗'; source.target = '_blank'; source.rel = 'noreferrer';
+    item.append(title, facts, verification, maker, identity, expiry, source);
+    if (canCancelRecovered(entry, account)) item.append(rowButton('Review cancellation', { kind: 'cancel', signed: entry.signed, deploymentId: entry.deploymentId }));
+    if (!account || !sameAddress(entry.signed.order.maker, account)) {
+      const note = document.createElement('small'); note.textContent = entry.relation === 'incoming'
+        ? 'Only the signing bidder can cancel this order.' : 'Connect the signing wallet to cancel or export a verified order.';
+      item.append(note);
     }
     container.append(item);
   }
+  const verified = recovered.filter(entry => entry.verification === 'verified').length;
+  el('recovery-status').textContent = `${recovered.length} published orders; ${verified} verified on Ethereum. ${discoveryNotice}`;
+  controls();
+}
+async function verifyDiscovered(current: number) {
+  const expected = searchedAccount;
+  const assertCurrent = () => { if (current !== generation || searchedAccount !== expected) throw new Error('Wallet or connection changed. Search again.'); };
+  await verifyRecoveryEntries(discovered, readClient, assertCurrent, entries => {
+    assertCurrent(); recovered = visibleRecoveryEntries(entries); renderRecovered();
+  });
 }
 button('find-orders').onclick = async () => {
-  if (busy || !account) return;
+  if (busy || privateTesting || !validLookup()) return;
   busy = true; clearRecovered(); controls();
-  const current = generation, expected = account;
-  const assertCurrent = () => { if (current !== generation || account !== expected) throw new Error('Wallet or connection changed. Search again.'); };
+  const current = generation, expected = getAddress(lookup.value.trim().toLowerCase());
+  searchedAccount = expected;
+  const assertCurrent = () => { if (current !== generation || searchedAccount !== expected) throw new Error('Wallet or connection changed. Search again.'); };
   const status = el('recovery-status');
   status.textContent = 'Reading published records directly from Arkiv…';
   try {
     const endpoint = el<HTMLSelectElement>('arkiv-connection').value === 'custom' ? el<HTMLInputElement>('arkiv-rpc').value : arkivRecovery.rpc;
     const found = await discoverRecoveryOrders(recoveryRequest(endpoint), expected, assertCurrent);
-    assertCurrent();
-    const client = clients().client, block = await verifyBackupContracts(client);
-    assertCurrent();
-    let next = 0, checked = 0, unverifiable = 0;
-    const verified: typeof recovered = [];
-    await Promise.all(Array.from({ length: 3 }, async () => {
-      while (next < found.orders.length) {
-        assertCurrent();
-        const entry = found.orders[next++];
-        try { verified.push({ ...entry, status: await verifyRecoveredOrder(client, entry, 1, block) }); }
-        catch { unverifiable++; }
-        assertCurrent(); checked++;
-        status.textContent = `Checking maker signatures and Ethereum state: ${checked} of ${found.orders.length}…`;
-      }
-    }));
-    assertCurrent();
-    const unique = new Map<Hex, (typeof verified)[number]>();
-    for (const entry of verified.sort((a, b) => b.version - a.version)) if (!unique.has(entry.hash)) unique.set(entry.hash, entry);
-    recovered = [...unique.values()].sort((a, b) => a.hash.localeCompare(b.hash)); renderRecovered();
-    const own = recovered.filter(order => order.relation === 'own').length;
-    status.textContent = `${own} verified orders signed by you; ${recovered.length - own} incoming bids. ` +
-      `${found.rejected} malformed records skipped; ${unverifiable} signatures or Ethereum checks could not be verified. ` +
+    assertCurrent(); discovered = found.orders;
+    discoveryNotice = `${found.rejected} malformed records skipped. ` +
       (found.failedSchemas ? `${found.failedSchemas} schema searches failed or stopped early. Results are incomplete. ` : '') +
-      (found.truncated ? 'Search limit reached (50 records per schema). Results are incomplete. ' : '') +
-      'Only live, published records can be found. Missing results never prove there are no orders. Pages read current blocks and can shift during updates.';
-    message('Arkiv search finished. Review the recovery results and any incomplete-search notice.');
+      (found.truncated ? 'Search limit reached (50 records per schema across V1/V2). Results are incomplete. ' : '') +
+      'Only live published records can be found. This is not a complete stake inventory. Missing results never prove there are no orders.';
+    recovered = visibleRecoveryEntries(recoverySnapshots(discovered)); renderRecovered();
+    await verifyDiscovered(current);
+    assertCurrent();
+    toast(found.failedSchemas || found.truncated ? 'Arkiv search finished. Some results are incomplete.' : 'Arkiv search finished.');
   } catch (error) {
     if (current === generation) { clearRecovered(); status.textContent = describeError(error); message('Order discovery could not finish. Saved-file and counter cancellation remain available.', true); }
   } finally { busy = false; controls(); }
 };
+button('verify-orders').onclick = async () => {
+  if (busy || privateTesting || !discovered.length) return;
+  busy = true; controls();
+  try { await verifyDiscovered(generation); }
+  catch { /* A changed wallet/lookup has already cleared the old results. */ }
+  finally { busy = false; controls(); }
+};
 button('export-recovered').onclick = () => {
-  if (busy || !account) return;
-  const exported = createBackup(account, recovered.filter(order => order.relation === 'own').map(order => order.signed));
+  if (busy || privateTesting || !account) return;
+  const entries = recovered.filter(order => canExportRecovered(order, account));
+  if (!entries.length) return;
+  const exported = createBackupFile(account, entries);
   const url = URL.createObjectURL(new Blob([JSON.stringify(exported, null, 2)], { type: 'application/json' }));
   const link = document.createElement('a'); link.href = url; link.download = `garuda-orders-${account.toLowerCase()}.json`; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  message(`Exported ${exported.orders.length} verified orders signed by this wallet. Keep the file safe; signatures are included.`);
+  message(`Exported ${entries.length} verified orders signed by this wallet. Keep the file safe; signatures are included.`);
 };
 
 function rowButton(label: string, selectedAction: BackupAction) {
@@ -266,15 +353,16 @@ el<HTMLInputElement>('import').onchange = async event => {
     if (file.size > 512_000) throw new Error('Backup is too large. The limit is 512 KB and 100 orders.');
     const raw = JSON.parse(await file.text());
     if (current !== generation || account !== expected) throw new Error('Wallet changed during import. Import again.');
-    backup = parseBackup(raw, expected);
-    for (const signed of backup.orders) {
-      const { hash } = parseSignedSale(signed, backupDeployment);
+    backup = parseBackupFile(raw, expected);
+    for (const group of backup) for (const signed of group.orders) {
+      const deploymentId = backupDeploymentId(group.adapter);
+      const { hash } = parseSignedSale(signed, backupDeployments[deploymentId]);
       const item = document.createElement('div'); item.className = 'item';
-      const description = document.createElement('p'); description.textContent = `Signature #${signed.order.tokenId} · ${signed.order.kind === 0 ? 'Listing' : 'Bid'} · ${amount(BigInt(signed.order.amount))} WISE`;
+      const description = document.createElement('p'); description.textContent = `Signature #${signed.order.tokenId} · ${signed.order.kind === 0 ? 'Listing' : 'Bid'} · ${formatPaymentAmount(BigInt(signed.order.amount), signed.order.currency)} ${paymentToken(signed.order.currency).symbol} · Market ${deploymentId.toUpperCase()}`;
       const identity = document.createElement('small'); identity.className = 'address'; identity.textContent = hash;
-      item.append(description, identity, rowButton('Review cancellation', { kind: 'cancel', signed })); el('orders').append(item);
+      item.append(description, identity, rowButton('Review cancellation', { kind: 'cancel', signed, deploymentId })); el('orders').append(item);
     }
-    message(`Imported ${backup.orders.length} orders for this wallet. Nothing was uploaded or submitted.`);
+    message(`Imported ${backup.reduce((n, group) => n + group.orders.length, 0)} orders for this wallet. Nothing was uploaded or submitted.`);
   } catch (error) { message(describeError(error), true); }
   finally { input.value = ''; controls(); }
 };

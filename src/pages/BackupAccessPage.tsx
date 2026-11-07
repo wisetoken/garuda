@@ -26,7 +26,7 @@ export function BackupAccessPage() {
       <div className="ba-scenario-grid">
         <article><Unplug size={22} aria-hidden="true" /><h3>Garuda won’t open</h3><p>Run your saved copy from your computer. It talks to Ethereum without Garuda’s website, API, or sign-in service.</p><span className="ba-outcome">Keep access to supported stakes</span></article>
         <article><ArrowUpRight size={22} aria-hidden="true" /><h3>Your connection stops responding</h3><p>Choose another Ethereum read provider in the tool. If sending transactions fails, change the connection in your wallet too.</p><span className="ba-outcome">Choose a working connection</span></article>
-        <article><FileSearch size={22} aria-hidden="true" /><h3>Your saved orders are missing</h3><p>Find supported, still-published V1 orders directly on Arkiv. The tool checks the maker’s signature and Ethereum status before offering cancellation of your orders.</p><span className="ba-outcome">Recover orders without our database</span></article>
+        <article><FileSearch size={22} aria-hidden="true" /><h3>Your saved orders are missing</h3><p>Look up published V1/V2 offers directly on Arkiv. Snapshots stay visible during an Ethereum outage; cancellation requires the signing wallet and successful Ethereum checks.</p><span className="ba-outcome">Recover orders without our database</span></article>
       </div>
     </section>
 
@@ -39,7 +39,7 @@ export function BackupAccessPage() {
         <div><dt>Check against Ethereum</dt><dd>A published record does not grant control over a stake. The tool checks the maker’s signature and current Ethereum order status; your wallet authorizes cancellation, and Ethereum enforces it.</dd></div>
       </dl>
       <p className="ba-scope"><strong>Why this matters:</strong> you have a recovery path that does not need our server to keep running. The normal marketplace still uses our API and database for its catalog, publication queue and validation history.</p>
-      <p className="ba-scope"><strong>Recovery coverage today:</strong> individual order discovery, export, import and cancellation in the saved tool support the original V1 Signature market with WISE payments. The new V2 market’s published data is public too, but individual V2 order recovery is not yet supported by this tool. Broad Seaport counter cancellation remains available and also affects orders from other apps.</p>
+      <p className="ba-scope"><strong>Recovery coverage today:</strong> the saved tool supports Signature V1 orders in WISE and V2 orders in WISE, WETH or USDC. Published snapshots are readable without a wallet; cancellation and verified export require the signing wallet and current Ethereum checks. Broad Seaport counter cancellation remains available and also affects orders from other apps.</p>
       <details><summary>Public data, retention and remaining dependencies</summary><p>Published wallet addresses, trade terms and signatures are public. Arkiv adds data availability; it does not make offers or queries private. RPC providers can see your IP and queries. Wallet keys stay in your wallet.</p><p>Initial publication depends on our publisher, which can refuse publication or delete its copies. Records can expire, and Arkiv or its RPC can be unavailable. Keep a local export of supported orders too. Extending storage does not extend the signed trading deadline.</p></details>
       <details><summary>Where does Graph fit?</summary><p>The market currently labels its service-catalog option “Graph,” but that option reads Garuda’s database through our API. The actual subgraph supplies stake creation details; it is not currently a separate backup of signed offers. Both normal market source options use our API. The saved tool’s direct Arkiv reads and local-file import provide the independent recovery paths.</p></details>
     </section>
@@ -49,7 +49,7 @@ export function BackupAccessPage() {
         <div className="ba-kicker">PREPARE ONCE</div><h2>Keep two things somewhere safe.</h2>
         <ol className="ba-steps">
           <li><strong>Save the backup tool.</strong><p>The HTML file includes the interface and code it needs. Keep a copy outside this website.</p></li>
-          <li><strong>Export your signed orders.</strong><p>This browser’s saved V1 Signature orders can be imported later to cancel them individually. Export again after signing new orders.</p></li>
+          <li><strong>Export your signed orders.</strong><p>This browser’s saved V1/V2 Signature orders can be imported later to cancel them individually. Export again after signing new orders.</p></li>
         </ol>
         <button type="button" disabled={!account} onClick={() => {
           if (!account) return;
@@ -57,8 +57,8 @@ export function BackupAccessPage() {
             const count = downloadOrderBackup(account.address);
             setNotice(count ? `Exported ${count} Signature orders. Keep the file safe: it contains order signatures, not wallet keys.` : 'No Signature orders were saved for this wallet in this browser. The backup tool can also search Arkiv or cancel all current Seaport orders.');
           } catch { setNotice('Saved orders could not be exported. Keep your browser data. You can still use the backup tool to cancel all orders signed with your current Seaport counter.'); }
-        }}><Download size={17} aria-hidden="true" /> Export my V1 Signature orders</button>
-        <small>{account ? 'Only orders saved for this wallet and the original V1 Signature deployment are included.' : 'Connect your wallet in Garuda to export orders saved in this browser. Saving the tool needs no wallet connection.'} Backups include signatures that may still be executable; keep them private.</small>
+        }}><Download size={17} aria-hidden="true" /> Export my Signature orders</button>
+        <small>{account ? 'Only orders saved for this wallet and the supported V1/V2 Signature deployments are included.' : 'Connect your wallet in Garuda to export orders saved in this browser. Saving the tool needs no wallet connection.'} Backups include signatures that may still be executable; keep them private.</small>
         <p className="ba-notice" role="status" aria-live="polite">{notice}</p>
       </article>
       <article>
@@ -72,7 +72,7 @@ export function BackupAccessPage() {
     <section className="ba-capabilities" aria-labelledby="ba-capabilities-title">
       <div className="ba-section-heading"><span className="ba-kicker">AVAILABLE TODAY</span><h2 id="ba-capabilities-title">Control your existing positions and permissions.</h2></div>
       <dl className="ba-capability-list">
-        <div><dt>Cancel your orders</dt><dd>Import a supported V1 backup or recover published V1 orders from Arkiv. Without either, invalidate all orders signed with your current Seaport 1.6 counter—including orders from other apps.</dd></div>
+        <div><dt>Cancel your orders</dt><dd>Import a supported V1/V2 backup or recover published orders from Arkiv. Without either, invalidate all orders signed with your current Seaport 1.6 counter—including orders from other apps.</dd></div>
         <div><dt>Remove market permissions</dt><dd>Revoke Seaport’s WISE allowance and Signature NFT permissions. Removing a permission does not cancel a signed order; reapproving can make it usable again.</dd></div>
         <div><dt>Redeem matured Signature stakes</dt><dd>End a verified, matured Signature stake and receive its WISE in your connected wallet. Redemption burns the NFT. Early ending is disabled here.</dd></div>
       </dl>
@@ -86,7 +86,7 @@ export function BackupAccessPage() {
       <dl className="ba-crops-grid">
         <div><dt>C · Access without our server</dt><dd>The saved tool reads supported published orders directly from Arkiv without our database or API. It also supports local exports and actions that need only Ethereum. Reachable providers, your wallet and gas remain necessary.</dd></div>
         <div><dt>O · Open code</dt><dd>The tool is MIT licensed and buildable from the repository. Its code and styles are included in the saved file.</dd></div>
-        <div><dt>P · Clear data boundaries</dt><dd>Optional Anon-RPC hides your IP from the destination RPC for covered app reads. Wallet traffic, APIs and direct backup-tool reads remain outside that route. No trackers or analytics in the standalone tool.</dd></div>
+        <div><dt>P · Clear data boundaries</dt><dd>Optional Anon-RPC hides your IP from the destination RPC for covered Ethereum reads, including an optional connection in the saved tool. Wallet traffic, APIs and Arkiv discovery remain outside that route. No trackers or analytics in the standalone tool.</dd></div>
         <div><dt>S · Your wallet approves</dt><dd>The tool checks contracts and current state, simulates actions, and checks confirmed results. You still trust your wallet, the provider’s answers, the downloaded file, and the deployed contracts.</dd></div>
       </dl>
       <details><summary>Arkiv availability and file verification</summary><p>Arkiv only returns records that are still published and available. Records may expire, be deleted, or be omitted; no search result does not mean no orders exist. File import and current-counter cancellation work without Arkiv. Incoming bids belong to their signers and cannot be cancelled by you.</p><p>A valid signature and uncancelled status do not prove that an order can trade. This tool does not buy or accept bids. Longer storage retention never extends a signed order’s trading deadline.</p><p>Check a downloaded tool against a release checksum obtained from a source you trust. A checksum from the same compromised source does not establish authenticity.</p><a href="/garuda-backup.sha256" download>Download release checksum</a></details>

@@ -4,7 +4,7 @@ import { custom, toFunctionSelector } from 'viem';
 export const NYM_SPECIFIER = '0x3aCD9742C68F6d993066Ae25533e09b9e1f60eD0';
 export const PRIVATE_RPC_ENDPOINT = 'https://ethereum-rpc.publicnode.com';
 export const PRIVATE_READS_KEY = 'garuda:private-reads:v1';
-const FAILURE = 'Private reads could not complete. No direct fallback was used. Retry from CROPS or explicitly turn private reads off.';
+const FAILURE = 'Private reads could not complete. No direct fallback was used. Retry the connection or explicitly select a direct read provider.';
 const READ_METHODS = new Set(['eth_chainId', 'net_version', 'eth_blockNumber', 'eth_call', 'eth_getBalance',
   'eth_getCode', 'eth_getStorageAt', 'eth_getLogs', 'eth_getBlockByNumber', 'eth_getBlockByHash',
   'eth_getTransactionReceipt', 'eth_getTransactionByHash', 'eth_getTransactionCount',

@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { keccak256 } from 'viem';
+import { encodeErrorResult, keccak256, parseAbi } from 'viem';
 import { createBackup, parseBackup, parseRpcUrl, executeBackupAction, backupDeployment as d } from '../src/lib/backup/core.ts';
 import { buildBackup } from './build-backup.mjs';
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { backupReadClient, backupReadTransport } from '../src/lib/backup/connection.ts';
 
 const account = '0x1111111111111111111111111111111111111111';
 const other = '0x2222222222222222222222222222222222222222';
@@ -31,6 +33,46 @@ test('custom RPC only permits HTTPS or local HTTP, without URL-authority credent
   for (const url of ['http://example.org', 'javascript:alert(1)', 'file:///tmp/key', 'https://user:pass@example.org', 'https://example.org/#fragment']) assert.throws(() => parseRpcUrl(url));
 });
 
+test('backup private reads use only the selected session, including failure', async () => {
+  const calls = []; let walletCalls = 0, fail = false;
+  const transport = backupReadTransport({ selection: 'nym',
+    provider: { request: async () => { walletCalls++; throw Error('Must not reach wallet'); } },
+    privateRequest: async request => { calls.push(request); if (fail) throw Error('Private route unavailable'); return '0x2'; },
+  })({});
+  const request = { method: 'eth_getBalance', params: [account, 'latest'] };
+  assert.equal(await transport.request(request), '0x2');
+  fail = true;
+  await assert.rejects(transport.request(request), /Private route unavailable/);
+  assert.deepEqual(calls, [request, request]);
+  assert.equal(walletCalls, 0);
+});
+
+test('backup wallet mode does not start Nym, and requires an explicit provider', async () => {
+  let starts = 0;
+  const request = { method: 'eth_blockNumber' };
+  const calls = [];
+  const transport = backupReadTransport({ selection: 'wallet',
+    provider: { request: async args => { calls.push(args); return '0x1234'; } },
+    privateRequest: async () => { starts++; throw Error('Must not start Nym'); },
+  })({});
+  assert.equal(await transport.request(request), '0x1234');
+  assert.deepEqual(calls, [request]);
+  assert.equal(starts, 0);
+  assert.throws(() => backupReadTransport({ selection: 'wallet' }), /Connect an external wallet/);
+});
+
+test('private backup client rejects offchain lookup redirects without a gateway fetch', async t => {
+  let gatewayCalls = 0;
+  t.mock.method(globalThis, 'fetch', async () => { gatewayCalls++; throw Error('Offchain read must stay blocked'); });
+  const data = encodeErrorResult({ abi: parseAbi(['error OffchainLookup(address sender, string[] urls, bytes callData, bytes4 callbackFunction, bytes extraData)']),
+    errorName: 'OffchainLookup', args: [d.collection, ['https://gateway.invalid/{sender}/{data}'], '0x1234', '0x12345678', '0x'] });
+  const client = backupReadClient({ selection: 'nym', privateRequest: async () => {
+    throw Object.assign(new Error('execution reverted'), { code: 3, data });
+  } });
+  await assert.rejects(client.call({ to: d.collection, data: '0x1234' }));
+  assert.equal(gatewayCalls, 0);
+});
+
 test('wrong chain, changed wallet, and substituted contract code never request a transaction', async () => {
   for (const failure of ['chain', 'account', 'code', 'session']) {
     let sent = 0;
@@ -53,6 +95,16 @@ test('backup builds are byte-identical, self-contained, CSP hash-pinned and cont
   assert.equal(await readFile(new URL('../public/garuda-backup.html', import.meta.url), 'utf8'), first.html,
     'The shipped HTML must match current source; run npm run build:backup after edits');
   assert.match(first.html, /script-src 'sha256-/);
+  const csp = first.html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1];
+  const directives = Object.fromEntries(csp.split(';').map(part => part.trim().split(/\s+/)).filter(([key]) => key).map(([key, ...values]) => [key, values]));
+  const script = first.html.match(/<script>([\s\S]*)<\/script>/)[1];
+  const iframeBoot = await readFile(new URL(import.meta.resolve('@anon-rpc/browser-harness/iframe-boot.js')), 'utf8');
+  const hashes = [script, iframeBoot].map(source => `'sha256-${createHash('sha256').update(source).digest('base64')}'`);
+  assert.deepEqual(directives['script-src-elem'], [...hashes, 'blob:']);
+  assert.deepEqual(directives['script-src'], [...hashes, 'blob:', "'wasm-unsafe-eval'"]);
+  assert.deepEqual(directives['script-src-attr'], ["'none'"]);
+  assert.deepEqual(directives['frame-src'], ["'self'"]);
+  assert.deepEqual(directives['worker-src'], ['blob:']);
   assert.doesNotMatch(first.html, /<script[^>]+src=|<link[^>]+(?:stylesheet|preload)/i);
   assert.ok(first.inputs.every(path => !/node_modules\/(thirdweb|@arkiv-network)|server\//.test(path)));
   assert.doesNotMatch(first.html, /\/api\/garuda|analytics\.thirdweb|googletagmanager|posthog/i);

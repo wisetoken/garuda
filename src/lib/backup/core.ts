@@ -6,11 +6,19 @@ import {
   zeroAddress, type Address, type Hex, type PublicClient, type WalletClient,
 } from 'viem';
 import manifest from '../../../scripts/fixtures/signature-market.json';
+import manifestV2 from '../../../contracts/seaport/deployments/ethereum-mainnet-v2.json';
 import { parseSalesDeployment, parseSignedSale, sameAddress, type SignedSale } from '../blend/sales';
 import { seaportAbi, seaportComponents } from '../blend/seaport';
 import { loadSignaturePortfolio } from '../blend/live-portfolio';
 
 export const backupDeployment = parseSalesDeployment(manifest);
+export const backupDeployments = { v1: backupDeployment, v2: parseSalesDeployment(manifestV2) } as const;
+export type BackupDeploymentId = keyof typeof backupDeployments;
+export function backupDeploymentId(adapter: string): BackupDeploymentId {
+  const id = (Object.keys(backupDeployments) as BackupDeploymentId[]).find(id => sameAddress(backupDeployments[id].adapter, adapter));
+  if (!id) throw new Error('Unsupported backup deployment.');
+  return id;
+}
 export const backupNftAbi = parseAbi([
   'function ownerOf(uint256) view returns(address)',
   'function getApproved(uint256) view returns(address)',
@@ -36,25 +44,48 @@ export function parseBackup(raw: unknown, account: string): BackupEnvelope {
   const value = raw as BackupEnvelope;
   if (value.format !== 'wiseone.garuda.backup' || value.version !== 1 || value.chainId !== 1 ||
       typeof value.market !== 'string' || !sameAddress(value.market, backupDeployment.market) ||
-      typeof value.adapter !== 'string' || !sameAddress(value.adapter, backupDeployment.adapter) ||
+      typeof value.adapter !== 'string' ||
       typeof value.account !== 'string' || !isAddress(value.account, { strict: false }) ||
       !sameAddress(value.account, account) || !Array.isArray(value.orders) || value.orders.length > 100)
     throw new Error('Backup network, deployment, version, or connected wallet does not match.');
+  const deployment = backupDeployments[backupDeploymentId(value.adapter)];
   const hashes = new Set<string>();
   const orders = value.orders.map(rawOrder => {
-    const parsed = parseSignedSale(rawOrder, backupDeployment);
+    const parsed = parseSignedSale(rawOrder, deployment);
     if (!sameAddress(parsed.order.maker, account)) throw new Error('An order belongs to another wallet.');
     if (hashes.has(parsed.hash)) throw new Error('Duplicate order in backup.');
     hashes.add(parsed.hash);
     return parsed.signed;
   });
   return { format: 'wiseone.garuda.backup', version: 1, chainId: 1,
-    market: backupDeployment.market, adapter: backupDeployment.adapter,
+    market: deployment.market, adapter: deployment.adapter,
     account: getAddress(account.toLowerCase()), orders };
 }
-export function createBackup(account: string, orders: SignedSale[]): BackupEnvelope {
+export function createBackup(account: string, orders: SignedSale[], deploymentId: BackupDeploymentId = 'v1'): BackupEnvelope {
+  const deployment = backupDeployments[deploymentId];
   return parseBackup({ format: 'wiseone.garuda.backup', version: 1, chainId: 1,
-    market: backupDeployment.market, adapter: backupDeployment.adapter, account, orders }, account);
+    market: deployment.market, adapter: deployment.adapter, account, orders }, account);
+}
+/** Each group selects only a release-pinned deployment, never imported configuration. */
+export function parseBackupFile(raw: unknown, account: string): BackupEnvelope[] {
+  if (raw && typeof raw === 'object' && 'format' in raw && raw.format === 'wiseone.garuda.backup-bundle') {
+    const bundle = raw as { version?: unknown; groups?: unknown };
+    if (bundle.version !== 1 || !Array.isArray(bundle.groups) || bundle.groups.length < 1 || bundle.groups.length > 2)
+      throw new Error('Invalid backup bundle.');
+    const groups = bundle.groups.map(group => parseBackup(group, account));
+    if (new Set(groups.map(group => group.adapter.toLowerCase())).size !== groups.length || groups.reduce((n, group) => n + group.orders.length, 0) > 100)
+      throw new Error('Duplicate deployment or too many orders in backup bundle.');
+    return groups;
+  }
+  return [parseBackup(raw, account)];
+}
+export function createBackupFile(account: string, entries: { signed: SignedSale; deploymentId: BackupDeploymentId }[]) {
+  const groups = (Object.keys(backupDeployments) as BackupDeploymentId[]).map(id =>
+    createBackup(account, entries.filter(entry => entry.deploymentId === id).map(entry => entry.signed), id)).filter(group => group.orders.length);
+  if (groups.length < 2) return groups[0] ?? createBackup(account, []);
+  const bundle = { format: 'wiseone.garuda.backup-bundle', version: 1, groups };
+  parseBackupFile(bundle, account);
+  return bundle;
 }
 export function parseRpcUrl(value: string): string {
   const url = new URL(value.trim());
@@ -65,7 +96,7 @@ export function parseRpcUrl(value: string): string {
 }
 
 export type BackupAction =
-  | { kind: 'cancel'; signed: SignedSale }
+  | { kind: 'cancel'; signed: SignedSale; deploymentId?: BackupDeploymentId }
   | { kind: 'counter' }
   | { kind: 'revoke-wise' }
   | { kind: 'revoke-operator' }
@@ -123,7 +154,8 @@ export async function executeBackupAction(session: BackupSession, action: Backup
   await guard(session);
   await verifyBackupContracts(session.client, session.chainId);
   const { client, account } = session;
-  const d = backupDeployment;
+  const d = action.kind === 'cancel' ? backupDeployments[action.deploymentId ?? 'v1'] : backupDeployment;
+  if (!d) throw new Error('Unsupported backup deployment.');
   let to: Address = d.market;
   let data: Hex;
   let beforeCounter: bigint | undefined;

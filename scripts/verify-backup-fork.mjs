@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import { parseEther, parseAbi, parseEventLogs, zeroAddress } from 'viem';
 import { marketFixture } from './fork/market-fixture.mjs';
 import { executeBackupAction, readBackupState, backupDeployment as d, backupNftAbi,
-  createBackup, parseBackup } from '../src/lib/backup/core.ts';
+  createBackup, parseBackup, backupDeployments, createBackupFile, parseBackupFile } from '../src/lib/backup/core.ts';
 import { publishSale } from '../src/lib/blend/sales-wallet.ts';
 import { marketAbi, parseSignedSale } from '../src/lib/blend/sales.ts';
-import { saleSettlement } from '../src/lib/blend/seaport.ts';
+import { saleSettlement, seaportTypedData } from '../src/lib/blend/seaport.ts';
+import { paymentTokens } from '../src/lib/blend/payment-tokens.ts';
 import { discoverRecoveryOrders, verifyRecoveredOrder, arkivRecovery } from '../src/lib/backup/arkiv.ts';
 import { recoveryEntity } from './fixtures/arkiv-recovery.mjs';
 
@@ -50,7 +51,10 @@ try {
 
     await f.receipt(await f.buyer.writeContract({ address: d.currency, abi: f.tokenAbi, functionName: 'approve', args: [d.market, parseEther('10000')] }));
     const order = await sign(targetId, 901n);
-    await rawFill(order); // Establish this exact order could execute before cancellation.
+    const legacyPaused = await f.client.readContract({ address: d.adapter,
+      abi: parseAbi(['function newActivityPaused() view returns(bool)']), functionName: 'newActivityPaused' });
+    if (legacyPaused) await assert.rejects(rawFill(order));
+    else await rawFill(order); // When active, establish executability before cancellation.
     // Synthetic Arkiv response avoids publishing fork signatures; all validation and Ethereum calls are real.
     const discovery = await discoverRecoveryOrders(async (method, params) => method === 'eth_chainId'
       ? `0x${arkivRecovery.chainId.toString(16)}` : { blockNumber: '0x123',
@@ -63,13 +67,29 @@ try {
     assert.equal((await f.client.readContract({ address: d.market, abi: marketAbi, functionName: 'getOrderStatus', args: [hash] }))[1], true);
     await assert.rejects(rawFill(order));
     assert.equal((await verifyRecoveredOrder(f.client, discovery.orders[0], 31337)).state, 'cancelled');
-    console.log('PASS Arkiv wire recovery, signature/status check, export/import and cancellation; previously executable settlement now reverts');
+    console.log(`PASS V1 Arkiv recovery, export/import and cancellation; settlement reverts (legacy zone paused: ${legacyPaused})`);
+
+    for (const [index, token] of paymentTokens.entries()) {
+      const deployment = { ...backupDeployments.v2, chainId: 31337 };
+      const terms = { ...order.order, currency: token.address, amount: (2n * 10n ** BigInt(token.decimals)).toString(), nonce: String(910 + index) };
+      const parsed = parseSignedSale({ order: terms, signature: '0x00' }, deployment);
+      const signed = { order: terms, signature: await wallet.signTypedData(seaportTypedData(deployment, parsed.order)) };
+      const rows = await discoverRecoveryOrders(async (method) => method === 'eth_chainId'
+        ? `0x${arkivRecovery.chainId.toString(16)}` : { blockNumber: '0x123', data: [recoveryEntity(signed, 2, 'v2')] }, address);
+      assert.equal(rows.orders.length, 1);
+      assert.equal((await verifyRecoveredOrder(f.client, rows.orders[0], 31337)).state, 'open');
+      const [group] = parseBackupFile(createBackupFile(address, [{ signed, deploymentId: 'v2' }]), address);
+      await executeBackupAction(session, { kind: 'cancel', signed: group.orders[0], deploymentId: 'v2' });
+      assert.equal((await verifyRecoveredOrder(f.client, rows.orders[0], 31337)).state, 'cancelled');
+      console.log(`PASS V2 ${token.symbol} Arkiv recovery, export/import and exact Seaport cancellation`);
+    }
 
     const counterOrder = await sign(targetId, 902n);
-    await rawFill(counterOrder);
+    if (legacyPaused) await assert.rejects(rawFill(counterOrder));
+    else await rawFill(counterOrder);
     await executeBackupAction(session, { kind: 'counter' });
     await assert.rejects(rawFill(counterOrder));
-    console.log('PASS counter invalidation rejects a previously executable order without a backup');
+    console.log('PASS counter invalidation without a backup; settlement remains rejected');
 
     await f.receipt(await wallet.writeContract({ address: d.currency, abi: f.tokenAbi, functionName: 'approve', args: [d.market, parseEther('100')] }));
     await f.receipt(await wallet.writeContract({ address: d.collection, abi: backupNftAbi, functionName: 'setApprovalForAll', args: [d.market, true] }));

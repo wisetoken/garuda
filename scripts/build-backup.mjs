@@ -14,7 +14,13 @@ export async function buildBackup() {
   if (forbidden.length) throw new Error(`Unexpected runtime dependencies: ${forbidden.join(', ')}`);
   const script = result.outputFiles[0].text.replaceAll('</script', '<\\/script');
   const hash = createHash('sha256').update(script).digest('base64');
-  const csp = `default-src 'none'; script-src 'sha256-${hash}'; style-src 'unsafe-inline'; connect-src https: http://localhost:* http://127.0.0.1:* http://[::1]:*; img-src data:; base-uri 'none'; form-action 'none'`;
+  // The same pinned bootstrap is embedded by the harness in its sandboxed srcdoc.
+  // importScripts also obeys script-src-elem in some browsers. Permit blob scripts
+  // for the verified worker, but no remote/data scripts, inline handlers or JS eval.
+  const iframeBoot = await readFile(new URL(import.meta.resolve('@anon-rpc/browser-harness/iframe-boot.js')), 'utf8');
+  const iframeHash = createHash('sha256').update(iframeBoot).digest('base64');
+  const scriptHashes = `'sha256-${hash}' 'sha256-${iframeHash}'`;
+  const csp = `default-src 'none'; script-src ${scriptHashes} blob: 'wasm-unsafe-eval'; script-src-elem ${scriptHashes} blob:; script-src-attr 'none'; frame-src 'self'; worker-src blob:; style-src 'unsafe-inline'; connect-src https: wss: http://localhost:* http://127.0.0.1:* http://[::1]:*; img-src data:; base-uri 'none'; form-action 'none'`;
   const template = await readFile(resolve(root, 'src/backup/template.html'), 'utf8');
   const html = template.replace('__CSP__', csp).replace('__SCRIPT__', () => script);
   return { html, sha256: createHash('sha256').update(html).digest('hex'), inputs: Object.keys(result.metafile.inputs) };
