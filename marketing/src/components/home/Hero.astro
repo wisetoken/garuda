@@ -2,7 +2,7 @@
 /**
  * Home hero: the WISEONE wordmark fitted to the page width (the "DO" in soft grey), then the slider
  * (Figma "Hero slide"). The slide copy and the controls sit in canvas-coloured cut-outs, so any image
- * can go in a slide. Two slides, autoplay every 6 s with a thin progress line, paused on hover and
+ * can go in a slide. Slides autoplay every 6 s with a thin progress line, paused on hover and
  * focus; a clip-path wipe from the right on desktop, a swipe on phones (scripts/site.ts, "slider").
  * Entrance: the letters rise from below while the tracking closes, "DO" arrives orange and settles.
  */
@@ -41,12 +41,14 @@ const two = (i: number) => String(i + 1).padStart(2, '0');
             <div class:list={['sl__s', i === 0 && 'is-on']} role="group" aria-roledescription={c.ui.slide.toLowerCase()} aria-label={`${i + 1} / ${slides.length}`} data-slide>
               <Photo
                 photo={s.image}
+                mobilePhoto={s.mobile}
                 width={1416}
                 height={580}
                 sizes="(min-width: 768px) calc(100vw - 24px), calc(100vw - 52px)"
-                widths={[800, 1100, 1416, 1800]}
-                mobile={{ width: 338, height: 470, sizes: 'calc(100vw - 52px)', widths: [338, 520, 676] }}
+                widths={[800, 1100, 1416, 1800, 2400, 3024]}
+                mobile={{ width: 338, height: 470, sizes: 'calc(100vw - 52px)', widths: [338, 676, 1014, 1230] }}
                 priority={i === 0}
+                quality={82}
               />
             </div>
           ))

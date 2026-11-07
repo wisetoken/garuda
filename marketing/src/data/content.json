@@ -91,14 +91,25 @@
     },
     "slides": [
       {
-        "text": "Your stake. Your next move. Open Garuda.",
-        "href": "/market",
-        "image": "hero-stake"
+        "text": "Start with your stake.",
+        "href": "/stakes",
+        "image": "slide-positions",
+        "mobile": "slide-positions-mobile",
+        "alt": "Your WiseOne positions, with Signature Stakes ready to list for sale"
       },
       {
-        "text": "Find your next stake. Explore the marketplace.",
+        "text": "A new owner. The same stake.",
         "href": "/market",
-        "image": "hero-market"
+        "image": "slide-market",
+        "mobile": "slide-market-mobile",
+        "alt": "The Garuda stake market, where a listed stake keeps its terms under a new owner"
+      },
+      {
+        "text": "Review the stake. Pay with ETH.",
+        "href": "/market",
+        "image": "slide-purchase",
+        "mobile": "slide-purchase-mobile",
+        "alt": "Reviewing a Signature Stake purchase and paying with ETH"
       }
     ]
   },

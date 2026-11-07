@@ -873,6 +873,7 @@ html.pt-out .pt__tile {
   }
 }
 
-/* Match WiseOne's teal identity while retaining the supplied theme's layout. */
+/* Match WiseOne's teal identity while retaining the supplied theme's layout.
+   Hero slides are already product shots in that palette, so they stay unfiltered. */
 img.mark { object-fit: contain; filter: hue-rotate(-45deg) saturate(1.4); }
-.hero .sl img, .offers img, .offer img { filter: grayscale(1) sepia(1) hue-rotate(120deg) saturate(1.5); }
+.offers img, .offer img { filter: grayscale(1) sepia(1) hue-rotate(120deg) saturate(1.5); }

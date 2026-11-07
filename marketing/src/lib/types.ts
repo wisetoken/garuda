@@ -97,6 +97,8 @@ export interface Slide {
   text: string;
   href: string;
   image: Photo;
+  /** A taller crop for phones, when the desktop frame is too wide to read. */
+  mobile?: Photo;
 }
 
 export interface Home {
