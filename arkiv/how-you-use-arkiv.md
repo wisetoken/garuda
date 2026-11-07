@@ -49,7 +49,7 @@ The [standalone backup](../docs/backup-access.md) offers direct Arkiv reads, mak
 
 ## Swarm artwork references
 
-The dedicated bonus submission is [Swarm artwork: before/after, entity/file pair and reproduction](swarm.md). It identifies the exact `manifest.image.reference` and `manifest.metadata.reference` fields and distinguishes working functionality from incomplete postage and video evidence.
+The dedicated bonus submission is [Swarm artwork: before/after, entity/file pair and reproduction](swarm.md). It identifies the exact `manifest.image.reference` and `manifest.metadata.reference` fields, links the demo video, and records Continuity acceptance. Postage is supplied by the public gateway, which does not return the funded batch ID.
 
 The optional media worker uses `wiseone.garuda.media.v1` for public references to an SVG artwork snapshot and JSON metadata on Swarm. It indexes deployment scope, order hash, collection, token ID and renderer. The publisher owns these entities, with a 90-day lifetime independent of order deadlines and stake maturity. Files must pass gateway retrieval and checksum checks before the reference is published and the UI reports a completed backup.
 

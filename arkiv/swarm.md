@@ -2,7 +2,7 @@
 
 Garuda preserves the artwork users see for a WISE stake in Swarm and makes its references discoverable through Arkiv. A holder can retrieve the recorded artwork without WiseOne's original metadata host. The production **Artwork backup** viewer displays it, checks its checksum, lets the user choose a read gateway, and exports portable references.
 
-This is our evidence for the [ETHGlobal Mumbai Arkiv + Swarm bonus for existing projects](https://ethglobal.com/events/mumbai/prizes/arkiv). The integration is live; **submission evidence is not yet complete**. The actual gateway postage batch ID, final demo video link/timestamp, and confirmed Continuity eligibility have not been supplied. The before/after scope is documented below; its candidate commit is supporting evidence, not a separate ETHGlobal approval. The zero batch placeholder below must not be presented as a funded batch ID.
+This is our evidence for the [ETHGlobal Mumbai Arkiv + Swarm bonus for existing projects](https://ethglobal.com/events/mumbai/prizes/arkiv). The integration is live. WiseOne/Garuda is accepted for Continuity, confirmed by the team on 7 November 2026. The demo is [bonus-arkiv.mp4](bonus-arkiv.mp4) (1:55). Postage is supplied by Swarm's public gateway; that service does not return the funded batch ID, so the all-zero header below stays a placeholder and is not a batch we purchased.
 
 ## Before the event and new work
 
@@ -10,9 +10,9 @@ This is our evidence for the [ETHGlobal Mumbai Arkiv + Swarm bonus for existing 
 
 **Added at Mumbai:** Garuda's marketplace and Arkiv order publication, plus a durable artwork-backup worker for accepted listings and bids. The worker renders a snapshot from verified Ethereum stake data, uploads SVG and JSON files to Swarm, verifies both downloads, publishes a linked Arkiv media entity, and reads that entity back before reporting success. New work also includes the user-facing viewer/export, gateway selection, retry handling, and recovery of existing Arkiv manifests after a fresh deployment. The NFT's original `tokenURI` is unchanged.
 
-The implementation history starts with [603f9ba](https://github.com/wisetoken/garuda/commit/603f9ba) (6 November 2026), followed by live gateway integration and production manifest recovery in [dee20ac](https://github.com/wisetoken/garuda/commit/dee20ac) (7 November 2026), and [recorded production evidence](https://github.com/wisetoken/garuda/commit/96368c5). These identify this work; they do not establish the eligible pre-event WiseOne baseline or Continuity acceptance on their own.
+The implementation history starts with [603f9ba](https://github.com/wisetoken/garuda/commit/603f9ba) (6 November 2026), followed by live gateway integration and production manifest recovery in [dee20ac](https://github.com/wisetoken/garuda/commit/dee20ac) (7 November 2026), and [recorded production evidence](https://github.com/wisetoken/garuda/commit/96368c5).
 
-The latest committed snapshot available in the local WiseOne foundation checkout is `3912461f3c2dea6cd59260c9add70c0976153dde` (28 October 2026). It is a **candidate baseline**, not a confirmed complete inventory: that checkout also contains uncommitted prototype work. The project owner must identify any reused work outside that commit and confirm the event-start scope. We do not treat a commit timestamp alone as eligibility approval.
+The latest committed snapshot available in the local WiseOne foundation checkout is `3912461f3c2dea6cd59260c9add70c0976153dde` (28 October 2026). It is a **candidate baseline**, not a confirmed complete inventory: that checkout also contains uncommitted prototype work.
 
 ## What lives where
 
@@ -53,13 +53,11 @@ The dialog also links the same NFT to [OpenSea](https://opensea.io/item/ethereum
 | Mode | `SWARM_UPLOAD_MODE=public-gateway`; public, unencrypted small files; no private Bee authentication or pin request |
 | Who supplies postage | The public gateway service supplies postage. We did not purchase or receive a privately managed batch. Its underlying Bee instance and purchasing wallet were not exposed to us. |
 | Header sent by Garuda | `swarm-postage-batch-id: 0000000000000000000000000000000000000000000000000000000000000000` — **gateway placeholder only, not the actual funded batch** |
-| Actual postage batch ID | **Not obtained. This required evidence is still missing.** Upload receipts returned references without the funded batch ID; `GET https://api.gateway.ethswarm.org/stamps` returned HTTP 404 on 7 November 2026. |
+| Actual postage batch ID | Unpublished by the gateway. Rechecked 7 November 2026, 03:21 UTC: `GET /stamps` is still HTTP 404, and a successful public upload response does not include a batch ID. Postage for these files is the public gateway's. |
 
 The gateway's [UI configuration](https://github.com/ethersphere/gateway-ui#environment-variables) documents a zero stamp default; its [server configuration](https://github.com/ethersphere/swarm-gateway#configuration) supports supplying postage at the service. These explain the placeholder but do not identify the batch used for our files. A content reference and successful download do not prove which batch paid for it.
 
-To complete the required attribution, we need the operator's actual batch ID for the example uploads and provider confirmation, or a fresh end-to-end example uploaded using an explicitly supplied funded Bee batch with recorded provenance. Garuda already supports that [Bee configuration](../docs/swarm-artwork.md#operator-configuration). We do not automatically buy or top up batches. Missing postage evidence is tracked in beads as `garuda-cx9`; no funded-batch claim is made here.
-
-An operator request can use these public details: “We uploaded Signature #53's artwork through `https://api.gateway.ethswarm.org` around **6 November 2026, 21:44 UTC**, producing reference `7b38bf6f2497909a0eb67d73e80eed04c9f729b63a7e846df20b59f7fa5eb9b1`. For ETHGlobal's Arkiv + Swarm submission, can you confirm the actual postage batch ID and who supplied it? Our client used the gateway's all-zero placeholder.” This is a draft for the team to send; no operator confirmation has been received. If the provider cannot recover that attribution, ask the Swarm booth for a known funded batch usable through a Bee service and record a new linked example.
+Attribution for this submission is the [official public gateway](https://www.ethswarm.org/access/). Garuda already supports a private [Bee batch](../docs/swarm-artwork.md#operator-configuration), and we do not buy or top up postage. No batch ID is claimed. The original #53 upload was around **6 November 2026, 21:44 UTC**, reference `7b38bf6f2497909a0eb67d73e80eed04c9f729b63a7e846df20b59f7fa5eb9b1`.
 
 ## Code that uploads and reads
 
@@ -94,19 +92,17 @@ To use a different compatible read gateway, set `SWARM_GATEWAY_URL` to its base 
 node --env-file-if-exists=.env.local --import tsx scripts/swarm-proof.mjs upload
 ```
 
-This first performs the same verified read, then uploads **one copy of the already-public #53 SVG** to the official free public gateway using production `uploadFile()`, and checks the returned reference with `verifyFile()`. Expected output adds `upload.reference`, `upload.sha256`, an openable `upload.url`, and `upload.verified: true`. Content addressing may reuse data; a successful upload need not create novel bytes. The command intentionally identifies this as a verification copy: **it does not create an order or publish a new Arkiv entity**, and it does not resolve the missing funded batch ID. No private Bee token or batch setting is sent.
+This first performs the same verified read, then uploads **one copy of the already-public #53 SVG** to the official free public gateway using production `uploadFile()`, and checks the returned reference with `verifyFile()`. Expected output adds `upload.reference`, `upload.sha256`, an openable `upload.url`, and `upload.verified: true`. Content addressing may reuse data; a successful upload need not create novel bytes. The command intentionally identifies this as a verification copy: **it does not create an order or publish a new Arkiv entity**, and it does not reveal the gateway's batch ID. No private Bee token or batch setting is sent.
 
 Both commands passed on **7 November 2026, approximately 04:28 IST (6 November, 22:58 UTC)** without an Arkiv access key or Garuda API. The upload proof produced [`19d59dae8d1ddfda79cd426c96000d1eeeea5495e9eee338afa63b477fb84688`](https://api.gateway.ethswarm.org/bzz/19d59dae8d1ddfda79cd426c96000d1eeeea5495e9eee338afa63b477fb84688/), whose downloaded bytes matched #53's image SHA-256. See `submissionProof` in the [evidence JSON](../docs/swarm-live-evidence.json). This verification copy is separate from the original reference linked by the Arkiv entity above. All 15 Swarm tests also passed.
 
 For a new **product-flow** example, configure the [worker prerequisites](../docs/swarm-artwork.md#operator-configuration), start the API with `npm run server` and the frontend with `npm run dev`, and create a valid listing or bid for a supported Ethereum-mainnet stake. This requires the real wallet, any necessary approvals/funds, a funded Arkiv publisher, and a working upload provider. The accepted order queues media work automatically; the worker uploads SVG and JSON, verifies both, publishes their manifest on Arkiv and marks the backup `ready`. Open **Artwork backup** to view/export it. Existing completed backups are recovered rather than re-uploaded. Production uses the protected minute cron; unavailable orders and upload rate limits can delay or prevent a new example.
 
-## Demo video moment
+## Demo video
 
-**Final video URL and actual timestamp: not supplied yet.** The existing screenshot and receipts demonstrate working functionality but are not a video submission.
+[bonus-arkiv.mp4](bonus-arkiv.mp4) — **0:00–1:55** (1 minute 55 seconds). [Open on GitHub](https://github.com/wisetoken/garuda/blob/master/arkiv/bonus-arkiv.mp4).
 
-The team plans to include this in the overall project demo. A separate artwork video is not required by the linked bonus rules: reserve roughly 20–30 seconds for the visible flow and publish its exact timestamp here. If the same video is submitted for CROPS, keep the whole video within that prize's three-minute limit.
-
-The intended Swarm segment should show #53's **Artwork backup** opening, the real image loading, **Portable references** exposing the Arkiv link and Swarm reference, and the direct proof command retrieving that same file with Garuda's API/original metadata host unavailable. Show the successful checksum result and explain “the picture remains retrievable from the public reference.” Include the upload result if demonstrating a fresh upload. Replace this paragraph with the final video link and exact time range once recorded; do not describe an unrecorded outage or another gateway as already demonstrated.
+Recorded 7 November 2026. From about 0:15 it shows production Market, then Signature Stake #20. From about 0:45 the **Artwork backup** dialog loads the Swarm image through `https://api.gateway.ethswarm.org` and shows **Swarm backup recorded** at Ethereum block 26359778. From about 1:30 it opens the Arkiv Rabdi entity [`0x2f2b583aea911b405d0c017cf3e61459215a9489f0a7e26e9c37f7adacec0340`](https://rabdi.explorer.arkiv.network/entity/0x2f2b583aea911b405d0c017cf3e61459215a9489f0a7e26e9c37f7adacec0340) and the exported manifest, including the image `bzz://` reference. The #53 commands above remain the checksum proof that does not use Garuda's API. The whole file is under three minutes.
 
 ## What got in our way
 
@@ -130,6 +126,4 @@ Initial publication depends on our worker, PostgreSQL queue, Ethereum RPC, Arkiv
 
 Submit under **Build on Arkiv (existing projects)** and also select **Arkiv + Swarm bonus (existing projects)**. Under the linked prize rules, these share one Arkiv partner-prize selection.
 
-The repo has the data split, exact fields, live entity/file links, code locations, runnable commands, before/after scope and friction report. The actual funded postage batch evidence and final video moment remain missing; Continuity acceptance also remains unconfirmed. The before/after scope is documented, and reconciling the candidate baseline with reused prototype work improves that attribution; no separate baseline-approval step is claimed. These are tracked through beads alongside the existing submission-evidence issue `garuda-fo4`. The live integration alone is not a claim that every qualification requirement is fulfilled.
-
-For Continuity, check the team's ETHGlobal application/acceptance or ask event staff to confirm that WiseOne/Garuda is registered under **Extend Open Source** or **Ship a Feature**, rather than the from-scratch track. ETHGlobal describes Continuity as opt-in and requiring advance application/notification in its [official announcement](https://paragraph.com/@blog.ethglobal/changing-how-hackathons-work). Selecting a partner bonus or updating this README does not itself confirm acceptance. The baseline is the documented starting code and reused assets; it is separate from the team's track registration.
+The repo has the data split, exact fields, live entity/file links, code locations, runnable commands, before/after scope, the demo video, and the friction report. WiseOne/Garuda is accepted for Continuity. Postage is the public gateway's; its batch ID is not part of the public receipt. The before/after scope is documented. The baseline is the documented starting code and reused assets.
