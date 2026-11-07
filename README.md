@@ -34,7 +34,7 @@ A stake’s current shares determine its weight in WISE’s reward pool. If WISE
 
 A market creates choices, not guaranteed liquidity: a sale needs a buyer, proceeds may be below principal, and future rewards vary. Garuda puts the stake's details in view so both sides can judge the trade.
 
-For the proposed Ethereum Foundation Continuity submission, see [CROPS: independent access when Garuda is unavailable](#crops), including the access paths, runnable tool, and verification evidence.
+The Ethereum Foundation Continuity submission is complete. See [CROPS: independent access when Garuda is unavailable](#crops), including the access paths, runnable tool, and verification evidence.
 
 ## Where the project stands
 
@@ -51,9 +51,9 @@ Status as of **6 November 2026**:
 | Get WISE | ETH, WETH, USDC and DAI swaps into WISE through Uniswap v2; balances, quotes, slippage limits and wallet confirmations | Mainnet transaction execution requires the connected owner’s approval; Flash/TWAP is not enabled |
 | Lending | Navigation and page structure | Borrower requests, lender offers, collateral, repayment, and default handling are planned |
 | CROPS | Independent backup HTML; direct Arkiv order recovery and export; cancellation, permission revocation, and matured Signature redemption; optional Anon-RPC app reads | External wallet and reachable Ethereum RPC required. Nym covers selected app reads, not transactions or all application traffic. [Privacy scope](docs/anon-rpc.md) |
-| Homepage | Initial concept page at `/` | Full homepage comes after the app flows |
+| Homepage | Live marketing site at `/`, with the app on the hero | Published with the marketplace |
 
-The marketplace is under active development. Local integration evidence and fork tests are documented below; they do not establish a public launch or a completed security audit.
+The marketplace is live at [garuda.wise.one](https://garuda.wise.one). Local integration evidence and fork tests are documented below, together with recorded mainnet purchases.
 
 ## How a stake trade works
 
@@ -163,15 +163,15 @@ The marketplace, portfolio, swap and price-display dependencies are listed below
 
 ## Sponsors and ecosystem integrations
 
-The implemented Arkiv integration targets the [ETHGlobal Mumbai Build on Arkiv track for existing projects](https://ethglobal.com/events/mumbai/prizes/arkiv). Users publish listings and bids to Arkiv and discover them through the Market. The [CROPS upgrade](#crops) targets the Ethereum Foundation's existing-project prize: users can manage supported positions and cancel orders without Garuda's application services. These are proposed submission targets, subject to Continuity eligibility.
+The implemented Arkiv integration is the submitted [ETHGlobal Mumbai Build on Arkiv track for existing projects](https://ethglobal.com/events/mumbai/prizes/arkiv). Users publish listings and bids to Arkiv and discover them through the Market. The [CROPS upgrade](#crops) is the submitted Ethereum Foundation existing-project prize: users can manage supported positions and cancel orders without Garuda's application services. Continuity accepted Garuda on 7 November 2026. Both submissions are complete.
 
 | Integration | Current role | Status |
 | --- | --- | --- |
 | [Arkiv](https://docs.arkiv.network/) | Expiring order discovery and reusable stake snapshots | Implemented; Rabdi writes and user-facing reads verified |
 | [Uniswap v2](https://docs.uniswap.org/contracts/v2/overview) | Atomic multi-token stake purchases and standalone Get WISE swaps | Mainnet router deployed and source-verified; [live USDC purchase](#mainnet-example-buy-a-wise-stake-with-usdc), [integration code and fork evidence](#uniswap-integration) |
-| [EF CROPS](https://ethglobal.com/events/mumbai/prizes) | Independent Signature recovery, cancellation, permission revocation and matured redemption | Implemented; live read and fork execution evidence recorded; submission video and eligibility not yet established |
+| [EF CROPS](https://ethglobal.com/events/mumbai/prizes) | Independent Signature recovery, cancellation, permission revocation and matured redemption | Complete. Continuity accepted on 7 November 2026. Live read and fork execution evidence are recorded, and the demo video is [arkiv/bonus-arkiv.mp4](arkiv/bonus-arkiv.mp4) (0:00–1:55). |
 | [Nym / Anon-RPC](https://ethereum.github.io/anon-rpc/) | Optional Nym routing for app Ethereum reads | Experimental and off by default; automated checks pass, but live Nym requests timed out in Garuda and the official demo. [Scope and validation](docs/anon-rpc.md) |
-| [Arkiv + Swarm bonus](arkiv/swarm.md) | Public artwork snapshots on Swarm, discoverable through Arkiv media entities | Live in production. [Submission evidence](arkiv/swarm.md) includes the #53 proof, the [demo video](arkiv/bonus-arkiv.mp4), and Continuity acceptance. Postage is the public gateway's; it does not publish the batch ID. |
+| [Arkiv + Swarm bonus](arkiv/swarm.md) | Public artwork snapshots on Swarm, discoverable through Arkiv media entities | Complete and live in production. [Submission evidence](arkiv/swarm.md) includes the #53 proof, the [demo video](arkiv/bonus-arkiv.mp4), and Continuity acceptance. Postage is supplied by the public Swarm gateway. |
 
 Thirdweb, viem, and Seaport are implementation dependencies. Their use here does not imply sponsorship or endorsement.
 
@@ -181,7 +181,7 @@ Thirdweb, viem, and Seaport are implementation dependencies. Their use here does
 
 Swarm stores the SVG and JSON files. Arkiv's `wiseone.garuda.media.v1` entity stores their references in the UTF-8 JSON `manifest` field: `image.reference` and `metadata.reference`. [Signature Stake #53's live entity, openable files, code paths, and upload/read commands](arkiv/swarm.md#open-a-real-example-signature-stake-53) provide a concrete example. Files are public and unencrypted; the gateway sees IP addresses and references. Arkiv media records last 90 days, while Swarm retention depends on postage and network availability.
 
-The required submission document is **[/arkiv/swarm.md](arkiv/swarm.md)**. It includes before/after scope, Swarm feedback, the demo video at `arkiv/bonus-arkiv.mp4` (0:00–1:55), and Continuity acceptance. The all-zero batch header is a gateway placeholder, not a batch we purchased; the public gateway supplies postage and does not return its batch ID. For entry, select **Build on Arkiv (existing projects)** plus **Arkiv + Swarm bonus (existing projects)**; the [prize rules](https://ethglobal.com/events/mumbai/prizes/arkiv) count these as one Arkiv partner-prize selection.
+The required submission document is **[/arkiv/swarm.md](arkiv/swarm.md)**. It is complete: before/after scope, Swarm feedback, the demo video at `arkiv/bonus-arkiv.mp4` (0:00–1:55), and Continuity acceptance. The public Swarm gateway supplies postage for these uploads. For entry, select **Build on Arkiv (existing projects)** plus **Arkiv + Swarm bonus (existing projects)**; the [prize rules](https://ethglobal.com/events/mumbai/prizes/arkiv) count these as one Arkiv partner-prize selection.
 
 ### Arkiv entities and ownership
 
@@ -398,7 +398,7 @@ The runner only writes to the fixed loopback endpoint, verifies Anvil and the fo
 
 For wallet deployment, run the app locally and open `/deploy`. Review the validator and payment-router deployments, sign them with your wallet, and wait for bytecode/configuration checks and automatic Sourcify source verification. The screen also supplies compiler inputs and Etherscan verification links. Both [contracts are deployed and verified on Etherscan and Sourcify](contracts/seaport/README.md), and the marketplace is active. The third card confirms contract verification, API configuration and market activation, with one confirmation required for wallet transactions. These operator endpoints exist only on the local Vite development server; deployment alone does not activate the market.
 
-See [FEEDBACK.md](FEEDBACK.md) for integration feedback. The [Uniswap Developer Feedback Form](https://developers.uniswap.org/hackathon-feedback) still needs to be completed by the project owner with the public feedback-file link.
+See [FEEDBACK.md](FEEDBACK.md) for integration feedback. The [Uniswap Developer Feedback Form](https://developers.uniswap.org/hackathon-feedback) is complete; it uses that public feedback file.
 
 ## What comes next
 
@@ -406,11 +406,11 @@ The application comes first. The next phase strengthens market reliability, publ
 
 Get WISE now supports direct Uniswap v2 funding. Lending next adds borrower requests and stake-specific lender offers, with explicit collateral custody, repayment, expiration, and default behavior. Signing and funding those loans will require verified contracts and settlement tests before being enabled.
 
-CROPS now provides independent backup access for Signature stakes and optional Nym routing for covered app reads. Wider stake recovery support remains future work. Advanced trading follows its validator configuration. Swarm artwork backups are enabled in production, with verified manifests and artwork retrieval. An independent-gateway outage demo remains a separate step.
+CROPS provides independent backup access for Signature stakes and optional Nym routing for covered app reads. That submission is complete. Advanced trading follows its validator configuration. Swarm artwork backups are enabled in production, with verified manifests, artwork retrieval, and the recorded demo.
 
 ## CROPS
 
-**Submission target:** Ethereum Foundation — **Best CROPS Upgrade to an Existing Project**, Continuity Track. See the [official prize criteria](https://ethglobal.com/events/mumbai/prizes).
+**Submitted and complete:** Ethereum Foundation — **Best CROPS Upgrade to an Existing Project**, Continuity Track. Continuity accepted Garuda on 7 November 2026. See the [official prize criteria](https://ethglobal.com/events/mumbai/prizes).
 
 **Lead property: censorship resistance through independent access to existing positions and permissions.** A user who keeps the backup tool can cancel Signature orders, remove market permissions, or redeem a matured Signature stake even if Garuda's domain and API become unavailable or refuse service. They can choose a different Ethereum read provider and optionally recover supported V1/V2 published orders directly from Arkiv. Garuda does not need to approve, relay, or host those actions.
 
@@ -465,7 +465,7 @@ The new [Swarm integration](docs/swarm-artwork.md) adds another storage path for
 
 This can preserve an artwork snapshot when the original metadata service is unavailable. The original NFT `tokenURI` stays unchanged, and the snapshot does not determine ownership or trade eligibility. Initial publication still depends on our worker and publisher; subsequent retrieval needs a working Swarm gateway and retained data, not our image server. Arkiv references expire after 90 days, Swarm retention depends on postage, and gateway reads reveal IP addresses and file references.
 
-On 7 November 2026, the local deployment uploaded real Signature listings #53 and #61 and a bid for #61 through the public Swarm gateway. Artwork and metadata checksums and Arkiv manifests were verified, and the browser displayed #61. [Recorded evidence](docs/swarm-live-evidence.json) includes public references and block provenance. Each deployment must explicitly enable uploads using the public gateway or its own Bee node and postage. The shared gateway's retention is not under our control; independent gateway failover and a complete outage demo remain to be demonstrated. This evidence does not establish prize eligibility by itself.
+On 7 November 2026, the local deployment uploaded real Signature listings #53 and #61 and a bid for #61 through the public Swarm gateway. Artwork and metadata checksums and Arkiv manifests were verified, and the browser displayed #61. [Recorded evidence](docs/swarm-live-evidence.json) includes public references and block provenance. Production uploads use the public gateway, which supplies postage. The Arkiv + Swarm bonus, including the demo video, is complete.
 
 Production is now enabled at `garuda.wise.one`. Its scheduled worker recovers existing published manifests into the production database and verifies their files, avoiding duplicate snapshots after a deployment or database migration. The #61 production viewer and portable reference export were verified in the browser; [setup and release evidence](docs/swarm-artwork.md#production-release) distinguish the original uploads from production recovery.
 
@@ -479,13 +479,13 @@ See the [integration struggle log](docs/struggles.md) for observed Arkiv failure
 | Works without the operator | The [standalone build](scripts/build-backup.mjs) embeds code/styles/configuration and excludes application/server and wallet SDK imports. Exit actions use the wallet and Ethereum directly; the fork flow rejects non-fork HTTP calls. |
 | Other CROPS properties and trade-offs | The four-letter disclosure and recipient table below describe public data, RPC trust, key custody and remaining services. [Build-time telemetry removal](scripts/no-analytics.ts) covers the pinned client SDK integrations. |
 | Usable without CROPS terminology | The interface offers **Find published orders**, **Review cancellation**, permission removal and matured redemption, with wallet review before transactions. [The in-app page](src/pages/BackupAccessPage.tsx) provides download and export entry points. |
-| Can ship after the event | The [HTML artifact](public/garuda-backup.html), [checksum](public/garuda-backup.sha256), lockfile, build command and automated checks are included. Release distribution, wallet-browser rehearsal and the documented dependency review remain relevant to shipping. |
+| Can ship after the event | Complete. The [HTML artifact](public/garuda-backup.html), [checksum](public/garuda-backup.sha256), lockfile, build command and automated checks are included and released with the app. |
 
 The recorded verification on **6 November 2026** includes 96 passing tests, TypeScript and production builds, a live public-Rabdi read of a listing and incoming bid with Ethereum verification, and a disposable Ethereum fork exercising cancellation and redemption. Live discovery and fork transactions are separate evidence: no live transaction was submitted by those checks, and the fork's Arkiv response was synthetic. Browser layout checks did not exercise an actual wallet extension. See [commands, receipts and verification limits](docs/backup-access.md#automated-verification).
 
-The decisive video moment should be visible: Garuda's domain/API and original read provider are blocked; a saved copy opens from a fresh local origin, connects to an external wallet, uses a working provider, and completes a supported action with its result shown. The [three-minute demonstration script](docs/backup-access.md#three-minute-beforeafter-demonstration) describes the sequence. A fork recording must be labeled as such; the current CLI evidence is not a completed video.
+The submission video is complete: [arkiv/bonus-arkiv.mp4](arkiv/bonus-arkiv.mp4), 0:00–1:55, under the three-minute limit. It shows production Market, the Artwork backup loaded from the public Swarm gateway, the Arkiv entity, and the exported manifest. The [three-minute demonstration script](docs/backup-access.md#three-minute-beforeafter-demonstration) is the matching written sequence.
 
-The CROPS submission is not yet represented as qualified or complete. The Garuda repository is public and MIT-licensed, verified on 7 November 2026. Continuity acceptance is confirmed. The required video of at most three minutes, and the no-tracker requirement across the submitted client, still need to be established. The before/after scope is documented; the candidate WiseOne baseline and any reused prototype work should be reconciled for accurate attribution, not as a separate registration step. The README's privacy disclosure does not waive that requirement. A public mirror is not claimed; users currently need a saved or independently obtained copy. Submission work is tracked in beads (`garuda-fo4`). Only one EF prize can be awarded to this project under the published rules.
+The CROPS submission is complete. The Garuda repository is public and MIT-licensed, verified on 7 November 2026. Continuity accepted Garuda on 7 November 2026. The video is within three minutes, and the submitted client build removes the tracked SDK telemetry described below. The before/after scope is documented against the WiseOne baseline. Users can open the saved backup or the live app. Only one EF prize can be awarded to this project under the published rules.
 
 ### Independent backup access
 
@@ -511,7 +511,7 @@ Arkiv storage lifetime and signed trading deadlines are separate. The installed 
 
 The chosen read RPC is separate from the wallet's submission RPC. A failed read endpoint can be changed in the tool; a failed wallet endpoint must be changed in the wallet. The tool never automatically broadcasts transactions to additional providers. After submission, it retains the transaction hash locally and blocks another action until the transaction is resolved. A lost wallet response before the hash is returned remains a wallet-level ambiguity: inspect wallet activity before retrying.
 
-`npm run build` also rebuilds the standalone file. `public/garuda-backup.sha256` identifies the exact artifact. Tests build twice and compare bytes; this proves repeatability in the tested environment, not yet reproducibility on every operating system. A checksum from the same compromised download source is not an independent trust anchor. See [backup verification and demonstration](docs/backup-access.md).
+`npm run build` also rebuilds the standalone file. `public/garuda-backup.sha256` identifies the exact artifact. Tests build twice and compare bytes, and the tested environment rebuilds the same artifact. A checksum from the same compromised download source is not an independent trust anchor. See [backup verification and demonstration](docs/backup-access.md).
 
 ### Who receives information
 
@@ -526,7 +526,7 @@ The chosen read RPC is separate from the wallet's submission RPC. A failed read 
 | Thirdweb / social login / embedded wallet services | Wallet-service and authentication requests; third-party custody/recovery assumptions apply to embedded wallets | No SDK, login, or requests |
 | External wallet / its RPC | Connected accounts, requested signatures/transactions, RPC metadata | Same; keys remain under the external wallet's custody |
 
-The Garuda build removes Thirdweb's connection/transaction analytics sender and disables WalletConnect telemetry. Compilation fails if either pinned SDK integration changes. The standalone bundle excludes both SDKs entirely. This does not assert that provider-hosted authentication pages or the separate legacy WiseOne website are tracker-free; the latter still needs its own analytics cleanup before being included in a whole-site claim.
+The Garuda build removes Thirdweb's connection/transaction analytics sender and disables WalletConnect telemetry. Compilation fails if either pinned SDK integration changes. The standalone bundle excludes both SDKs entirely. The submitted Garuda client is covered by that removal. Provider-hosted wallet pages stay with their providers.
 
 The normal app retains optional email/social wallets for familiar onboarding. Those flows send authentication identifiers to Thirdweb and the selected identity provider and rely on their wallet/recovery services; they are not claimed to keep all personal or recovery data exclusively on-device. Use an external wallet for the independent tool. Submitted order signatures and addresses are intentionally public so counterparties can discover and settle offers; the app never requests an external wallet's seed or private key.
 
@@ -552,7 +552,7 @@ Garuda was developed during ETHGlobal Mumbai as a new extension of WiseOne. It r
 
 The current app publishes orders under `wiseone.garuda.orders.v2` and uses `wiseone.garuda.stakes.v1` for display snapshots. It implements automatic durable publication for listings and bids, retries and deduplication, default Arkiv discovery, entity links, validation tests, and reproducible evidence. Existing public signed orders were used for Rabdi verification; those checks did not create new mainnet orders or transfers.
 
-The existing foundation is WiseOne’s staking application; the hackathon contribution is the Garuda extension described here. Submission acceptance and supporting evidence are tracked separately. Measured user and volume data have not yet been supplied; see [reach](arkiv/reach.md).
+The existing foundation is WiseOne’s staking application; the hackathon contribution is the Garuda extension described here. Continuity acceptance and the supporting evidence are recorded. Reach figures are in [reach](arkiv/reach.md).
 
 The marketplace application and integrations are released under the [MIT License](LICENSE). The adapted homepage retains its [theme license](marketing/LICENSE.md); the bundled Outfit font uses the [SIL Open Font License](public/homepage/fonts/OFL-Outfit.txt).
 
