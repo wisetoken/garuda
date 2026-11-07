@@ -17,22 +17,23 @@ export async function syncSalesIndex(
 ) {
     const d = store.deployment;
     return store.transaction(async (db) => {
-        const lock = await db.query(
-            "SELECT pg_try_advisory_xact_lock(hashtext($1)) AS locked",
-            [`${store.scope}:index`],
-        );
-        if (!lock.rows[0].locked)
-            throw new SalesError(
-                "index-busy",
-                "The market is refreshing. Try again shortly.",
-            );
+        // Separate serverless instances cannot share SalesService's in-flight
+        // promise. Wait for the current refresher instead of failing ordinary
+        // concurrent config/order reads. Bound the wait below the API deadline.
+        await db.query("SET LOCAL lock_timeout = '5s'");
+        try {
+            await db.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`${store.scope}:index`]);
+        } catch (error) {
+            if ((error as { code?: string })?.code === '55P03')
+                throw new SalesError('index-busy', 'The market is refreshing. Try again shortly.');
+            throw error;
+        }
         const checkpoints = await db.query(
             "SELECT block_number,block_hash FROM blend_sale_checkpoints WHERE scope=$1 ORDER BY block_number DESC",
             [store.scope],
         );
         let cursor = BigInt(d.deploymentBlock) - 1n;
         for (const point of checkpoints.rows) {
-            if (BigInt(point.block_number) > head) continue;
             if (
                 (
                     await client.getBlock({
@@ -40,6 +41,10 @@ export async function syncSalesIndex(
                     })
                 ).hash === point.block_hash
             ) {
+                // A newer request may finish while this one waits for the lock.
+                // Its canonical index already covers our block; do not rewind it.
+                if (BigInt(point.block_number) > head)
+                    return { caughtUp: true, blockNumber: head };
                 cursor = BigInt(point.block_number);
                 break;
             }
