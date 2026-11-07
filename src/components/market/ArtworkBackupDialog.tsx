@@ -45,7 +45,7 @@ export function ArtworkBackupDialog({row,onClose}: {row:SaleRow;onClose:()=>void
   return <dialog ref={dialog} className="market-activity-dialog artwork-backup-dialog" aria-labelledby={titleId}
     onCancel={event=>{event.preventDefault();onClose();}}>
     <header className="market-activity-heading"><div><h2 id={titleId}><ImageIcon size={22} />Artwork backup</h2><p>{collection.name} Stake #{row.order.tokenId}</p></div>
-      <button className="market-secondary" aria-label="Close artwork backup" onClick={onClose}><X size={20} /></button></header>
+      <button type="button" className="artwork-backup-close" aria-label="Close artwork backup" onClick={onClose}><X size={18} aria-hidden="true" /></button></header>
     <div className="artwork-backup-content">
       {status.isError ? <><p>Backup status could not be loaded.</p><button className="market-secondary" onClick={()=>void status.refetch()}>Retry</button></> : status.isPending ? <p role="status">Checking backup status…</p> : receipt ? <>
         <p className="artwork-backup-ready">Swarm backup recorded</p>

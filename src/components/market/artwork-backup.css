@@ -1,4 +1,7 @@
 .artwork-backup-dialog { width:min(680px,calc(100vw - 32px));text-align:left;white-space:normal; }
+.artwork-backup-dialog .market-activity-heading > div { flex:1;min-width:0; }
+.artwork-backup-close { display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;padding:0;border:1px solid var(--border);border-radius:50%;background:transparent;color:var(--muted); }
+.artwork-backup-close:hover { color:var(--text-primary);border-color:var(--border-strong); }
 .artwork-backup-content { padding:24px;overflow:auto;min-height:0;font-size:14px;line-height:1.6; }
 .artwork-backup-content p { margin:0 0 16px; }
 .artwork-backup-empty { padding:24px 0;text-align:center; }
