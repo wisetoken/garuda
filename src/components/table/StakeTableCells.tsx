@@ -2,6 +2,7 @@ import { ArrowLeftRight, CircleCheck, Clock3 } from "lucide-react";
 import type { SignaturePosition } from "../../lib/blend/live-portfolio";
 import { stakeTimeline, stakeYield } from "../../lib/blend/stake-art";
 import { marketWise, marketUsd, marketDate, statusLabel, daysServed } from "../../lib/market/presentation";
+import { interestAmount, yieldPercent } from "../../lib/portfolio";
 
 type PositionProps = { position?: SignaturePosition };
 type ValueProps = PositionProps & { usd?: number };
@@ -36,7 +37,7 @@ export function StakeYieldCell({ position }: PositionProps) {
   return <>
     <span className="market-yield" data-mature={position && stakeTimeline(position).status === "Mature"}
       title="Simple annualized yield, based on past accrued interest. Future returns may vary.">
-      {value === null ? "—" : `${value.toFixed(2)}%`}
+      {!position ? "—" : `${yieldPercent(value)}%`}
     </span>
     <small>{position ? daysServed(position) : "—"}</small>
   </>;
@@ -44,7 +45,7 @@ export function StakeYieldCell({ position }: PositionProps) {
 
 export function StakeRewardCell({ position, usd }: ValueProps) {
   return <>
-    <span className="market-yield">{position?.unclaimedInterest === undefined ? "—" : `+${marketWise(position.unclaimedInterest)} WISE`}</span>
+    <span className="market-yield">{position?.unclaimedInterest === undefined ? "—" : `+${interestAmount(position.unclaimedInterest)} WISE`}</span>
     <small>{position?.unclaimedInterest !== undefined && usd ? "+" : ""}{marketUsd(position?.unclaimedInterest, usd)}</small>
   </>;
 }

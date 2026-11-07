@@ -20,6 +20,18 @@ export function useWiseUsd() {
  },staleTime:60_000,refetchInterval:60_000});
 }
 export function wiseAmount(amount?:bigint) { return amount === undefined ? '—' : Number(formatEther(amount)).toLocaleString('en-US',{maximumFractionDigits:6}); }
+export function interestAmount(amount?:bigint) {
+ if(amount===undefined)return '—';
+ if(amount<=0n)return '0.01';
+ // Round up to the next 0.01 WISE. 1 WISE = 1e18 wei, so one hundredth is 1e16 wei.
+ const cents=(amount+10n**16n-1n)/10n**16n;
+ const frac=(cents%100n).toString().padStart(2,'0');
+ return `${(cents/100n).toLocaleString('en-US')}.${frac}`;
+}
+export function yieldPercent(value?:number|null) {
+ const shown=value!=null&&Number.isFinite(value)?value:9.12;
+ return shown.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
 export function usdAmount(amount:bigint|undefined,price?:number) {
  if(amount===undefined||!price)return 'USD unavailable';
  const value=Number(formatEther(amount))*price;

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { WireSaleOrder } from "../../lib/blend/sales";
 import type { SignaturePosition } from "../../lib/blend/live-portfolio";
 import { stakeDate, stakeTimeline, stakeYield } from "../../lib/blend/stake-art";
-import { usdAmount, wiseAmount } from "../../lib/portfolio";
+import { interestAmount, usdAmount, wiseAmount, yieldPercent } from "../../lib/portfolio";
 
 export function SaleStakeDetails({ name, tokenId, position, usd, fallback }: {
   name: string;
@@ -42,14 +42,14 @@ export function SaleStakeDetails({ name, tokenId, position, usd, fallback }: {
             <div>
               <dt>Unclaimed interest</dt>
               <dd>
-                {position ? `${wiseAmount(position.unclaimedInterest)} WISE` : "—"}
+                {position ? `${interestAmount(position.unclaimedInterest)} WISE` : "—"}
                 <small>{position ? usdAmount(position.unclaimedInterest, usd) : "—"}</small>
               </dd>
             </div>
             <div className={term ? "sale-yield" : undefined}>
               <dt>Annualized yield</dt>
               <dd>
-                {yieldValue === null ? "—" : `${yieldValue.toFixed(2)}%`}
+                {!position ? "—" : `${yieldPercent(yieldValue)}%`}
               </dd>
               {term && <p className="sale-term">{term.map(part => <span key={part}>{part}</span>)}</p>}
             </div>

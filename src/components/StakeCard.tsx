@@ -6,7 +6,7 @@ import type { SignaturePosition } from '../lib/blend/live-portfolio';
 import { STAKE_COLLECTIONS, stakeCollection } from '../lib/blend/stake-collections';
 import { stakeDate as formatDate, stakeTimeline, stakeYield } from '../lib/blend/stake-art';
 import { loadStakeCreationTx } from '../lib/blend/stake-creation-tx';
-import { ethereumClient, useWiseUsd, wiseAmount, usdAmount } from '../lib/portfolio';
+import { ethereumClient, interestAmount, useWiseUsd, wiseAmount, usdAmount, yieldPercent } from '../lib/portfolio';
 import './stake-card.css';
 
 export function StakeCard({ position, onList, actions }: { position: SignaturePosition; onList?: () => void; actions?: ReactNode }) {
@@ -15,7 +15,7 @@ export function StakeCard({ position, onList, actions }: { position: SignaturePo
   const {data:hash}=useQuery({queryKey:['stake-creation',collection,position.stakeId],queryFn:()=>loadStakeCreationTx(ethereumClient,position.stakeId,collection),staleTime:Infinity});
   const timeline=stakeTimeline(position),yieldValue=stakeYield(position);
   const showInterestUsd = !!price && Number(position.unclaimedInterest) / 1e18 * price >= 0.01;
-  const stake={...timeline,id:position.tokenId,collection:stakeCollection(collection).name,principal:wiseAmount(position.principal),principalUsd:usdAmount(position.principal,price),interest:wiseAmount(position.unclaimedInterest),interestUsd:usdAmount(position.unclaimedInterest,price),annualYield:yieldValue?.toLocaleString('en-US',{maximumFractionDigits:2})??'—',progress:Math.round(timeline.progress*100),started:new Date(position.startAt*1000).toISOString(),maturity:new Date(position.maturesAt*1000).toISOString(),creationTransactionHash:hash};
+  const stake={...timeline,id:position.tokenId,collection:stakeCollection(collection).name,principal:wiseAmount(position.principal),principalUsd:usdAmount(position.principal,price),interest:interestAmount(position.unclaimedInterest),interestUsd:usdAmount(position.unclaimedInterest,price),annualYield:yieldPercent(yieldValue),progress:Math.round(timeline.progress*100),started:new Date(position.startAt*1000).toISOString(),maturity:new Date(position.maturesAt*1000).toISOString(),creationTransactionHash:hash};
   const stakeDate=(date:string)=>formatDate(Date.parse(date)/1000);
   return <article className="garuda-stake-card" aria-label={`${stake.collection} Stake #${stake.id}`} data-status={stake.status}>
     <div className="garuda-stake-face">
