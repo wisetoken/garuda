@@ -1,4 +1,3 @@
-import { handle } from '@hono/node-server/vercel';
 import { attachDatabasePool, waitUntil } from '@vercel/functions';
 import { createApp } from './app';
 import { serviceResolver } from './market/runtime';
@@ -17,5 +16,6 @@ const app = createApp({ resolvers, publish: service => {
   waitUntil(work);
   return work;
 } });
-export const config = { api: { bodyParser: false } };
-export default handle(app);
+// Use Vercel's native Web handler. Node helpers consume the incoming body
+// before a Node listener runs, which leaves Hono waiting on an exhausted stream.
+export default { fetch: app.fetch };

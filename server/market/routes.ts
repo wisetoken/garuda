@@ -1,3 +1,4 @@
+import { reportMarketFailure } from './diagnostics';
 import { legacyTradingRetired } from "../../src/lib/blend/sales-migration";
 import type { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -45,6 +46,7 @@ export function registerMarketRoutes(
       const {getStakeDetails} = await import('./stake-cache');
       return c.json(await getStakeDetails(service, hash));
     } catch (e) {
+      reportMarketFailure('stake-details', prefix, e);
       return c.json({error:e instanceof SalesError ? e.message : 'Stake details could not be loaded.'},503);
     }
   });
@@ -131,7 +133,8 @@ export function registerMarketRoutes(
         deployment: service.store.deployment,
         newActivityPaused: newActivityPaused || !await legacyTradingRetired(service.client, service.store.deployment, block.number),
       });
-    } catch {
+    } catch (e) {
+      reportMarketFailure("config", prefix, e);
       return c.json({ error: "The configured market is unavailable." }, 503);
     }
   });
@@ -168,6 +171,7 @@ export function registerMarketRoutes(
       const states = await publicationStates(service.store,book.orders.map(row=>row.hash));
       return c.json({...book,source:"catalog",orders:book.orders.map(row=>({...row,arkiv:states.get(row.hash)}))});
     } catch (e) {
+      reportMarketFailure("sales-list", prefix, e);
       return c.json(
         {
           error:
@@ -188,6 +192,7 @@ export function registerMarketRoutes(
       if (!service) return c.json({ error: "Trading is not enabled." }, 503);
       return c.json(await service.get(hash.toLowerCase()));
     } catch (e) {
+      reportMarketFailure("sales-detail", prefix, e);
       return c.json(
         {
           error:
@@ -216,6 +221,7 @@ export function registerMarketRoutes(
       void runPublication(service).catch(() => {});
       return c.json({...result,arkiv:{state:"queued"}}, result.created ? 201 : 200);
     } catch (e) {
+      reportMarketFailure("sales-publish", prefix, e);
       return c.json(
         {
           error:
